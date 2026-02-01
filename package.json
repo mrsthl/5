@@ -1,0 +1,34 @@
+{
+  "name": "5-phase-workflow",
+  "version": "1.0.0",
+  "description": "A 5-phase feature development workflow for Claude Code",
+  "bin": {
+    "5-phase-workflow": "bin/install.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "workflow",
+    "ai-assisted",
+    "feature-development",
+    "development-workflow"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "https://github.com/mrsthl/5"
+}

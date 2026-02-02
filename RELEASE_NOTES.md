@@ -1,5 +1,44 @@
 # Release Notes
 
+## v1.1.2
+
+**Release Date:** February 2, 2026
+
+### Improvements
+
+**Command Scope Enforcement**
+- Added explicit scope constraints to all workflow commands to prevent scope creep
+- Each command now clearly defines what it should and should not do
+- Added "CRITICAL SCOPE CONSTRAINT" sections with visual indicators (✅/❌)
+- Commands now explicitly state when their job is complete and they should exit
+- Prevents commands from exceeding their intended phase boundaries
+
+**Enhanced Developer Guidance**
+- Commands now provide clear stopping points to prevent over-execution
+- Better separation of concerns between phases
+- Improved instructions prevent commands from doing work belonging to other phases
+- Added boundary documentation to each command
+
+**Affected Commands:**
+- `/5:configure` - Now only creates feature specs, doesn't write config files
+- `/5:plan-feature` - Enforces focus on requirements gathering only
+- `/5:discuss-feature` - Restricts to feature spec updates only
+- `/5:plan-implementation` - Prevents premature implementation
+- `/5:implement-feature` - Maintains orchestration-only role
+- `/5:verify-implementation` - Focuses on verification without fixing
+- `/5:review-code` - Stays within review boundaries
+- `/5:quick-implement` - Maintains streamlined scope
+
+### Benefits
+
+- **Clearer Workflows**: Each command has well-defined responsibilities
+- **Better AI Behavior**: Reduces instances of commands doing too much work
+- **Improved User Experience**: Users know exactly what each command does
+- **Maintainability**: Easier to debug and enhance individual commands
+- **Context Efficiency**: Commands stay focused and use less context
+
+---
+
 ## v1.1.1
 
 **Release Date:** February 2, 2026

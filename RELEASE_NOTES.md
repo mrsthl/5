@@ -8,6 +8,7 @@
 
 **Documentation**
 - Added `RELEASE_NOTES.md`
+- Added repository URL to `package.json`
 
 ---
 

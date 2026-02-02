@@ -4,6 +4,15 @@
     "command": "node .claude/hooks/statusline.js"
   },
   "hooks": {
-    "onCommandStart": "node .claude/hooks/check-updates.js"
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/check-updates.js"
+          }
+        ]
+      }
+    ]
   }
 }

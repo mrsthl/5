@@ -19,6 +19,41 @@ This skill is part of **Phase 1** (Feature Planning) of the 5-phase workflow:
 
 This skill enables **optional iterative refinement** of feature specs after initial planning through discussion, clarification, and requirement changes. Use it when the initial spec needs adjustments before proceeding to implementation planning.
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND ONLY UPDATES FEATURE SPECIFICATIONS. IT DOES NOT PLAN OR IMPLEMENT.**
+
+Your job in this command:
+✅ Read existing feature specification
+✅ Ask what user wants to discuss
+✅ Explore codebase if needed for context
+✅ Ask clarifying questions
+✅ Update feature specification
+✅ Tell user to run /5:plan-implementation
+
+Your job is NOT:
+❌ Create new feature specs (use /5:plan-feature)
+❌ Create implementation plans
+❌ Map to technical components
+❌ Start implementation
+❌ Write any code
+❌ Rewrite entire feature spec (only update changed sections)
+
+**After updating the feature spec and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Create new feature specs** - That's /5:plan-feature
+- ❌ **Create implementation plans** - That's Phase 2 (/5:plan-implementation)
+- ❌ **Start implementation** - That's Phase 3 (/5:implement-feature)
+- ❌ **Write any code** - This is planning only
+- ❌ **Rewrite entire spec** - Only update sections that changed
+- ❌ **Delete previous Q&A** - Append new discussions, keep history
+
+**If you find yourself creating plans or writing code, STOP IMMEDIATELY. You are exceeding this command's scope.**
+
 ## Use Cases
 
 Use this skill when:
@@ -196,15 +231,19 @@ After updating the spec, tell the developer:
 
 ## Instructions Summary
 
+Follow these steps **IN ORDER** and **STOP after step 9**:
+
 1. **Extract feature name** - From user input or by matching ticket ID
 2. **Read feature spec** - Load current state from `.5/{feature-name}/feature.md`
 3. **Ask initial question** - What do they want to discuss?
 4. **Explore if needed** - Understand codebase context
 5. **Interactive Q&A** - Multiple rounds of clarifying questions
-6. **Iterate** - Allow continued discussion
-7. **Update feature spec** - Modify relevant sections
+6. **Iterate** - Allow continued discussion until user is satisfied
+7. **Update feature spec** - Modify only the relevant sections that changed
 8. **Track changes** - Document discussion history
-9. **Inform developer** - Summarize changes and next steps
+9. **Inform developer** - Summarize changes and ask: "Discuss more or run `/clear` followed by `/5:plan-implementation {feature-name}`?"
+
+**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT CREATE IMPLEMENTATION PLANS.**
 
 ## Key Principles
 
@@ -216,14 +255,6 @@ After updating the spec, tell the developer:
 6. **Preserve history** - Keep previous Q&A, add new discussions
 7. **Clear next steps** - Guide user on what to do next
 
-## DO NOT in This Skill
-
-- DO NOT rewrite the entire feature spec (only update changed sections)
-- DO NOT skip asking what the user wants to discuss
-- DO NOT create new feature specs (use /plan-feature for that)
-- DO NOT proceed to technical planning (that's Phase 2's job)
-- DO NOT start implementation
-- DO NOT delete previous Q&A sections (append to them)
 
 ## Discussion Patterns
 

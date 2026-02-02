@@ -19,6 +19,41 @@ This skill is the **first phase** of the 5-phase workflow:
 
 This skill guides intensive collaboration with the developer to understand requirements, challenge assumptions, and create a comprehensive feature specification.
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND ONLY CREATES THE FEATURE SPECIFICATION. IT DOES NOT IMPLEMENT.**
+
+Your job in this phase:
+✅ Ask questions
+✅ Explore codebase
+✅ Create feature.md file
+✅ Tell user to run /5:plan-implementation
+
+Your job is NOT:
+❌ Create implementation plans
+❌ Map to technical components
+❌ Write any code
+❌ Start implementation
+
+**After creating feature.md and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Create implementation plans** - That's Phase 2 (`/5:plan-implementation`)
+- ❌ **Map components to skills** - That's Phase 2's job
+- ❌ **Start any implementation** - That's Phase 3 (`/5:implement-feature`)
+- ❌ **Write any code** - Not even example code
+- ❌ **Create TodoWrite task lists** - Wrong phase
+- ❌ Ask for ticket ID (extract from branch name automatically)
+- ❌ Skip asking for feature description first
+- ❌ Ask questions before exploring the codebase
+- ❌ Skip the intensive Q&A phase
+- ❌ Accept vague requirements
+
+**If you find yourself doing any of the above, STOP IMMEDIATELY. You are exceeding this command's scope.**
+
 ## Planning Process
 
 ### Step 1: Gather Feature Description
@@ -129,7 +164,9 @@ Based on the feature description and discussion:
 
 ### Step 6: Create Feature Specification
 
-Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` with the following structure:
+Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` with the following structure.
+
+**THIS IS YOUR FINAL OUTPUT. After creating this file, proceed immediately to Step 7.**
 
 ```markdown
 # Feature: {TICKET-ID} - {Title}
@@ -219,6 +256,8 @@ After approval:
 
 ## Instructions
 
+Follow these steps **IN ORDER** and **STOP after step 8**:
+
 1. **Ask for feature description** - Request task description and additional information from developer
 2. **Extract Ticket ID** - Get current branch name and extract ticket ID using configured pattern
 3. **Explore the codebase** - Understand existing patterns and affected modules
@@ -226,7 +265,9 @@ After approval:
 5. **Challenge assumptions** - Present alternatives, question complexity
 6. **Determine feature name** - Create short kebab-case description
 7. **Create feature specification** in `.5/{TICKET-ID}-{description}/feature.md`
-8. **Inform the developer** to review the spec and then run `/plan-implementation {TICKET-ID}-{description}`
+8. **Inform the developer** to review the spec and then run `/clear` followed by `/5:plan-implementation {TICKET-ID}-{description}`
+
+**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT PROCEED TO IMPLEMENTATION.**
 
 ## Key Principles
 
@@ -239,16 +280,6 @@ After approval:
 7. **Structured output** - Use the feature spec template consistently
 8. **Clear handoff** - Tell developer what to do next
 
-## DO NOT in This Skill
-
-- DO NOT ask for ticket ID (extract from branch name automatically)
-- DO NOT skip asking for feature description first
-- DO NOT ask questions before exploring the codebase
-- DO NOT create TodoWrite task lists (that's Phase 2's job)
-- DO NOT map components to skills (that's Phase 2's job)
-- DO NOT start implementation (that's Phase 3's job)
-- DO NOT skip the intensive Q&A phase
-- DO NOT accept vague requirements
 
 ## Common Feature Types
 
@@ -279,8 +310,14 @@ After approval:
 7. Skill challenges: "Could we reuse existing scheduling infrastructure instead of creating new one?"
 8. Skill determines: Feature name `add-emergency-schedule`
 9. Skill creates: `.5/PROJ-1234-add-emergency-schedule/feature.md`
-10. Skill tells user: "Feature spec created. Please review and then run `/clear` followed by `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
-11. Skill tells user: "If the feature needs refinements, run `/5:discuss-feature PROJ-1234-add-emergency-schedule`"
+10. Skill tells user: "✅ Feature spec created at `.5/PROJ-1234-add-emergency-schedule/feature.md`
+
+    **Next steps:**
+    1. Review the feature spec
+    2. If changes needed: `/5:discuss-feature PROJ-1234-add-emergency-schedule`
+    3. If approved: `/clear` then `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
+
+**🛑 COMMAND COMPLETE. The skill stops here and waits for user to proceed to Phase 2.**
 
 ## Related Documentation
 

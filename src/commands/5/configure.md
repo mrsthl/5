@@ -19,6 +19,37 @@ After running this command, proceed through the standard phases:
 4. `/5:verify-implementation` - Verify configuration
 5. `/5:review-code` - Review generated files
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND ONLY CREATES THE CONFIGURATION FEATURE SPEC. IT DOES NOT CONFIGURE.**
+
+Your job in this command:
+✅ Analyze project (detect type, build commands, etc.)
+✅ Gather user preferences via questions
+✅ Create feature spec at `.5/CONFIGURE/feature.md`
+✅ Tell user to run /5:plan-implementation CONFIGURE
+
+Your job is NOT:
+❌ Write config.json directly (Phase 3 does this)
+❌ Create CLAUDE.md directly (Phase 3 does this)
+❌ Generate skills directly (Phase 3 does this)
+❌ Skip user interaction
+❌ Assume project structure
+
+**After creating the feature spec and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Write config.json** - That's Phase 3's job (via configure-project skill)
+- ❌ **Create CLAUDE.md** - That's Phase 3's job
+- ❌ **Generate skills** - That's Phase 3's job
+- ❌ **Skip questions** - Always confirm detected values with user
+- ❌ **Assume structure** - Detect or ask, don't guess
+
+**If you find yourself creating config files or CLAUDE.md, STOP IMMEDIATELY. You should only be creating the feature spec.**
+
 ## Configuration Process
 
 ### Step 1: Analyze Project (auto-detect, no user interaction)

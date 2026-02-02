@@ -19,6 +19,41 @@ This skill is the **second phase** of the 5-phase workflow:
 
 **Critical design constraint:** The plan must be executable by haiku-model agents without any codebase exploration. This means YOU must do all analysis upfront and embed everything into the plan: exact file paths, exact code patterns, reference snippets, imports, and complete instructions.
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND ONLY CREATES THE IMPLEMENTATION PLAN. IT DOES NOT IMPLEMENT.**
+
+Your job in this phase:
+✅ Read feature specification
+✅ Analyze codebase deeply
+✅ Ask technical questions
+✅ Create atomic plan files (meta.md, step-N.md, verification.md)
+✅ Build self-contained prompts for each component
+✅ Tell user to run /5:implement-feature
+
+Your job is NOT:
+❌ Start implementation
+❌ Execute any components
+❌ Create state files
+❌ Write any code files
+❌ Run build or tests
+❌ Create TodoWrite task lists
+
+**After creating the plan files and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Start implementation** - That's Phase 3 (`/5:implement-feature`)
+- ❌ **Execute components** - That's Phase 3's job
+- ❌ **Create state files** - That's Phase 3's responsibility
+- ❌ **Write code files** - Only create plan files in `.5/{feature-name}/plan/`
+- ❌ **Run builds or tests** - Phase 3 and 4 handle this
+- ❌ **Create vague prompts** - Every prompt must be self-contained and executable by haiku without exploration
+
+**If you find yourself doing any of the above, STOP IMMEDIATELY. You are exceeding this command's scope.**
+
 ## Prerequisites
 
 Before invoking this skill, ensure:
@@ -386,14 +421,18 @@ prompt: |
 
 ## Instructions Summary
 
+Follow these steps **IN ORDER** and **STOP after step 8**:
+
 1. **Read feature spec** from `.5/{feature-name}/feature.md`
 2. **Deep codebase analysis** - Read actual files, extract patterns, imports, conventions. This is the critical step.
 3. **Ask 3-5 technical questions** - Clarify implementation details
 4. **Map components to skills** - Check `.claude/skills/` for available skills
 5. **Group into dependency steps** - Based on component dependencies
 6. **Build self-contained prompts** - Each prompt must be executable by haiku without exploration
-7. **Write plan** to `.5/{feature-name}/plan.md` in the structured format
-8. **Inform developer** to review and run `/5:implement-feature`
+7. **Write plan** to `.5/{feature-name}/plan/` directory with atomic files (meta.md, step-N.md, verification.md)
+8. **Inform developer** to review and run `/clear` followed by `/5:implement-feature {feature-name}`
+
+**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT START IMPLEMENTATION.**
 
 ## Key Principles
 
@@ -404,15 +443,6 @@ prompt: |
 5. **Dependency-driven steps** - Step grouping from component dependencies
 6. **Verify prompt quality** - Could someone with no codebase knowledge execute it?
 
-## DO NOT
-
-- DO NOT start implementation (that's Phase 3's job)
-- DO NOT create state files (that's `/implement-feature`'s job)
-- DO NOT write vague prompts like "follow existing patterns" without including the pattern
-- DO NOT skip codebase analysis - reading actual files is mandatory
-- DO NOT leave file paths ambiguous
-- DO NOT write prompts that require the executor to read other files to understand what to do
-- DO NOT assume the executor can figure things out - be explicit
 
 ## Example Usage
 
@@ -431,7 +461,19 @@ Skill:
 9. Writes plan/meta.md with metadata and risks
 10. Writes plan/step-1.md, plan/step-2.md, plan/step-3.md with YAML components
 11. Writes plan/verification.md with build/test config
-12. Tells user: "Plan created with 7 components across 3 steps. Atomic plan structure at `.5/PROJ-1234-add-emergency-schedule/plan/`. Review the plan files, then run `/clear` followed by `/5:implement-feature PROJ-1234-add-emergency-schedule`"
+12. Tells user: "✅ Implementation plan created at `.5/PROJ-1234-add-emergency-schedule/plan/`
+
+    **Plan structure:**
+    - 7 components across 3 steps
+    - Atomic plan files: meta.md, step-1.md, step-2.md, step-3.md, verification.md
+    - Self-contained prompts ready for haiku execution
+
+    **Next steps:**
+    1. Review the plan files
+    2. Run `/clear` to reset context
+    3. Run `/5:implement-feature PROJ-1234-add-emergency-schedule`"
+
+**🛑 COMMAND COMPLETE. The command stops here and waits for user to proceed to Phase 3.**
 ```
 
 ## Related Documentation

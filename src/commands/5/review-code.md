@@ -30,6 +30,45 @@ This skill automates code review using the CodeRabbit CLI. It supports two workf
 - This command stays in the main context (user interaction, fix application)
 - review-processor agent runs CodeRabbit and categorizes findings (forked context)
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND REVIEWS CODE AND APPLIES USER-APPROVED FIXES ONLY.**
+
+Your job in this phase:
+✅ Check CodeRabbit prerequisites
+✅ Ask user what to review
+✅ Spawn review-processor agent
+✅ Present findings overview to user
+✅ Ask user which fixes to apply
+✅ Apply ONLY user-approved fixes
+✅ Verify changes (compile and test)
+✅ Save review report
+
+Your job is NOT:
+❌ Run CodeRabbit directly (agent does this)
+❌ Parse CodeRabbit output directly (agent does this)
+❌ Apply fixes without user approval
+❌ Auto-apply complex refactoring
+❌ Skip the overview step
+❌ Skip verification after applying fixes
+❌ Proceed if CodeRabbit not installed
+
+**ALWAYS GET USER CONSENT BEFORE APPLYING ANY FIXES. This is a review tool, not an auto-fix tool.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Run CodeRabbit directly** - review-processor agent handles this
+- ❌ **Parse CodeRabbit output directly** - review-processor agent handles this
+- ❌ **Apply fixes without approval** - ALWAYS ask user first
+- ❌ **Auto-apply refactoring** - Even if CodeRabbit suggests it
+- ❌ **Skip the overview** - User must see all findings first
+- ❌ **Skip verification** - Always compile and test after fixes
+- ❌ **Assume user wants all fixes** - Each fix needs approval
+
+**If you find yourself applying fixes without user approval, STOP IMMEDIATELY. User consent is mandatory.**
+
 ## Prerequisites
 
 **Required:**
@@ -451,31 +490,45 @@ For interactive mode only, save the review summary to:
 ## Instructions Summary
 
 ### Interactive Mode (Default)
+
+Follow these steps **IN ORDER**:
+
 1. **Check prerequisites** - CodeRabbit installed and logged in
 2. **Ask what to review** - Staged, unstaged, branch, or specific files
 3. **Ask review mode** - Interactive or save to file
 4. **Spawn review-processor** - Delegate CodeRabbit execution and parsing
 5. **Process results** - Receive categorized findings
-6. **Provide overview** - Show concise summary to user
+6. **Provide overview** - Show concise summary to user (MANDATORY - don't skip)
 7. **Ask user** - Which fixes to apply, how to handle questions
 8. **Apply fixes** - Only user-approved fixes, using Edit tool
 9. **Handle questions** - Ask user for each if requested
 10. **Verify changes** - Compile and test after applying fixes
 11. **Save report** - Store in `.5/{feature-name}/`
 
+**🛑 AFTER SAVING REPORT, YOUR JOB IS COMPLETE.**
+
 ### File-Based Annotation Mode
+
+Follow these steps **IN ORDER**:
+
 1. **Check prerequisites** - CodeRabbit installed and logged in
 2. **Ask what to review** - Staged, unstaged, branch, or specific files
 3. **User selects "Save to file"**
 4. **Spawn review-processor** - Delegate CodeRabbit execution and parsing
 5. **Process results** - Receive categorized findings
 6. **Save findings file** - Store structured findings in `.5/{feature-name}/review-{timestamp}-findings.md`
-7. **User edits file** - Mark findings as [FIX], [SKIP], or [MANUAL] with instructions
-8. **User runs `/review-code apply`** - Apply annotated fixes
-9. **Parse annotations** - Read user's action markers and custom instructions
-10. **Apply marked fixes** - Apply [FIX] and [MANUAL] fixes automatically
-11. **Verify changes** - Compile and test after applying fixes
-12. **Update findings file** - Append application results
+7. **Tell user** - Edit the file and run `/5:review-code apply`
+
+**🛑 STOP HERE if in save-to-file mode. Wait for user to edit and run apply.**
+
+**When user runs `/5:review-code apply`:**
+
+8. **Parse annotations** - Read user's action markers and custom instructions
+9. **Apply marked fixes** - Apply [FIX] and [MANUAL] fixes automatically (user already approved via file annotations)
+10. **Verify changes** - Compile and test after applying fixes
+11. **Update findings file** - Append application results
+
+**🛑 AFTER UPDATING FINDINGS FILE, YOUR JOB IS COMPLETE.**
 
 ## Key Principles
 
@@ -486,16 +539,6 @@ For interactive mode only, save the review summary to:
 5. **Verification** - Always compile and test after applying fixes
 6. **Non-intrusive** - If not installed or logged in, gracefully exit
 
-## DO NOT
-
-- DO NOT run CodeRabbit directly (agent handles this)
-- DO NOT parse CodeRabbit output directly (agent handles this)
-- DO NOT apply fixes without user approval
-- DO NOT auto-apply complex refactoring suggestions
-- DO NOT skip the overview step
-- DO NOT skip verification (compilation/tests)
-- DO NOT proceed if CodeRabbit is not installed
-- DO NOT assume user wants all fixes applied
 
 ## Error Handling
 

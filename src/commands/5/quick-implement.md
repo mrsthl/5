@@ -10,6 +10,43 @@ user-invocable: true
 
 Fast path for small, well-understood tasks (1-5 files). Skips extensive planning phases but preserves state tracking and skill-based implementation.
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND IS FOR SMALL, FOCUSED TASKS ONLY (1-5 FILES).**
+
+Your job in this command:
+✅ Get task description
+✅ Extract ticket ID
+✅ Create quick plan (max 5 components)
+✅ Get user approval on plan
+✅ Initialize state tracking
+✅ Execute implementation
+✅ Run verification
+✅ Report completion
+
+Your job is NOT:
+❌ Handle complex features (6+ files)
+❌ Work across multiple domains
+❌ Skip clarifying questions if unclear
+❌ Skip state file updates
+❌ Create feature spec files (use full workflow)
+❌ Commit changes (user handles this)
+
+**This is a FAST PATH for well-understood, small tasks. For anything complex, use the full workflow.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Use for complex features** - 6+ files or multiple domains → use full workflow
+- ❌ **Skip clarifying questions** - If implementation is unclear, ask first
+- ❌ **Skip state updates** - State file updates are MANDATORY
+- ❌ **Create feature specs** - This is for quick tasks, not full features
+- ❌ **Auto-commit** - User handles commits
+- ❌ **Skip plan approval** - Always show plan and get user approval first
+
+**If the task involves more than 5 files or multiple domains, STOP and recommend the full workflow instead.**
+
 ## Process
 
 ### Step 1: Get Task Description
@@ -224,7 +261,7 @@ Skill tool call:
 Report to user:
 
 ```
-Quick implementation complete!
+✅ Quick implementation complete!
 
 ${TICKET_ID}: ${DESCRIPTION}
 
@@ -238,9 +275,11 @@ Tests: {Success | Skipped}
 State: .5/${feature_name}/state.json
 
 Next steps:
-- Review and commit changes
-- For a new task, run `/clear` before starting
+1. Review and commit changes
+2. For a new task, run `/clear` before starting
 ```
+
+**🛑 YOUR JOB IS COMPLETE. DO NOT START NEW TASKS.**
 
 ## Skill Mappings
 
@@ -256,12 +295,3 @@ Skills are project-specific and should be configured in your project's `.claude/
 | Tests | Project-specific test skill |
 | Simple edits | Edit tool directly |
 
-## DO NOT
-
-- DO NOT use for complex features (6+ files, multiple domains)
-- DO NOT skip clarifying questions if implementation is unclear
-- **DO NOT skip state file updates** (breaks resumability)
-- **DO NOT skip state file initialization** (Step 7 is mandatory)
-- **DO NOT skip state file completion update** (Step 10 is mandatory)
-- DO NOT create feature spec files (use full workflow for that)
-- DO NOT commit changes (user handles this)

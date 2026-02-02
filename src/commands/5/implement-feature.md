@@ -31,6 +31,43 @@ This command is a **thin orchestrator** that:
 - The plan contains self-contained prompts - agents execute without codebase exploration
 - Skills are called by agents when specified in the plan
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND ORCHESTRATES IMPLEMENTATION. IT DELEGATES TO AGENTS.**
+
+Your job in this phase:
+✅ Load implementation plan
+✅ Initialize state tracking
+✅ Spawn agents (step-executor, step-verifier, step-fixer)
+✅ Process agent results
+✅ Update state file after each step
+✅ Report completion
+✅ Tell user to run /5:verify-implementation
+
+Your job is NOT:
+❌ Execute skills directly (agents call skills)
+❌ Do heavy file reading/writing (agents do this)
+❌ Write code files directly (agents do this)
+❌ Skip state file updates
+❌ Analyze or fix errors yourself (delegate to step-fixer agent)
+❌ Continue past 80% context usage
+
+**You are a THIN ORCHESTRATOR. Delegate all heavy work to agents in forked contexts.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Execute skills directly** - Agents call skills, not this command
+- ❌ **Write code directly** - Agents handle all file operations
+- ❌ **Analyze errors yourself** - Delegate to step-fixer agent (sonnet)
+- ❌ **Skip state file updates** - State updates are MANDATORY after each step
+- ❌ **Skip verification** - step-verifier must run after each step-executor
+- ❌ **Continue after 2 failed retries** - Escalate to user
+- ❌ **Ignore context warnings** - Stop at 80% usage
+
+**If you find yourself writing code or fixing errors directly, STOP. You should be spawning agents instead.**
+
 ## Prerequisites
 
 Before using this skill, ensure:
@@ -367,16 +404,24 @@ Update state file:
 4. **Verify** the update by reading the file again
 
 Tell the developer:
-1. "Feature implementation complete!"
-2. "All {N} components created successfully"
-3. "Compilation: Successful"
-4. "Tests: All passing ({N} tests)"
-5. **"State file: `.5/{feature-name}/state.json`"** (this is critical for resume capability)
-6. "Next steps:"
-   - "Run `/clear` to reset context"
-   - "Then run `/5:verify-implementation {feature-name}` to validate completeness"
+
+```
+✅ Feature implementation complete!
+
+Summary:
+- All {N} components created successfully
+- Compilation: Successful
+- Tests: All passing ({N} tests)
+- State file: `.5/{feature-name}/state.json`
+
+Next steps:
+1. Run `/clear` to reset context
+2. Run `/5:verify-implementation {feature-name}` to validate completeness
+```
 
 **Note:** The verification step will automatically prompt the developer to commit changes, which is recommended before running CodeRabbit review.
+
+**🛑 YOUR JOB IS COMPLETE. DO NOT START VERIFICATION. Wait for user to proceed to Phase 4.**
 
 ## State File Schema
 
@@ -467,24 +512,28 @@ User: /implement-feature PROJ-1234-add-emergency-schedule
 
 ## Instructions Summary
 
+Follow these steps **IN ORDER**:
+
 1. **Load implementation plan metadata** from `.5/{feature-name}/plan/meta.md` - parse YAML frontmatter for total_steps, total_components
 2. **Initialize state file** (MANDATORY) in `.5/{feature-name}/state.json` - verify creation
 3. **Create tasks** for all steps defined in the plan
 4. **For each step (1 to total_steps):**
    - Load and parse step file: `.5/{feature-name}/plan/step-{N}.md` (parse YAML frontmatter + components block)
    - Build step block object from parsed data
-   - Spawn step-executor with step block
+   - Spawn step-executor with step block (haiku model)
    - Process results
    - Spawn step-verifier
    - Process results
    - **Update state file** (MANDATORY - Step 4f) - verify update
 5. **For final integration step (if configured):** Spawn integration-agent, process results, **update state file** (MANDATORY)
-6. **Handle failures** - record in state file (MANDATORY), extract original prompt from plan/step-{N}.md, spawn step-fixer to diagnose and fix, re-verify after fix, escalate if stuck
+6. **Handle failures** - record in state file (MANDATORY), extract original prompt from plan/step-{N}.md, spawn step-fixer (sonnet) to diagnose and fix, re-verify after fix, escalate if stuck
 7. **Monitor context** - warn at 50%, stop at 80%
 8. **Update state file to completed** (MANDATORY - Step 8) - verify final update
-9. **Report completion** with summary including state file location
+9. **Report completion** - Tell user: "Run `/clear` followed by `/5:verify-implementation {feature-name}`"
 
 **CRITICAL**: State file updates at Steps 2, 4f (after each step), 5 (failures), and 8 (completion) are MANDATORY. These enable resumability if implementation is interrupted.
+
+**🛑 AFTER REPORTING COMPLETION, YOUR JOB IS DONE. DO NOT START VERIFICATION.**
 
 ## Key Principles
 
@@ -524,18 +573,6 @@ User: "Continue implementation of PROJ-1234-add-emergency-schedule"
 [Execute Step 2 → remaining steps]
 ```
 
-## DO NOT
-
-- DO NOT execute skills directly from this command (agents call skills)
-- DO NOT do heavy file reading/writing in main context (agents do this)
-- **DO NOT skip state file updates** (this breaks resumability)
-- **DO NOT skip state file initialization** (Step 2 is mandatory)
-- **DO NOT skip state file completion update** (Step 8 is mandatory)
-- DO NOT skip verification (step-verifier) after any step
-- DO NOT continue after 2 failed retry attempts without escalation
-- DO NOT ignore context usage warnings
-- DO NOT analyze errors in main context (delegate to step-fixer)
-- DO NOT fix code in main context (delegate to step-fixer)
 
 ## Related Documentation
 

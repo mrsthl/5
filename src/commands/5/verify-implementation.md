@@ -20,6 +20,43 @@ This skill provides comprehensive verification of a completed feature implementa
 - Delegates verification work to the verification-agent (also forked context)
 - Handles reporting, state updates, and user interaction within the forked context
 
+## ⚠️ CRITICAL SCOPE CONSTRAINT
+
+**THIS COMMAND VERIFIES IMPLEMENTATION. IT DELEGATES CHECKS TO AGENT.**
+
+Your job in this phase:
+✅ Load implementation plan
+✅ Spawn verification-agent
+✅ Process verification results
+✅ Save verification report
+✅ Update state file
+✅ Prompt for commit (if passed)
+✅ Tell user to run /5:review-code
+
+Your job is NOT:
+❌ Run compilation directly (agent does this)
+❌ Run tests directly (agent does this)
+❌ Detect problems directly (agent does this)
+❌ Block on warnings (only errors block)
+❌ Create commits without user approval
+❌ Skip asking about commit
+
+**After prompting for commit and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+
+## ❌ Boundaries: What This Command Does NOT Do
+
+**CRITICAL:** This command has a LIMITED scope. Do NOT:
+
+- ❌ **Run compilation directly** - verification-agent handles this
+- ❌ **Run tests directly** - verification-agent handles this
+- ❌ **Detect problems directly** - verification-agent handles this
+- ❌ **Block on warnings** - Only errors block completion
+- ❌ **Auto-commit** - Always ask user first
+- ❌ **Skip state file update** - State update is mandatory
+- ❌ **Start code review** - That's Phase 5 (/5:review-code)
+
+**If you find yourself running builds or tests directly, STOP. You should be spawning the verification-agent instead.**
+
 ## Verification Process
 
 ### Step 1: Load Implementation Plan
@@ -259,16 +296,20 @@ EOF
 
 ## Instructions Summary
 
+Follow these steps **IN ORDER** and **STOP after step 7**:
+
 1. **Load implementation plan** from `.5/{feature-name}/plan/`:
    - Read meta.md for plan metadata
    - Read verification.md for build/test config and targets
    - Aggregate expected files from all step-N.md files
 2. **Spawn verification-agent** with aggregated expected files, modules, and test modules
 3. **Process agent results** - extract status, report, and structured data
-4. **Save verification report** to state directory
+4. **Save verification report** to `.5/{feature-name}/verification.md`
 5. **Update state file** with verification results
 6. **Inform developer** with clear status
-7. **Prompt for commit** (if PASSED or PASSED WITH WARNINGS) - Recommended before CodeRabbit review
+7. **Prompt for commit** (if PASSED or PASSED WITH WARNINGS) and tell user: "Run `/clear` followed by `/5:review-code` for CodeRabbit review"
+
+**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT START CODE REVIEW.**
 
 ## Key Principles
 
@@ -280,17 +321,6 @@ EOF
 6. **Resumable** - Can be re-run after fixes
 7. **Commit ready** - Prompt for commit after successful verification
 
-## DO NOT
-
-- DO NOT run compilation or tests directly (agent handles this)
-- DO NOT run problem detection directly (agent handles this)
-- DO NOT block on warnings (only errors block)
-- DO NOT skip state file update
-- DO NOT skip saving verification report
-- DO NOT skip asking about commit if verification passed
-- DO NOT automatically create commits without user approval
-- DO NOT use emojis in commit messages
-- DO NOT include AI attribution or Co-Authored-By lines in commit messages
 
 ## Error Handling
 

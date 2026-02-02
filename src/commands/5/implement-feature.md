@@ -35,7 +35,10 @@ This command is a **thin orchestrator** that:
 
 Before using this skill, ensure:
 1. Feature spec exists at `.5/{TICKET-ID}-{description}/feature.md`
-2. Implementation plan exists at `.5/{TICKET-ID}-{description}/plan.md`
+2. Implementation plan exists at `.5/{TICKET-ID}-{description}/plan/` directory with:
+   - plan/meta.md (metadata)
+   - plan/step-N.md files (one per step)
+   - plan/verification.md (verification config)
 3. Implementation plan has been reviewed and approved by developer
 4. You have the feature name (e.g., "PROJ-1234-add-emergency-schedule") ready
 
@@ -43,14 +46,23 @@ Before using this skill, ensure:
 
 ### Step 1: Load Implementation Plan
 
-Read the implementation plan from `.5/{feature-name}/plan.md` where `{feature-name}` is the argument provided by the user.
+Read the implementation plan metadata from `.5/{feature-name}/plan/meta.md` where `{feature-name}` is the argument provided by the user.
 
-The plan uses a structured format. Extract:
-- From `## Meta`: feature name, ticket ID, total_steps, total_components
-- From `## Steps`: each step block with its components, modes, and pre-built prompts
-- From `## Verification`: build_command, test_command, expected file lists
+**Error Handling:** If the plan directory or meta.md file is missing:
+- Report error immediately: "Error: Implementation plan not found at `.5/{feature-name}/plan/`. Please run /5:plan-implementation first."
+- Do not proceed to Step 2
 
-Each step block contains complete, self-contained component prompts ready to pass directly to haiku agents.
+Parse the YAML frontmatter from meta.md to extract:
+- `feature`: feature name
+- `ticket`: ticket ID
+- `total_steps`: number of steps in the plan
+- `total_components`: total component count
+- `new_files`: count of new files
+- `modified_files`: count of modified files
+
+Store this metadata for state file initialization.
+
+**Note:** Individual step files (plan/step-N.md) will be loaded on-demand during Step 4 when executing each step.
 
 ### Step 2: Initialize State Tracking (MANDATORY)
 
@@ -89,15 +101,39 @@ Create TaskCreate entries for all steps defined in the implementation plan. Step
 
 ### Step 4: Execute Steps via Agents
 
-For each step defined in the plan, follow this pattern:
+For each step (1 to total_steps from meta.md), follow this pattern:
 
-#### 4a. Extract Step Block
+#### 4a. Load and Parse Step File
 
-From the plan, extract the step block verbatim. The plan already contains the structured format that step-executor expects:
-- Step number, name, mode
-- Components with action, file, skill, depends_on, and complete prompt
+For the current step number N:
 
-No transformation needed - the plan format matches the step-executor input contract.
+1. **Read step file:** `.5/{feature-name}/plan/step-{N}.md`
+
+   **Error Handling:** If the step file is missing:
+   - Report error: "Error: Step {N} plan file not found at `.5/{feature-name}/plan/step-{N}.md`. Plan may be incomplete."
+   - Stop execution and escalate to user
+
+2. **Parse YAML frontmatter** (between `---` markers):
+   - Extract: `step`, `name`, `mode`, `components` (count)
+
+3. **Extract YAML components block:**
+   - Find the `## Components` section
+   - Extract the YAML block (between ` ```yaml` and ` ``` `)
+   - Parse the YAML to get the `components` array
+
+   **Error Handling:** If YAML parsing fails:
+   - Report error: "Error: Malformed step plan file at `.5/{feature-name}/plan/step-{N}.md`. Check YAML syntax in components block."
+   - Stop execution and escalate to user
+
+4. **Build step block object:**
+   ```yaml
+   step: {from frontmatter}
+   name: "{from frontmatter}"
+   mode: {from frontmatter}
+   components: {from YAML block}
+   ```
+
+This step block is now ready to pass to the step-executor agent (same format as before).
 
 #### 4b. Spawn step-executor Agent (haiku)
 
@@ -230,6 +266,12 @@ If a step-executor or step-verifier reports failure:
 
 3. **Spawn step-fixer agent** (sonnet) — read `.claude/agents/step-fixer.md` for agent instructions, then spawn via Task tool:
 
+   To retrieve the original component prompt:
+   - Read `.5/{feature-name}/plan/step-{N}.md`
+   - Parse the YAML components block
+   - Find the component by ID
+   - Extract the `prompt` field
+
    ```
    Task tool call:
      subagent_type: general-purpose
@@ -247,7 +289,7 @@ If a step-executor or step-verifier reports failure:
        Attempt: {M}
 
        Original Prompt:
-       {The component prompt from the plan that step-executor used}
+       {The component prompt extracted from plan/step-{N}.md}
 
        Step Verifier Output:
        {Complete output from step-verifier}
@@ -425,17 +467,19 @@ User: /implement-feature PROJ-1234-add-emergency-schedule
 
 ## Instructions Summary
 
-1. **Load implementation plan** from `.5/{feature-name}/plan.md`
+1. **Load implementation plan metadata** from `.5/{feature-name}/plan/meta.md` - parse YAML frontmatter for total_steps, total_components
 2. **Initialize state file** (MANDATORY) in `.5/{feature-name}/state.json` - verify creation
 3. **Create tasks** for all steps defined in the plan
-4. **For each step:**
-   - Spawn step-executor
+4. **For each step (1 to total_steps):**
+   - Load and parse step file: `.5/{feature-name}/plan/step-{N}.md` (parse YAML frontmatter + components block)
+   - Build step block object from parsed data
+   - Spawn step-executor with step block
    - Process results
    - Spawn step-verifier
    - Process results
    - **Update state file** (MANDATORY - Step 4f) - verify update
 5. **For final integration step (if configured):** Spawn integration-agent, process results, **update state file** (MANDATORY)
-6. **Handle failures** - record in state file (MANDATORY), spawn step-fixer to diagnose and fix, re-verify after fix, escalate if stuck
+6. **Handle failures** - record in state file (MANDATORY), extract original prompt from plan/step-{N}.md, spawn step-fixer to diagnose and fix, re-verify after fix, escalate if stuck
 7. **Monitor context** - warn at 50%, stop at 80%
 8. **Update state file to completed** (MANDATORY - Step 8) - verify final update
 9. **Report completion** with summary including state file location

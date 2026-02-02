@@ -176,7 +176,12 @@ Claude maps your feature to technical components:
 - Maps components to implementation steps
 - Creates dependency graph
 
-The output is a detailed plan at `.claude/.implementations/plans/{ticket-id}.md`.
+The output is an **atomic plan structure** at `.5/{ticket-id}/plan/`:
+- `meta.md` - Feature metadata and risks
+- `step-1.md`, `step-2.md`, ... - Per-step components with pre-built prompts (YAML format)
+- `verification.md` - Build/test configuration
+
+Each step file is self-contained and independently loadable, making large plans manageable and improving agent efficiency.
 
 ### Phase 3: Orchestrated Implementation
 

@@ -24,17 +24,32 @@ This skill provides comprehensive verification of a completed feature implementa
 
 ### Step 1: Load Implementation Plan
 
-Read the implementation plan from `.5/{feature-name}/plan.md` where `{feature-name}` is the argument provided by the user.
+Read the implementation plan from `.5/{feature-name}/plan/` where `{feature-name}` is the argument provided by the user.
 
-**Error Handling:** If the plan file is missing or unreadable:
+**Error Handling:** If the plan directory is missing:
 - Return fail status immediately
-- Display clear error message: "Error: Implementation plan not found at `.5/{feature-name}/plan.md`. Please run /plan-implementation first."
+- Display clear error message: "Error: Implementation plan not found at `.5/{feature-name}/plan/`. Please run /5:plan-implementation first."
 - Do not proceed to Step 2
 
-Extract:
-- Component checklist (all expected files)
-- Affected modules
-- Test modules
+**Load metadata:**
+- Read `.5/{feature-name}/plan/meta.md`
+- Parse YAML frontmatter for basic plan info
+
+**Load verification config:**
+- Read `.5/{feature-name}/plan/verification.md`
+- Extract:
+  - `build_command`
+  - `test_command`
+  - Expected New Files list
+  - Expected Modified Files list
+  - Build Targets list
+  - Test Modules list
+
+**Load component checklist (aggregate from all step files):**
+- For each step (1 to total_steps from meta.md):
+  - Read `.5/{feature-name}/plan/step-{N}.md`
+  - Extract "Expected Outputs" section (files created/modified)
+- Build comprehensive expected files list to pass to verification-agent
 
 ### Step 2: Spawn verification-agent
 
@@ -52,15 +67,20 @@ Task tool call:
     ## Your Task
 
     Feature Name: {feature-name}
-    Implementation Plan Path: .5/{feature-name}/plan.md
+    Implementation Plan Path: .5/{feature-name}/plan/
     Expected Files:
     - {path/to/file1.ext}
     - {path/to/file2.ext}
+    (aggregated from all step files in Step 1)
     Affected Modules:
     - {module-path-1}
     - {module-path-2}
+    (from verification.md)
     Test Modules:
     - {module-path-for-tests}
+    (from verification.md)
+    Build Command: {from verification.md}
+    Test Command: {from verification.md}
 ```
 
 ### Step 3: Process Agent Results
@@ -239,8 +259,11 @@ EOF
 
 ## Instructions Summary
 
-1. **Load implementation plan** from `.5/{feature-name}/plan.md`
-2. **Spawn verification-agent** with expected files, modules, and test modules
+1. **Load implementation plan** from `.5/{feature-name}/plan/`:
+   - Read meta.md for plan metadata
+   - Read verification.md for build/test config and targets
+   - Aggregate expected files from all step-N.md files
+2. **Spawn verification-agent** with aggregated expected files, modules, and test modules
 3. **Process agent results** - extract status, report, and structured data
 4. **Save verification report** to state directory
 5. **Update state file** with verification results

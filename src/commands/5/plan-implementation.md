@@ -116,83 +116,142 @@ Group components by dependencies:
 
 ### Step 7: Write Implementation Plan
 
-Write the plan to `.5/{feature-name}/plan.md` using this exact format:
+Create the plan directory `.5/{feature-name}/plan/` and write atomic plan files:
+
+#### 7a. Create plan directory
+
+Use Bash to create the directory:
+```bash
+mkdir -p .5/{feature-name}/plan
+```
+
+#### 7b. Write plan/meta.md
+
+Write metadata file using this format:
 
 ```markdown
-# Plan: {TICKET-ID} - {Title}
-
-## Meta
+---
 feature: {feature-name}
 ticket: {ticket-id}
 total_steps: {N}
 total_components: {N}
 new_files: {N}
 modified_files: {N}
+created_at: {ISO timestamp}
+format_version: "2.0"
+---
 
-## Summary
-{1-2 sentences: what this plan builds and why}
+# Plan Metadata: {TICKET-ID} - {Title}
 
-## Steps
+{1-2 sentence summary of what this plan builds}
 
-### step: 1
-name: "{descriptive name}"
-mode: parallel | sequential
-
-#### component: {component-id}
-action: create | modify
-file: "{exact/path/to/file.ext}"
-skill: "{skill-name}" | null
-depends_on: []
-prompt: |
-  {Complete, self-contained execution instructions.
-  For create: include full file content or reference snippet + modifications.
-  For modify: include exact old_string and new_string.
-  Include all imports. Include all types.
-  This prompt is passed directly to a haiku agent that cannot explore the codebase.}
-
-#### component: {component-id-2}
-action: create | modify
-file: "{exact/path/to/file.ext}"
-skill: "{skill-name}" | null
-depends_on: []
-prompt: |
-  {Complete instructions}
-
-### step: 2
-name: "{descriptive name}"
-mode: parallel | sequential
-
-#### component: {component-id-3}
-action: create | modify
-file: "{exact/path/to/file.ext}"
-skill: null
-depends_on: ["{component-id}", "{component-id-2}"]
-prompt: |
-  {Complete instructions}
-
-## Verification
-build_command: "{from config}"
-test_command: "{from config}"
-expected_new_files:
-  - "{path1}"
-  - "{path2}"
-expected_modified_files:
-  - "{path3}"
+## Steps Overview
+- Step 1: {Name} ({N} components)
+- Step 2: {Name} ({N} components)
+- Step N: {Name} ({N} components)
 
 ## Risks
-- "{risk 1}: {mitigation}"
-- "{risk 2}: {mitigation}"
+- {risk 1}: {mitigation}
+- {risk 2}: {mitigation}
+```
+
+#### 7c. Write plan/step-N.md files (one per step)
+
+For each step, create a separate file `plan/step-{N}.md` using this format:
+
+```markdown
+---
+step: {N}
+feature: {feature-name}
+name: "{Step Name}"
+mode: parallel | sequential
+components: {N}
+---
+
+# Step {N}: {Step Name}
+
+{Brief description of what this step accomplishes}
+
+## Components
+
+```yaml
+components:
+  - id: {component-id}
+    action: create | modify
+    file: "{exact/path/to/file.ext}"
+    skill: "{skill-name}" | null
+    depends_on: []
+    prompt: |
+      {Complete, self-contained execution instructions.
+
+      For create: include full file content or reference snippet.
+      For modify: include exact old_string and new_string.
+      Include all imports, types, and context.}
+
+  - id: {component-id-2}
+    action: create | modify
+    file: "{exact/path/to/file.ext}"
+    skill: "{skill-name}" | null
+    depends_on: ["{component-id}"]
+    prompt: |
+      {Complete instructions}
+```
+
+## Expected Outputs
+**Files Created:**
+- {path1}
+- {path2}
+
+**Files Modified:**
+- {path3}
+
+## Verification Targets
+**Build Targets:**
+- {module1}
+- {module2}
+
+**Test Targets:**
+- {test-module-1}
+```
+
+**Important:** Use YAML block within Markdown for components. This provides easy parsing while maintaining readability.
+
+#### 7d. Write plan/verification.md
+
+Write verification configuration file:
+
+```markdown
+# Verification Configuration
+
+build_command: "{from config}"
+test_command: "{from config}"
+
+## Expected New Files
+- {path1}
+- {path2}
+
+## Expected Modified Files
+- {path3}
+- {path4}
+
+## Build Targets
+- {module1}
+- {module2}
+
+## Test Modules
+- {test-module-1}
 ```
 
 ### Step 8: Inform Developer
 
 After creating the implementation plan, tell the developer:
 
-1. "Implementation plan created at `.5/{feature-name}/plan.md`"
+1. "Implementation plan created at `.5/{feature-name}/plan/`"
 2. "{N} components across {M} steps"
-3. "Each component has a self-contained execution prompt for haiku agents"
-4. "Please review the plan"
-5. "Then run `/clear` followed by `/5:implement-feature {feature-name}`"
+3. "Atomic plan structure: meta.md, step-1.md, step-2.md, ..., verification.md"
+4. "Each component has a self-contained execution prompt for haiku agents"
+5. "Please review the plan files"
+6. "Then run `/clear` followed by `/5:implement-feature {feature-name}`"
 
 ## Component Prompt Examples
 
@@ -368,8 +427,11 @@ Skill:
 5. Maps components to skills (or null for direct execution)
 6. Groups into steps by dependencies
 7. Builds self-contained prompts with inline code and exact paths
-8. Creates .5/PROJ-1234-add-emergency-schedule/plan.md
-9. Tells user: "Plan created with 7 components across 3 steps. Review the plan, then run `/clear` followed by `/5:implement-feature PROJ-1234-add-emergency-schedule`"
+8. Creates .5/PROJ-1234-add-emergency-schedule/plan/ directory
+9. Writes plan/meta.md with metadata and risks
+10. Writes plan/step-1.md, plan/step-2.md, plan/step-3.md with YAML components
+11. Writes plan/verification.md with build/test config
+12. Tells user: "Plan created with 7 components across 3 steps. Atomic plan structure at `.5/PROJ-1234-add-emergency-schedule/plan/`. Review the plan files, then run `/clear` followed by `/5:implement-feature PROJ-1234-add-emergency-schedule`"
 ```
 
 ## Related Documentation

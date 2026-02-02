@@ -17,40 +17,58 @@ The spawning command provides:
 
 ```
 Feature Name: {feature-name}
-Implementation Plan Path: .5/{feature-name}/plan.md
+Implementation Plan Path: .5/{feature-name}/plan/
 Expected Files:
 - {path/to/file1.{ext}}
 - {path/to/file2.{ext}}
 - {path/to/file3.{ext}}
+(aggregated from all step files by verify-implementation command)
 Affected Modules:
 - {module-path-1}
 - {module-path-2}
+(from verification.md)
 Test Modules:
 - {module-path-for-tests}
+(from verification.md)
+Build Command: {from verification.md}
+Test Command: {from verification.md}
 ```
 
 ## Process
 
 ### 0. Parse Implementation Plan
 
-Read the implementation plan from the provided path and extract:
+Read the implementation plan from the provided path (`.5/{feature-name}/plan/`) and extract:
 
-**Component Checklist:**
-- Parse each step and task
-- Extract expected files, method signatures, expected logic
-- Identify checkboxes that should be completed
+**Plan Metadata:**
+- Read `plan/meta.md` for overview and risks
+
+**Component Checklist (from each step file):**
+- For each step file (`plan/step-1.md`, `plan/step-2.md`, etc.):
+  - Parse YAML frontmatter for step metadata
+  - Extract YAML components block
+  - Parse each component's expected action, file, and prompt
+  - Extract "Expected Outputs" section for files created/modified
+  - Note any specific implementation requirements or test coverage expectations
 
 **Verification Steps:**
-- Extract the numbered verification steps from the plan
-- These define what needs to be verified after implementation
+- Read `plan/verification.md` for:
+  - Build command
+  - Test command
+  - Expected new files
+  - Expected modified files
+  - Build targets
+  - Test modules
 
 **Acceptance Criteria:**
-- Look for AC (Acceptance Criteria) references in the plan
+- Look for AC (Acceptance Criteria) references in component prompts
 - Extract expected behavior that needs to be verified through tests
 
 **Technical Decisions:**
-- Note any key implementation requirements or constraints
+- Note any key implementation requirements or constraints from component prompts
 - These inform what to look for in the code
+
+**Note:** The verify-implementation command aggregates expected files and passes them to you, so you can use that list directly rather than reading all step files yourself. However, reading step files is useful for understanding detailed requirements in component prompts.
 
 Store this information for use in subsequent verification steps.
 
@@ -393,12 +411,27 @@ When verifying implementation completeness:
 
 ### Reading Implementation Plans
 
-Plans may have different structures. Look for:
-- Sections titled "Component Checklist", "Tasks", "Waves"
-- Numbered verification steps
+**Atomic Plan Structure (Format Version 2.0):**
+
+The plan is organized as a directory (`.5/{feature-name}/plan/`) with multiple files:
+- `meta.md`: YAML frontmatter with feature metadata + risks section
+- `step-N.md` files: Each contains YAML frontmatter + components YAML block + expected outputs
+- `verification.md`: Build/test commands and expected file lists
+
+To extract information:
+1. Read `meta.md` YAML frontmatter for: feature, ticket, total_steps, total_components
+2. For each step file:
+   - Parse YAML frontmatter: step, name, mode, components (count)
+   - Extract components YAML block (between ` ```yaml` and ` ``` `)
+   - Parse components array with: id, action, file, skill, depends_on, prompt
+   - Read "Expected Outputs" section for created/modified files
+3. Read `verification.md` for build/test config
+
+Look for in component prompts:
 - Acceptance criteria (often labeled AC1, AC2, etc.)
 - Method signatures in code blocks
 - Technical decisions that constrain implementation
+- Test coverage expectations
 
 ## DO NOT
 

@@ -117,17 +117,24 @@ docs/
 2. **Implementation Planning** (`/5:plan-implementation`)
    - Maps feature to technical components
    - Identifies dependencies and execution order
-   - Creates structured plan at `.5/{ticket-id}/plan.md`
-   - Plan contains **pre-built prompts** for each component
+   - Creates **atomic plan structure** at `.5/{ticket-id}/plan/`:
+     - `meta.md` - feature metadata and risks
+     - `step-N.md` - per-step components with pre-built prompts (YAML format)
+     - `verification.md` - build/test configuration
+   - Each step file is self-contained and independently loadable
 
 3. **Orchestrated Implementation** (`/5:implement-feature`)
-   - Command reads plan and delegates to agents
+   - Command reads `plan/meta.md` for overview
+   - Loads each `plan/step-N.md` on-demand during execution
+   - Parses YAML components and delegates to agents
    - `step-executor` creates components using pre-built prompts
    - `step-verifier` builds and checks after each step
    - `integration-agent` wires everything together
    - State tracked in `.5/{ticket-id}/state.json`
 
 4. **Verify Implementation** (`/5:verify-implementation`)
+   - Reads `plan/verification.md` for build/test config
+   - Aggregates expected files from all `plan/step-N.md` files
    - `verification-agent` checks all files exist
    - Runs build and tests
    - Generates verification report
@@ -138,6 +145,37 @@ docs/
    - Applies approved fixes
 
 ### Key Design Patterns
+
+#### Atomic Plan Structure (Format Version 2.0)
+
+Phase 2 creates an atomic, modular plan structure instead of a monolithic file:
+
+**Directory structure:**
+```
+.5/{feature-name}/
+├── plan/
+│   ├── meta.md              # Feature metadata (YAML frontmatter + risks)
+│   ├── step-1.md            # Step 1 components (YAML frontmatter + components YAML block)
+│   ├── step-2.md            # Step 2 components
+│   ├── step-N.md            # Step N components
+│   └── verification.md      # Build/test config
+├── state.json               # Implementation state tracking
+├── feature.md               # From Phase 1 (feature spec)
+└── verification.md          # From Phase 4 (verification report)
+```
+
+**Benefits:**
+- **Modularity**: Each step is independently loadable
+- **Scalability**: Large plans (50+ components) remain manageable
+- **Navigation**: Developers can quickly find specific steps
+- **Agent Efficiency**: Agents load only the step they need (smaller context)
+- **Version Control**: Smaller diffs when steps change
+- **Resumability**: Easier to resume from any step
+
+**File formats:**
+- `meta.md`: YAML frontmatter with feature, ticket, total_steps, total_components + risks section
+- `step-N.md`: YAML frontmatter (step, name, mode) + components YAML block + expected outputs
+- `verification.md`: Build/test commands and expected file lists (Markdown)
 
 #### Pre-built Prompts
 Phase 2 creates complete, self-contained prompts for each component. Agents in Phase 3 execute these prompts without exploring the codebase. This minimizes context usage.

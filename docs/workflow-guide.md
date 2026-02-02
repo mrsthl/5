@@ -120,7 +120,8 @@ Commands used to call skills directly, consuming main context for heavy operatio
 |                                                                   |
 | Developer: /plan-implementation {TICKET-ID}-{description}        |
 | Claude: Maps to modules, skills, dependency steps                |
-| Output: .5/{ticket}/plan.md                                      |
+| Output: .5/{ticket}/plan/ (atomic structure)                     |
+|   - meta.md, step-N.md files, verification.md                    |
 | Developer: Reviews technical approach                             |
 +-----------------------------+-------------------------------------+
                               |
@@ -255,10 +256,26 @@ Map feature requirements to technical components, skills, and dependency steps.
 
    Note: Step count and organization is configurable in `.claude/.5/config.json`
 
-6. **Implementation Plan Creation**: Claude writes plan to:
+6. **Implementation Plan Creation**: Claude writes an **atomic plan structure** to:
    ```
-   .5/{TICKET-ID}-{description}/plan.md
+   .5/{TICKET-ID}-{description}/plan/
+   ├── meta.md              # Feature metadata and risks
+   ├── step-1.md            # Step 1 components (YAML format)
+   ├── step-2.md            # Step 2 components
+   ├── step-N.md            # Step N components
+   └── verification.md      # Build/test configuration
    ```
+
+   **Atomic Plan Structure (Format Version 2.0):**
+   - Each step is in a separate file for modularity
+   - Components are stored in YAML format for easy parsing
+   - Metadata and verification config are separated
+   - Benefits: scalability, navigation, agent efficiency, version control
+
+   **File Formats:**
+   - `meta.md`: YAML frontmatter (feature, ticket, totals) + risks section
+   - `step-N.md`: YAML frontmatter (step, name, mode) + components YAML block + expected outputs
+   - `verification.md`: Build/test commands and expected file lists
 
 ### Your Role
 
@@ -291,7 +308,10 @@ Execute the implementation plan with state tracking, using agents in forked cont
 
 ### What Happens
 
-1. **Load Implementation Plan**: Command reads the approved plan
+1. **Load Implementation Plan**: Command reads the approved atomic plan
+   - Reads `plan/meta.md` for feature metadata and total steps count
+   - Loads each `plan/step-N.md` on-demand during execution
+   - Parses YAML components from each step file
 
 2. **Initialize State File**: Creates tracking file
    ```
@@ -551,7 +571,14 @@ Claude: Let me ask a few technical questions...
 You: [Answer technical questions]
 
 Claude: Implementation plan created at
-.5/PROJ-1234-add-user-profile/plan.md
+.5/PROJ-1234-add-user-profile/plan/
+
+Atomic plan structure:
+- meta.md: Feature metadata, 3 steps, 6 components
+- step-1.md: Foundation (2 components, parallel)
+- step-2.md: Logic (2 components, sequential)
+- step-3.md: Integration (2 components, sequential)
+- verification.md: Build/test configuration
 
 Module Impact:
 - src/models: 1 update (User model)
@@ -564,7 +591,7 @@ Step 1 (Foundation): User model update, ProfileValidator
 Step 2 (Logic): ProfileService with business logic
 Step 3 (Integration): API route registration, tests
 
-Please review and then run: /implement-feature PROJ-1234-add-user-profile
+Please review the plan files and then run: /implement-feature PROJ-1234-add-user-profile
 ```
 
 ### Step 4: Start Implementation (with Agents)
@@ -877,7 +904,7 @@ If working on multiple features:
 | File | Purpose | Committed? |
 |------|---------|------------|
 | `.5/{ticket}/feature.md` | Feature spec | Yes (after approval) |
-| `.5/{ticket}/plan.md` | Implementation plan | Yes (after approval) |
+| `.5/{ticket}/plan/` | Atomic implementation plan (meta.md, step-N.md, verification.md) | Yes (after approval) |
 | `.5/{ticket}/state.json` | Progress tracking | No (gitignored) |
 | `.5/{ticket}/verification.md` | Verification report | No (gitignored) |
 | `.5/{ticket}/review-{timestamp}.md` | CodeRabbit review report | No (gitignored) |

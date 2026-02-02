@@ -1,5 +1,73 @@
 # Release Notes
 
+## v1.1.0
+
+**Release Date:** February 2, 2026
+
+### What's New
+
+**Automatic Update Detection**
+- New `check-updates.js` hook automatically notifies users when updates are available
+- Version tracking in `.5/version.json` with 24-hour check frequency
+- Smart update prompts during installation
+- `--upgrade` flag for automatic updates without prompting
+
+**Selective Update System**
+- Preserves user-created commands, agents, skills, hooks, and templates during updates
+- Only updates workflow-managed files, protecting custom content
+- Deep merge of settings.json to preserve nested user customizations
+- Automated test suite to verify update behavior (`test/test-update-system.sh`)
+
+**Atomic Plan Structure (Format Version 2.0)**
+- Switched from monolithic `plan.md` to modular plan directory structure:
+  - `plan/meta.md` - Feature metadata and risks
+  - `plan/step-N.md` - Individual step components (independently loadable)
+  - `plan/verification.md` - Build/test configuration
+- Improved scalability for large plans (50+ components)
+- Smaller context usage - agents load only the step they need
+- Better version control with smaller diffs
+- Easier resumability from any step
+
+**Agent Color Coding**
+- Assigned unique colors to all agents for better visual categorization
+- Improved agent identification in logs and status displays
+
+**Context Management Improvements**
+- Added clear context suggestions after each phase completion
+- Helps users manage context usage more effectively
+- Prevents context overflow in complex workflows
+
+**Development Infrastructure**
+- Added comprehensive `CLAUDE.md` with development guidelines
+- Automated verification script (`test/verify-install-js.sh`) to ensure workflow files are properly tracked
+- GitHub Actions CI workflow for automated testing
+- Enhanced contribution guidelines and architectural documentation
+
+### Improvements
+
+**Installation & Updates**
+- Enhanced `bin/install.js` with version comparison and update detection
+- Better handling of existing installations
+- Improved user experience during updates with clear prompts
+
+**Documentation**
+- Extensive updates to README.md with update behavior details
+- Enhanced workflow-guide.md with atomic plan structure documentation
+- Better contribution guidelines for maintainers
+
+**Phase Commands**
+- Updated `/5:plan-implementation` to generate atomic plan structure
+- Updated `/5:implement-feature` to load steps on-demand from atomic plan
+- Updated `/5:verify-implementation` to aggregate files from step files
+- Enhanced verification agent to work with new plan format
+
+### Bug Fixes
+
+- Fixed potential issues with nested settings.json preservation during updates
+- Improved error handling in version detection
+
+---
+
 ## v1.0.1
 
 **Release Date:** February 2, 2026

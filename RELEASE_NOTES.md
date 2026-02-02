@@ -1,5 +1,18 @@
 # Release Notes
 
+## v1.1.1
+
+**Release Date:** February 2, 2026
+
+### Bug Fixes
+
+**Hook Configuration**
+- Fixed invalid hook event name in `settings.json` (changed `onCommandStart` to `SessionStart`)
+- Corrected hook structure to use proper nesting format as per Claude Code hooks specification
+- Update check hook now runs correctly when sessions start or resume
+
+---
+
 ## v1.1.0
 
 **Release Date:** February 2, 2026

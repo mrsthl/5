@@ -3,6 +3,7 @@ name: step-executor
 description: Executes all components of a single implementation step by following pre-built prompts. Runs in forked context with haiku for token efficiency.
 tools: Skill, Read, Write, Edit, Glob, Grep, mcp__jetbrains__get_file_problems, mcp__jetbrains__rename_refactoring
 model: haiku
+color: green
 ---
 
 # Step Executor Agent

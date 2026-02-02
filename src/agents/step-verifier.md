@@ -3,6 +3,7 @@ name: step-verifier
 description: Compiles affected modules and checks new files for problems after a step execution. Runs in forked context.
 tools: Bash, Read, Glob, Skill, mcp__jetbrains__get_file_problems
 model: sonnet
+color: yellow
 ---
 
 # Step Verifier Agent

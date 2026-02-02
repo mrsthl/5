@@ -3,6 +3,7 @@ name: verification-agent
 description: Performs complete verification of a feature implementation including file existence, problem detection, compilation, and tests. Runs in forked context.
 tools: Bash, Read, Glob, Skill, mcp__jetbrains__get_file_problems
 model: sonnet
+color: cyan
 ---
 
 # Verification Agent

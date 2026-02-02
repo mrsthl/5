@@ -3,6 +3,7 @@ name: integration-agent
 description: Integrates new components into the application by following existing project patterns. Wires components, registers endpoints/routes, and runs final build and tests. Runs in forked context.
 tools: Read, Edit, Bash, Glob, Grep, Skill, mcp__jetbrains__get_file_problems, mcp__jetbrains__rename_refactoring
 model: sonnet
+color: blue
 ---
 
 # Integration Agent

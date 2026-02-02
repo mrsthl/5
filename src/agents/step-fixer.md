@@ -3,6 +3,7 @@ name: step-fixer
 description: Diagnoses and fixes errors reported by step-verifier after a failed step execution. Analyzes root cause, applies targeted fixes, and runs local verification. Runs in forked context.
 tools: Read, Edit, Write, Glob, Grep, mcp__jetbrains__get_file_problems, mcp__jetbrains__rename_refactoring
 model: sonnet
+color: red
 ---
 
 # Step Fixer Agent

@@ -3,6 +3,7 @@ name: review-processor
 description: Runs CodeRabbit CLI, parses output, and categorizes findings into fixable issues, questions, and manual review items. Runs in forked context.
 tools: Bash, Read, Glob, Grep
 model: sonnet
+color: magenta
 ---
 
 # Review Processor Agent

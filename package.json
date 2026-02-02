@@ -5,6 +5,10 @@
   "bin": {
     "5-phase-workflow": "bin/install.js"
   },
+  "scripts": {
+    "test": "bash test/verify-install-js.sh",
+    "verify": "bash test/verify-install-js.sh"
+  },
   "files": [
     "bin",
     "src",

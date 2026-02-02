@@ -22,6 +22,68 @@ const log = {
   header: (msg) => console.log(`\n${colors.bright}${msg}${colors.reset}\n`)
 };
 
+// Version comparison (semver)
+function compareVersions(v1, v2) {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (parts1[i] > parts2[i]) return 1;
+    if (parts1[i] < parts2[i]) return -1;
+  }
+  return 0;
+}
+
+// Get installed version from .5/version.json
+function getInstalledVersion(targetPath) {
+  const versionFile = path.join(targetPath, '.5', 'version.json');
+  if (!fs.existsSync(versionFile)) return null;
+
+  try {
+    const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+    return data.installedVersion;
+  } catch (e) {
+    return null; // Corrupted file, treat as missing
+  }
+}
+
+// Get package version from package.json
+function getPackageVersion() {
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  return pkg.version;
+}
+
+// Get full version info
+function getVersionInfo(targetPath) {
+  const exists = checkExistingInstallation(targetPath);
+  if (!exists) {
+    return { exists: false };
+  }
+
+  const installed = getInstalledVersion(targetPath);
+  const available = getPackageVersion();
+
+  if (!installed) {
+    // Legacy install without version.json
+    return {
+      exists: true,
+      installed: null,
+      available,
+      needsUpdate: true,
+      legacy: true
+    };
+  }
+
+  const needsUpdate = compareVersions(installed, available) < 0;
+
+  return {
+    exists: true,
+    installed,
+    available,
+    needsUpdate
+  };
+}
+
 // Parse CLI arguments
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -29,6 +91,8 @@ function parseArgs() {
     global: false,
     local: false,
     uninstall: false,
+    upgrade: false,
+    check: false,
     help: false
   };
 
@@ -36,6 +100,8 @@ function parseArgs() {
     if (arg === '--global' || arg === '-g') options.global = true;
     else if (arg === '--local' || arg === '-l') options.local = true;
     else if (arg === '--uninstall' || arg === '-u') options.uninstall = true;
+    else if (arg === '--upgrade' || arg === '--force' || arg === '-U') options.upgrade = true;
+    else if (arg === '--check') options.check = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
   }
 
@@ -57,12 +123,17 @@ Usage: npx 5-phase-workflow [options]
 Options:
   --global, -g      Install to ~/.claude/ (available across all projects)
   --local, -l       Install to ./.claude/ (project-specific, default)
+  --upgrade, -U     Upgrade to latest version (auto-update, no prompt)
+  --force           Alias for --upgrade
+  --check           Check installed version and available updates
   --uninstall, -u   Remove installation from current directory
   --help, -h        Show this help message
 
 Examples:
-  npx 5-phase-workflow              # Install locally
+  npx 5-phase-workflow              # Install locally or prompt for update
   npx 5-phase-workflow --global     # Install globally
+  npx 5-phase-workflow --upgrade    # Auto-update to latest version
+  npx 5-phase-workflow --check      # Check version without updating
   npx 5-phase-workflow --uninstall  # Remove from current directory
 `);
 }
@@ -120,6 +191,128 @@ function removeDir(dir) {
 
     fs.rmdirSync(dir);
   }
+}
+
+// Get list of workflow-owned files/directories (not user-created)
+function getWorkflowManagedFiles() {
+  return {
+    // Commands: only the 5/ namespace
+    commands: ['5'],
+
+    // Agents: specific agent files
+    agents: [
+      'step-executor.md',
+      'step-verifier.md',
+      'integration-agent.md',
+      'verification-agent.md',
+      'review-processor.md',
+      'step-fixer.md'
+    ],
+
+    // Skills: specific skill directories
+    skills: [
+      'build-project',
+      'run-tests',
+      'configure-project',
+      'generate-readme'
+    ],
+
+    // Hooks: specific hook files
+    hooks: [
+      'statusline.js',
+      'check-updates.js'
+    ],
+
+    // Templates: specific template files
+    templates: [
+      'ARCHITECTURE.md',
+      'CONCERNS.md',
+      'CONVENTIONS.md',
+      'INTEGRATIONS.md',
+      'STACK.md',
+      'STRUCTURE.md',
+      'TESTING.md'
+    ]
+  };
+}
+
+// Selectively update only workflow-managed files, preserve user content
+function selectiveUpdate(targetPath, sourcePath) {
+  const managed = getWorkflowManagedFiles();
+
+  // Update commands/5/ only
+  const commandsSrc = path.join(sourcePath, 'commands', '5');
+  const commandsDest = path.join(targetPath, 'commands', '5');
+  if (fs.existsSync(commandsSrc)) {
+    if (fs.existsSync(commandsDest)) {
+      removeDir(commandsDest);
+    }
+    copyDir(commandsSrc, commandsDest);
+    log.success('Updated commands/5/');
+  }
+
+  // Update specific agents
+  const agentsSrc = path.join(sourcePath, 'agents');
+  const agentsDest = path.join(targetPath, 'agents');
+  if (!fs.existsSync(agentsDest)) {
+    fs.mkdirSync(agentsDest, { recursive: true });
+  }
+  for (const agent of managed.agents) {
+    const src = path.join(agentsSrc, agent);
+    const dest = path.join(agentsDest, agent);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+  log.success('Updated agents/ (workflow files only)');
+
+  // Update specific skills
+  const skillsSrc = path.join(sourcePath, 'skills');
+  const skillsDest = path.join(targetPath, 'skills');
+  if (!fs.existsSync(skillsDest)) {
+    fs.mkdirSync(skillsDest, { recursive: true });
+  }
+  for (const skill of managed.skills) {
+    const src = path.join(skillsSrc, skill);
+    const dest = path.join(skillsDest, skill);
+    if (fs.existsSync(src)) {
+      if (fs.existsSync(dest)) {
+        removeDir(dest);
+      }
+      copyDir(src, dest);
+    }
+  }
+  log.success('Updated skills/ (workflow skills only)');
+
+  // Update specific hooks
+  const hooksSrc = path.join(sourcePath, 'hooks');
+  const hooksDest = path.join(targetPath, 'hooks');
+  if (!fs.existsSync(hooksDest)) {
+    fs.mkdirSync(hooksDest, { recursive: true });
+  }
+  for (const hook of managed.hooks) {
+    const src = path.join(hooksSrc, hook);
+    const dest = path.join(hooksDest, hook);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+  log.success('Updated hooks/ (workflow files only)');
+
+  // Update specific templates
+  const templatesSrc = path.join(sourcePath, 'templates');
+  const templatesDest = path.join(targetPath, 'templates');
+  if (!fs.existsSync(templatesDest)) {
+    fs.mkdirSync(templatesDest, { recursive: true });
+  }
+  for (const template of managed.templates) {
+    const src = path.join(templatesSrc, template);
+    const dest = path.join(templatesDest, template);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+  log.success('Updated templates/ (workflow files only)');
 }
 
 // Detect project type by examining files in current directory
@@ -273,6 +466,51 @@ function initializeConfig(targetPath) {
   log.success(`Created config file with detected project type: ${projectType}`);
 }
 
+// Initialize version.json after successful install
+function initializeVersionJson(targetPath, isGlobal) {
+  const configDir = path.join(targetPath, '.5');
+  const versionFile = path.join(configDir, 'version.json');
+
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
+  const version = getPackageVersion();
+  const now = new Date().toISOString();
+
+  const versionData = {
+    packageVersion: version,
+    installedVersion: version,
+    installedAt: now,
+    lastUpdated: now,
+    installationType: isGlobal ? 'global' : 'local',
+    updateCheckLastRun: null,
+    updateCheckFrequency: 86400 // 24 hours in seconds
+  };
+
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  log.success('Initialized version tracking');
+}
+
+// Deep merge for settings.json
+function deepMerge(target, source) {
+  const result = { ...target };
+
+  for (const key in source) {
+    if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      // Recursively merge nested objects
+      result[key] = deepMerge(result[key] || {}, source[key]);
+    } else {
+      // For primitives and arrays: use source if target doesn't have it
+      if (!(key in result)) {
+        result[key] = source[key];
+      }
+      // User's existing value takes precedence if it exists
+    }
+  }
+  return result;
+}
+
 // Merge settings.json into existing
 function mergeSettings(targetPath, sourcePath) {
   const targetSettings = path.join(targetPath, 'settings.json');
@@ -286,7 +524,7 @@ function mergeSettings(targetPath, sourcePath) {
 
   if (fs.existsSync(targetSettings)) {
     const existingSettings = JSON.parse(fs.readFileSync(targetSettings, 'utf8'));
-    const merged = { ...newSettings, ...existingSettings };
+    const merged = deepMerge(newSettings, existingSettings);
     fs.writeFileSync(targetSettings, JSON.stringify(merged, null, 2));
     log.info('Merged settings with existing configuration');
   } else {
@@ -301,23 +539,21 @@ function checkExistingInstallation(targetPath) {
   return fs.existsSync(markerFile);
 }
 
-// Perform installation
-function install(isGlobal) {
-  const targetPath = getTargetPath(isGlobal);
-  const sourcePath = getSourcePath();
+// Helper to show commands
+function showCommandsHelp(targetPath) {
+  log.info('Available commands:');
+  log.info('  /5:plan-feature          - Start feature planning (Phase 1)');
+  log.info('  /5:plan-implementation   - Create implementation plan (Phase 2)');
+  log.info('  /5:implement-feature     - Execute implementation (Phase 3)');
+  log.info('  /5:verify-implementation - Verify implementation (Phase 4)');
+  log.info('  /5:review-code          - Code review (Phase 5)');
+  log.info('  /5:configure            - Interactive project setup');
+  log.info('');
+  log.info(`Config file: ${path.join(targetPath, '.5', 'config.json')}`);
+}
 
-  log.header('5-Phase Workflow Installation');
-  log.info(`Target: ${targetPath}`);
-  log.info(`Source: ${sourcePath}`);
-
-  // Check if already installed
-  const exists = checkExistingInstallation(targetPath);
-  if (exists) {
-    log.warn('Installation already exists at this location');
-    log.info('To upgrade, run with --uninstall first, then reinstall');
-    return;
-  }
-
+// Fresh installation
+function performFreshInstall(targetPath, sourcePath, isGlobal) {
   // Create target directory if it doesn't exist
   if (!fs.existsSync(targetPath)) {
     fs.mkdirSync(targetPath, { recursive: true });
@@ -339,21 +575,110 @@ function install(isGlobal) {
   // Merge settings
   mergeSettings(targetPath, sourcePath);
 
-  // Initialize config
+  // Initialize config (local only)
   if (!isGlobal) {
     initializeConfig(targetPath);
   }
 
+  // Initialize version tracking
+  initializeVersionJson(targetPath, isGlobal);
+
   log.header('Installation Complete!');
-  log.info('Available commands:');
-  log.info('  /5:plan-feature          - Start feature planning (Phase 1)');
-  log.info('  /5:plan-implementation   - Create implementation plan (Phase 2)');
-  log.info('  /5:implement-feature     - Execute implementation (Phase 3)');
-  log.info('  /5:verify-implementation - Verify implementation (Phase 4)');
-  log.info('  /5:review-code          - Code review (Phase 5)');
-  log.info('  /5:configure            - Interactive project setup');
-  log.info('');
-  log.info(`Config file: ${path.join(targetPath, '.5', 'config.json')}`);
+  showCommandsHelp(targetPath);
+}
+
+// Perform update (preserves .5/ directory and user-created files)
+function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
+  log.header(`Updating from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
+  log.info('Preserving user-created commands, agents, skills, and hooks');
+
+  // Selectively update only workflow-managed files (preserves user content)
+  selectiveUpdate(targetPath, sourcePath);
+
+  // Merge settings (deep merge preserves user customizations)
+  mergeSettings(targetPath, sourcePath);
+
+  // Update version.json
+  const configDir = path.join(targetPath, '.5');
+  const versionFile = path.join(configDir, 'version.json');
+
+  let versionData;
+  if (fs.existsSync(versionFile)) {
+    versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+  } else {
+    // Legacy install, create version.json
+    versionData = {
+      installedAt: new Date().toISOString(),
+      installationType: isGlobal ? 'global' : 'local',
+      updateCheckFrequency: 86400
+    };
+  }
+
+  versionData.packageVersion = versionInfo.available;
+  versionData.installedVersion = versionInfo.available;
+  versionData.lastUpdated = new Date().toISOString();
+
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+
+  log.header('Update Complete!');
+  log.success(`Now running version ${versionInfo.available}`);
+  showCommandsHelp(targetPath);
+}
+
+// Perform installation
+function install(isGlobal, forceUpgrade = false) {
+  const targetPath = getTargetPath(isGlobal);
+  const sourcePath = getSourcePath();
+
+  log.header('5-Phase Workflow Installation');
+  log.info(`Target: ${targetPath}`);
+  log.info(`Source: ${sourcePath}`);
+
+  // Check for existing installation and version
+  const versionInfo = getVersionInfo(targetPath);
+
+  if (versionInfo.exists) {
+    if (versionInfo.legacy) {
+      log.warn('Detected legacy installation (no version tracking)');
+      log.info(`Upgrading from legacy install to ${versionInfo.available}`);
+      performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+      return;
+    } else if (versionInfo.needsUpdate) {
+      log.info(`Installed: ${versionInfo.installed}`);
+      log.info(`Available: ${versionInfo.available}`);
+
+      if (!forceUpgrade) {
+        // Prompt user for confirmation
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+
+        rl.question('Update to latest version? (Y/n): ', (answer) => {
+          rl.close();
+          if (answer.toLowerCase() === 'n' || answer.toLowerCase() === 'no') {
+            log.info('Update cancelled');
+            return;
+          }
+          performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+        });
+        return; // Wait for user input
+      }
+      // Force upgrade, no prompt
+      performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+      return;
+    } else {
+      // Same version
+      log.success(`Already installed (version ${versionInfo.installed})`);
+      return;
+    }
+  }
+
+  // Fresh install (no existing installation)
+  performFreshInstall(targetPath, sourcePath, isGlobal);
 }
 
 // Perform uninstallation
@@ -397,12 +722,33 @@ function main() {
     return;
   }
 
+  if (options.check) {
+    const targetPath = getTargetPath(options.global);
+    const versionInfo = getVersionInfo(targetPath);
+
+    if (!versionInfo.exists) {
+      log.info('Not installed');
+      return;
+    }
+
+    log.info(`Installed: ${versionInfo.installed || 'legacy (no version)'}`);
+    log.info(`Available: ${versionInfo.available}`);
+
+    if (versionInfo.needsUpdate) {
+      log.warn('Update available');
+      log.info('Run: npx 5-phase-workflow --upgrade');
+    } else {
+      log.success('Up to date');
+    }
+    return;
+  }
+
   if (options.uninstall) {
     uninstall();
     return;
   }
 
-  install(options.global);
+  install(options.global, options.upgrade);
 }
 
 main();

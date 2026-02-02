@@ -8,6 +8,28 @@ This is the **5-Phase Workflow** package - a systematic, AI-assisted feature dev
 
 **Key Concept:** This is NOT a traditional application to run/build. It's an installer that copies workflow files to users' projects. The workflow files (commands, agents, skills) are written in Markdown and consumed by Claude Code.
 
+---
+
+### ⚠️ CRITICAL DEVELOPMENT RULE
+
+**ALWAYS check and update `bin/install.js` when making changes to workflow files!**
+
+When you add, rename, or remove ANY file in:
+- `src/commands/5/`
+- `src/agents/`
+- `src/skills/`
+- `src/hooks/`
+- `src/templates/`
+
+You **MUST** update the `getWorkflowManagedFiles()` function in `bin/install.js` to include it in the selective update system. Otherwise:
+- ❌ New files won't be installed during user upgrades
+- ❌ Renamed files will leave orphaned copies
+- ❌ Users will run outdated versions of your changes
+
+**See "Important Constraints" section below for detailed instructions.**
+
+---
+
 ## Commands for Development
 
 ### Installation Testing
@@ -205,19 +227,49 @@ Projects configure the workflow via `.claude/.5/config.json`:
 - Ticket pattern extraction
 - Framework-specific patterns
 
+#### Version Tracking
+The installer automatically tracks installed versions in `.5/version.json`:
+- Enables automatic update detection
+- Shows update notifications during workflow usage
+- Preserves user config during updates
+
 ## Installation Process (bin/install.js)
 
 The installer follows this flow:
 
-1. **Parse Arguments**: `--global`, `--local`, `--uninstall`
-2. **Detect Project Type**: Examines package.json, pom.xml, Cargo.toml, etc.
-3. **Copy Directories**: Commands, agents, skills, hooks, templates → target `.claude/`
-4. **Merge settings.json**: Preserves existing user settings
-5. **Create config.json**: At `.claude/.5/config.json` with detected build/test commands
+1. **Parse Arguments**: `--global`, `--local`, `--uninstall`, `--upgrade`, `--check`
+2. **Version Detection**: Checks for existing installation and compares versions
+3. **Detect Project Type**: Examines package.json, pom.xml, Cargo.toml, etc.
+4. **Copy Directories**: Commands, agents, skills, hooks, templates → target `.claude/`
+5. **Deep Merge settings.json**: Preserves nested user settings (recursive merge)
+6. **Create config.json**: At `.claude/.5/config.json` with detected build/test commands
+7. **Initialize version.json**: Tracks installed version and update check metadata
 
 **Target Paths:**
 - Global: `~/.claude/`
 - Local: `./.claude/` (default)
+
+**Update Behavior:**
+- Detects existing installations and prompts for update
+- Uses `--upgrade` flag to auto-update without prompting
+- Preserves `.5/` directory (config, feature state files)
+- Deep merges settings.json to preserve nested customizations
+- **Selective updates**: Only updates workflow-managed files, preserves user-created content
+
+**Preserved During Updates:**
+- User-created commands (e.g., `commands/mycompany/`)
+- User-created agents (e.g., `agents/my-agent.md`)
+- User-created skills (e.g., `skills/my-skill/`)
+- User-created hooks (e.g., `hooks/my-hook.js`)
+- User-created templates (e.g., `templates/MY_TEMPLATE.md`)
+- All config and feature state in `.5/` directory
+
+**Updated During Updates:**
+- `commands/5/` - Workflow commands only
+- Specific workflow agents: `step-executor.md`, `step-verifier.md`, `integration-agent.md`, etc.
+- Specific workflow skills: `build-project/`, `run-tests/`, `configure-project/`, `generate-readme/`
+- Specific workflow hooks: `statusline.js`, `check-updates.js`
+- Specific workflow templates: `ARCHITECTURE.md`, `CONVENTIONS.md`, `TESTING.md`, etc.
 
 **Uninstall:** Removes workflow directories but preserves user config.
 
@@ -302,13 +354,71 @@ The installer auto-detects project types by examining files:
 
 Each type gets default build/test commands in the config.
 
+## Version Tracking System
+
+The installer automatically tracks installed versions in `.5/version.json`.
+
+### For Package Maintainers
+
+When releasing a new version:
+1. Update `package.json` version field
+2. Add release notes to `RELEASE_NOTES.md`
+3. Commit and tag: `git tag v1.x.x && git push --tags`
+4. Publish: `npm publish`
+
+Users will automatically see update notifications on next command execution.
+
+### Version File Format
+
+```json
+{
+  "packageVersion": "1.0.1",
+  "installedVersion": "1.0.1",
+  "installedAt": "2026-02-02T10:30:00Z",
+  "lastUpdated": "2026-02-02T10:30:00Z",
+  "installationType": "local",
+  "updateCheckLastRun": "2026-02-02T10:35:00Z",
+  "updateCheckFrequency": 86400
+}
+```
+
+**Fields:**
+- `packageVersion`: Version from package.json at install time
+- `installedVersion`: Currently installed version (updated during upgrades)
+- `installedAt`: Timestamp of initial installation
+- `lastUpdated`: Timestamp of last update
+- `installationType`: "local" or "global"
+- `updateCheckLastRun`: Last time hook checked for updates
+- `updateCheckFrequency`: Seconds between update checks (default: 86400 = 24h)
+
+### Update Detection Flow
+
+1. User runs `npx 5-phase-workflow`
+2. Installer reads `.5/version.json` to get installed version
+3. Compares with package.json version
+4. If newer version available:
+   - Shows prompt: "Update to latest version? (Y/n)"
+   - User confirms or cancels
+   - Performs update (preserves config)
+5. If `--upgrade` flag used, skips prompt
+
+### Update Notification Hook
+
+The `check-updates.js` hook runs on every command start:
+- Checks if 24h has passed since last check
+- Compares installed vs available version
+- Shows notification if update available
+- Updates `updateCheckLastRun` timestamp
+
 ## Common Patterns
+
+⚠️ **CRITICAL:** When adding **any** new workflow file (command, agent, skill, hook, or template), you **MUST** update `bin/install.js` to ensure it gets updated during user upgrades. See details below.
 
 ### Adding a New Phase
 1. Create command in `src/commands/5/{phase-name}.md`
 2. Define agent if needed in `src/agents/{agent-name}.md`
-3. Update README.md workflow diagram
-4. Add to installer's directory copy list
+3. **UPDATE `bin/install.js`:** If adding a new agent, add it to `getWorkflowManagedFiles()` agents list
+4. Update README.md workflow diagram
 
 ### Adding a New Project Type
 1. Add detection logic in `detectProjectType()` (bin/install.js)
@@ -319,7 +429,22 @@ Each type gets default build/test commands in the config.
 1. Create directory: `src/skills/{skill-name}/`
 2. Add `SKILL.md` with skill definition
 3. Optionally add `EXAMPLES.md` for usage guidance
-4. Skills are auto-installed (installer copies entire skills/ directory)
+4. **UPDATE `bin/install.js`:** Add skill name to `getWorkflowManagedFiles()` skills list
+
+### Adding a New Agent
+1. Create file: `src/agents/{agent-name}.md`
+2. Define agent with YAML frontmatter
+3. **UPDATE `bin/install.js`:** Add `{agent-name}.md` to `getWorkflowManagedFiles()` agents list
+
+### Adding a New Hook
+1. Create file: `src/hooks/{hook-name}.js`
+2. Make it executable: `chmod +x src/hooks/{hook-name}.js`
+3. **UPDATE `bin/install.js`:** Add `{hook-name}.js` to `getWorkflowManagedFiles()` hooks list
+4. Update `src/settings.json` if needed for hook configuration
+
+### Adding a New Template
+1. Create file: `src/templates/{TEMPLATE_NAME}.md`
+2. **UPDATE `bin/install.js`:** Add `{TEMPLATE_NAME}.md` to `getWorkflowManagedFiles()` templates list
 
 ## State File Format
 
@@ -344,6 +469,50 @@ Implementation state is tracked at `.5/{feature-name}/state.json`:
 
 ## Important Constraints
 
+### ⚠️ CRITICAL: Always Update install.js
+
+**When making ANY change to this project that adds/removes/renames workflow files, you MUST update `bin/install.js`:**
+
+1. **Adding new workflow files?**
+   - Update `getWorkflowManagedFiles()` function
+   - Add your file to the appropriate list (agents, skills, hooks, templates)
+   - This ensures the file gets updated during user upgrades
+
+2. **Renaming workflow files?**
+   - Update the file name in `getWorkflowManagedFiles()`
+   - Otherwise old file won't be removed, new file won't be installed
+
+3. **Removing workflow files?**
+   - Remove from `getWorkflowManagedFiles()`
+   - Consider if old file should be deleted during upgrade
+
+**Why this matters:**
+- The installer uses selective updates to preserve user-created content
+- Only files listed in `getWorkflowManagedFiles()` are updated
+- Forgetting to update this list means users won't get your new files during upgrades
+- This could cause silent failures or version mismatches
+
+**Check before every commit:**
+```bash
+# Run the verification script
+npm test
+
+# Or run directly:
+bash test/verify-install-js.sh
+
+# Or manually check if you added/changed files in:
+src/commands/5/
+src/agents/
+src/skills/
+src/hooks/
+src/templates/
+
+# Then verify getWorkflowManagedFiles() in:
+bin/install.js
+```
+
+**Verification script:** `test/verify-install-js.sh` automatically checks that all workflow files are listed in install.js. Run it before every commit that modifies workflow files.
+
 ### Don't Make These Changes
 - **Don't add a build step** - files must remain static Markdown
 - **Don't add tests** - workflow validation happens through usage
@@ -360,13 +529,26 @@ Implementation state is tracked at `.5/{feature-name}/state.json`:
 
 Package version is in `package.json`. To release:
 
-1. Update version in package.json
-2. Add release notes to `RELEASE_NOTES.md`
-3. Commit changes
-4. Tag and push: `git tag v1.x.x && git push --tags`
-5. Publish: `npm publish`
+1. **Verify install.js is up to date:**
+   ```bash
+   # Run the verification script (REQUIRED before every release)
+   npm test
 
-Users upgrade by running `npx 5-phase-workflow --uninstall` then reinstalling.
+   # This script checks that all workflow files are listed in getWorkflowManagedFiles()
+   # If it fails, update bin/install.js before proceeding
+   ```
+
+2. Update version in package.json
+
+3. Add release notes to `RELEASE_NOTES.md`
+
+4. Commit changes
+
+5. Tag and push: `git tag v1.x.x && git push --tags`
+
+6. Publish: `npm publish`
+
+Users upgrade by running `npx 5-phase-workflow` (will prompt) or `npx 5-phase-workflow --upgrade` (auto-updates).
 
 ## Troubleshooting Development
 

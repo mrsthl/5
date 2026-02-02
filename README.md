@@ -305,17 +305,68 @@ If implementation gets stuck:
 
 ## Updating
 
-To upgrade to the latest version:
+The workflow automatically detects when a new version is available.
+
+### Automatic Update (Recommended)
 
 ```bash
-# Uninstall current version
-npx 5-phase-workflow --uninstall
+# Interactive upgrade (shows prompt)
+npx 5-phase-workflow
 
-# Reinstall latest
+# Force upgrade (no prompts)
+npx 5-phase-workflow --upgrade
+
+# Check version without updating
+npx 5-phase-workflow --check
+```
+
+### Legacy Upgrade Method
+
+```bash
+npx 5-phase-workflow --uninstall
 npx 5-phase-workflow
 ```
 
-Your configuration in `.claude/.5/config.json` will be preserved.
+**Note:** During updates:
+- Config files in `.claude/.5/` are preserved
+- User-created commands, agents, skills, hooks, and templates are preserved
+- Only workflow-managed files are updated
+
+## Development
+
+### Running Tests
+
+The project includes automated verification to ensure all workflow files are properly configured:
+
+```bash
+# Run verification tests
+npm test
+
+# Or run directly
+bash test/verify-install-js.sh
+```
+
+This verifies that all workflow files (commands, agents, skills, hooks, templates) are properly listed in `bin/install.js` for selective updates.
+
+### Continuous Integration
+
+A GitHub Actions workflow runs on every push to verify the install.js configuration. The workflow:
+- Checks that all workflow files are listed in `getWorkflowManagedFiles()`
+- Ensures selective updates will work correctly
+- Prevents accidental omissions that could break user upgrades
+
+See `.github/workflows/test.yml` for details.
+
+### Adding New Workflow Files
+
+When adding new commands, agents, skills, hooks, or templates:
+
+1. Create the file in the appropriate `src/` directory
+2. **Update `bin/install.js`** - Add the file to `getWorkflowManagedFiles()`
+3. Run `npm test` to verify
+4. Commit only if tests pass
+
+See `CLAUDE.md` for detailed development guidelines.
 
 ## Contributing
 

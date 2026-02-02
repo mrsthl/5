@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-install-js:
+    name: Verify install.js Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run verification
+        run: npm run verify
+
+      - name: Report success
+        if: success()
+        run: |
+          echo "✅ All workflow files are properly listed in install.js"
+          echo "✅ All verification checks passed"
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Verification failed"
+          echo "Please update getWorkflowManagedFiles() in bin/install.js"
+          echo "to include all workflow files."
+          exit 1

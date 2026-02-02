@@ -1,4 +1,17 @@
-# Release Notes - v1.0.0
+# Release Notes
+
+## v1.0.1
+
+**Release Date:** February 2, 2026
+
+### What's New
+
+**Documentation**
+- Added `RELEASE_NOTES.md`
+
+---
+
+## v1.0.0
 
 **Release Date:** February 2, 2026
 

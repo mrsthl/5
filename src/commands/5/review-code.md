@@ -557,10 +557,11 @@ Action: Please review the suggested fix manually.
 ```
 1. Make code changes
 2. Stage changes: git add .
-3. Run review: /review-code
-4. Address manual issues if needed
-5. Verify: /verify-implementation (if part of feature workflow)
+3. Run `/clear` to reset context
+4. Run review: /5:review-code
+5. Address manual issues if needed
 6. Commit: git commit -m "message"
+7. For next feature: Run `/clear` before starting /5:plan-feature
 ```
 
 ## Configuration

@@ -330,7 +330,9 @@ Tell the developer:
 3. "Compilation: Successful"
 4. "Tests: All passing ({N} tests)"
 5. **"State file: `.5/{feature-name}/state.json`"** (this is critical for resume capability)
-6. "Next step: Run `/verify-implementation` to validate completeness"
+6. "Next steps:"
+   - "Run `/clear` to reset context"
+   - "Then run `/5:verify-implementation {feature-name}` to validate completeness"
 
 **Note:** The verification step will automatically prompt the developer to commit changes, which is recommended before running CodeRabbit review.
 

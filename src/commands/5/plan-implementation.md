@@ -191,7 +191,8 @@ After creating the implementation plan, tell the developer:
 1. "Implementation plan created at `.5/{feature-name}/plan.md`"
 2. "{N} components across {M} steps"
 3. "Each component has a self-contained execution prompt for haiku agents"
-4. "Please review, then run: `/5:implement-feature {feature-name}`"
+4. "Please review the plan"
+5. "Then run `/clear` followed by `/5:implement-feature {feature-name}`"
 
 ## Component Prompt Examples
 
@@ -368,7 +369,7 @@ Skill:
 6. Groups into steps by dependencies
 7. Builds self-contained prompts with inline code and exact paths
 8. Creates .5/PROJ-1234-add-emergency-schedule/plan.md
-9. Tells user: "Plan created with 7 components across 3 steps. Review and run /5:implement-feature"
+9. Tells user: "Plan created with 7 components across 3 steps. Review the plan, then run `/clear` followed by `/5:implement-feature PROJ-1234-add-emergency-schedule`"
 ```
 
 ## Related Documentation

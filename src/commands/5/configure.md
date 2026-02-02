@@ -254,8 +254,10 @@ Each skill should:
 Tell the user:
 
 1. "Configuration feature planned at `.5/CONFIGURE/feature.md`"
-2. "Next: Run `/5:plan-implementation CONFIGURE`"
-3. "Then: `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code`"
+2. "Next steps:"
+   - "Run `/clear` to reset context"
+   - "Then run `/5:plan-implementation CONFIGURE`"
+3. "After that: Continue with `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code` (clearing context between each phase)"
 
 ## DO NOT
 
@@ -298,7 +300,7 @@ User: "Use these"
 
 Claude: [Writes .5/CONFIGURE/feature.md]
 Claude: "Configuration feature planned at `.5/CONFIGURE/feature.md`"
-Claude: "Next: Run `/5:plan-implementation CONFIGURE`"
+Claude: "Next: Run `/clear` followed by `/5:plan-implementation CONFIGURE`"
 ```
 
 ## Related Documentation

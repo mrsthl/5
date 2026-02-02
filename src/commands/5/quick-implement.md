@@ -236,6 +236,10 @@ Build: Success
 Tests: {Success | Skipped}
 
 State: .5/${feature_name}/state.json
+
+Next steps:
+- Review and commit changes
+- For a new task, run `/clear` before starting
 ```
 
 ## Skill Mappings

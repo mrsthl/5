@@ -190,8 +190,8 @@ After updating the spec, tell the developer:
    - "Modified: {Y}"
    - "Removed: {Z}"
 3. Ask: "Would you like to:"
-   - "Discuss more (run /discuss-feature again)"
-   - "Proceed to implementation planning (run /plan-implementation {feature-name})"
+   - "Discuss more (run /5:discuss-feature again)"
+   - "Proceed to implementation planning (run `/clear` followed by `/5:plan-implementation {feature-name}`)"
    - "Review the updated spec first"
 
 ## Instructions Summary
@@ -299,7 +299,7 @@ Skill: [Updates Requirements and Acceptance Criteria sections]
 Skill: "Feature specification updated. Changes:
 - Clarified: Single emergency window per product (not multiple)
 - Added: Full CRUD operations for emergency windows
-Would you like to proceed to implementation planning? Run: /plan-implementation PROJ-1234-add-feature"
+Would you like to proceed to implementation planning? Run `/clear` followed by `/5:plan-implementation PROJ-1234-add-feature`"
 ```
 
 ### Example 2: Adding Requirements
@@ -341,7 +341,7 @@ Skill: [Updates Acceptance Criteria, adds notification verification]
 Skill: "Feature specification updated. Changes:
 - Added: Email notification when emergency window starts
 - Added: Integration with email service
-Review the changes and run: /plan-implementation 12345-implement-your-new-feature when ready"
+Review the changes and run `/clear` followed by `/5:plan-implementation PROJ-1234-add-feature` when ready"
 ```
 
 ### Example 3: Simplification

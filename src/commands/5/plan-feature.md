@@ -212,7 +212,9 @@ Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` 
 ...
 
 ## Next Steps
-After approval, run: `/plan-implementation {TICKET-ID}-{description}`
+After approval:
+1. Run `/clear` to reset context
+2. Run `/5:plan-implementation {TICKET-ID}-{description}`
 ```
 
 ## Instructions
@@ -277,8 +279,8 @@ After approval, run: `/plan-implementation {TICKET-ID}-{description}`
 7. Skill challenges: "Could we reuse existing scheduling infrastructure instead of creating new one?"
 8. Skill determines: Feature name `add-emergency-schedule`
 9. Skill creates: `.5/PROJ-1234-add-emergency-schedule/feature.md`
-10. Skill tells user: "Feature spec created. Please review and then run `/plan-implementation PROJ-1234-add-emergency-schedule`"
-11. Skill tells user: "If the feature needs refinements, run `/discuss-feature PROJ-1234-add-emergency-schedule`"
+10. Skill tells user: "Feature spec created. Please review and then run `/clear` followed by `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
+11. Skill tells user: "If the feature needs refinements, run `/5:discuss-feature PROJ-1234-add-emergency-schedule`"
 
 ## Related Documentation
 

@@ -132,7 +132,10 @@ All checks completed successfully:
 
 Verification report: .5/{feature-name}/verification.md
 
-Ready to commit and create pull request!
+Next steps:
+1. Commit your changes (recommended before code review)
+2. Run `/clear` to reset context
+3. Run `/5:review-code` for CodeRabbit review
 ```
 
 **If PASSED WITH WARNINGS:**
@@ -152,7 +155,10 @@ See warnings in verification report:
 
 You may address warnings before committing, but they don't block completion.
 
-Ready to commit!
+Next steps:
+1. Commit your changes (recommended before code review)
+2. Run `/clear` to reset context
+3. Run `/5:review-code` for CodeRabbit review
 ```
 
 **If FAILED:**
@@ -191,9 +197,10 @@ It's recommended to commit changes before running CodeRabbit review (/review-cod
 - Create commit using the standard commit message format below
 - Stage all relevant files
 - Create commit with proper message format
+- After committing, tell user: "Changes committed. Next steps: Run `/clear` followed by `/5:review-code` for CodeRabbit review."
 
 **If user selects "No":**
-- Tell user: "You can commit the changes manually when ready. After committing, run `/review-code` for CodeRabbit review."
+- Tell user: "You can commit the changes manually when ready. After committing, run `/clear` followed by `/5:review-code` for CodeRabbit review."
 
 #### Commit Message Format
 

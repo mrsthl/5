@@ -9,20 +9,20 @@ process.stdin.on('data', (chunk) => {
   inputData += chunk;
 });
 
-process.stdin.on('end', () => {
+process.stdin.on('end', async () => {
   try {
     // Parse hook input (contains workspace info)
     const hookData = JSON.parse(inputData);
     const workspaceDir = hookData.workingDirectory || process.cwd();
 
-    checkForUpdates(workspaceDir);
+    await checkForUpdates(workspaceDir);
   } catch (e) {
     // Silent failure - don't block on errors
     process.exit(0);
   }
 });
 
-function checkForUpdates(workspaceDir) {
+async function checkForUpdates(workspaceDir) {
   const versionFile = path.join(workspaceDir, '.claude', '.5', 'version.json');
 
   // Check if version.json exists
@@ -57,38 +57,53 @@ function checkForUpdates(workspaceDir) {
 
   // Compare versions
   const installed = versionData.installedVersion;
-  const packageVersion = getPackageVersion(workspaceDir);
+  const latestVersion = await getLatestVersion();
 
-  if (!packageVersion || installed === packageVersion) {
+  if (!latestVersion || installed === latestVersion) {
     // No update available
     process.exit(0);
   }
 
-  // Check if update is available (installed < package)
-  if (compareVersions(installed, packageVersion) < 0) {
+  // Check if update is available (installed < latest)
+  if (compareVersions(installed, latestVersion) < 0) {
     // Show update notification
-    console.log(`\n\x1b[34mℹ\x1b[0m Update available: ${installed} → ${packageVersion}`);
+    console.log(`\n\x1b[34mℹ\x1b[0m Update available: ${installed} → ${latestVersion}`);
     console.log(`  Run: \x1b[1mnpx 5-phase-workflow --upgrade\x1b[0m\n`);
   }
 
   process.exit(0);
 }
 
-// Get package version from local package.json
-function getPackageVersion(workspaceDir) {
-  // Try to find package.json in node_modules/5-phase-workflow
-  const pkgPath = path.join(workspaceDir, 'node_modules', '5-phase-workflow', 'package.json');
-
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      return pkg.version;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  return null;
+// Get latest version from npm registry
+async function getLatestVersion() {
+  return new Promise((resolve) => {
+    const https = require('https');
+    const req = https.get(
+      'https://registry.npmjs.org/5-phase-workflow/latest',
+      { timeout: 3000 },
+      (res) => {
+        if (res.statusCode !== 200) {
+          resolve(null);
+          return;
+        }
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          try {
+            const pkg = JSON.parse(data);
+            resolve(pkg.version);
+          } catch (e) {
+            resolve(null);
+          }
+        });
+      }
+    );
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
 }
 
 // Compare semver versions

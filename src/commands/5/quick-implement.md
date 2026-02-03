@@ -84,6 +84,8 @@ feature_name="${TICKET_ID}-${slug}"
 - Which existing patterns to follow?
 - Any edge cases to handle?
 
+**Ask questions ONE AT A TIME.** Wait for the user's answer before asking the next question. Do NOT list multiple questions in one message.
+
 ### Step 5: Create Plan
 
 Write plan to `.5/${feature_name}/plan.md` using the template structure.

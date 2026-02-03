@@ -39,7 +39,9 @@ Understand the project structure:
 
 This is a quick scan, not deep analysis. The executor agent will do detailed pattern matching.
 
-### Step 3: Ask 2-3 Technical Questions
+### Step 3: Ask 2-3 Technical Questions (ONE AT A TIME)
+
+**CRITICAL:** Ask questions ONE AT A TIME. Wait for the user's answer before asking the next question.
 
 Use AskUserQuestion to clarify:
 - Data layer decisions (if applicable)
@@ -48,7 +50,11 @@ Use AskUserQuestion to clarify:
 - Software Architecture
 - Testing behaviour
 
-Keep it brief. Don't over-question. Don't ask feature questions already answered in the plan-feature phase. 
+Keep it brief. Don't over-question. Don't ask feature questions already answered in the plan-feature phase.
+
+- **ONE question at a time** - wait for answer before next question
+- Do NOT list multiple questions in one message
+- Do NOT skip to creating plan.md before asking your questions 
 
 ### Step 4: Design Components
 
@@ -212,3 +218,5 @@ Components in the same step run in parallel. Structure your plan accordingly:
 - Don't over-analyze the codebase - the executor will do detailed pattern matching
 - Don't ask more than 3 questions
 - Don't create unnecessary sequential steps - group independent work together
+- **Don't skip to implementation** - This command ONLY creates the plan
+- **Don't batch questions** - Ask one question at a time

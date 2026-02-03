@@ -101,9 +101,14 @@ Use Task tool with subagent_type=Explore for complex exploration.
 
 **Goal:** Understand what already exists so you can ask informed questions.
 
-### Step 4: Intensive Collaboration (5-10 Questions)
+### Step 4: Intensive Collaboration (5-10 Questions, ONE AT A TIME)
 
-**CRITICAL:** After exploring the codebase, engage in intensive Q&A using the AskUserQuestion tool. Ask 5-10 clarifying questions based on your findings. This is NOT optional.
+**CRITICAL:** After exploring the codebase, engage in intensive Q&A. This is NOT optional.
+
+- Ask 5-10 clarifying questions using AskUserQuestion
+- **ONE question at a time** - wait for answer before next question
+- Do NOT list multiple questions in one message
+- Do NOT skip to creating feature.md before asking at least 5 questions
 
 **Question categories to explore:**
 
@@ -154,7 +159,7 @@ Use Task tool with subagent_type=Explore for complex exploration.
 - "Could we use existing Z component instead?"
 - "Is a full factory needed or just simple creation?"
 
-Use AskUserQuestion to present options and trade-offs. Multiple questions can be asked in batches.
+**Ask questions ONE AT A TIME.** Use AskUserQuestion for each question. For clarifying questions, provide 2-4 options where meaningful. Wait for the user's answer before asking the next question. Open questions (like feature description) can use free text.
 
 ### Step 5: Determine Feature Name
 

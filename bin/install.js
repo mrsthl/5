@@ -199,11 +199,8 @@ function getWorkflowManagedFiles() {
     // Commands: only the 5/ namespace
     commands: ['5'],
 
-    // Agents: specific agent files
-    agents: [
-      'step-executor.md',
-      'review-processor.md'
-    ],
+    // Agents: none - instructions are now embedded inline in commands
+    agents: [],
 
     // Skills: specific skill directories
     skills: [

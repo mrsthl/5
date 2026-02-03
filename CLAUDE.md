@@ -16,7 +16,6 @@ This is the **5-Phase Workflow** package - a systematic, AI-assisted feature dev
 
 When you add, rename, or remove ANY file in:
 - `src/commands/5/`
-- `src/agents/`
 - `src/skills/`
 - `src/hooks/`
 - `src/templates/`
@@ -70,10 +69,6 @@ src/
 │   ├── discuss-feature.md
 │   └── quick-implement.md
 │
-├── agents/              # Specialized agents (forked contexts)
-│   ├── step-executor.md        # Implements components
-│   └── review-processor.md     # Processes CodeRabbit
-│
 ├── skills/              # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/
@@ -109,7 +104,7 @@ bin/
 
 3. **Orchestrated Implementation** (`/5:implement-feature`)
    - Reads plan.md
-   - Spawns step-executor agents for each step
+   - Spawns agents for each step (instructions embedded inline)
    - Agents explore codebase to find patterns
    - State tracked in `.5/{ticket-id}/state.json`
 
@@ -237,25 +232,12 @@ user-invocable: true
 Instructions for Claude Code...
 ```
 
-## Working with Agents
+## Spawned Agents
 
-Agents are Markdown files for forked contexts:
-
-```markdown
----
-name: step-executor
-description: Implements components...
-tools: Read, Write, Edit, Glob, Grep
-model: sonnet
----
-
-# Agent Instructions
-
-...
-```
-
-**Agent Rules:**
-- Run in forked context
+Commands spawn agents via the Task tool with inline instructions:
+- Instructions are embedded directly in the Task prompt
+- No separate agent files needed
+- Agents run in forked context
 - Explore codebase to find patterns
 - Create/modify files following conventions
 
@@ -284,4 +266,3 @@ When adding/removing/renaming workflow files, update `getWorkflowManagedFiles()`
 - Full workflow guide: `docs/workflow-guide.md`
 - Installation script: `bin/install.js`
 - Example command: `src/commands/5/plan-feature.md`
-- Example agent: `src/agents/step-executor.md`

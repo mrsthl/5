@@ -230,12 +230,6 @@ After installation, your `.claude/` directory will contain:
 │   ├── discuss-feature.md
 │   ├── quick-implement.md
 │   └── configure.md
-├── agents/                   # Specialized agents
-│   ├── step-executor.md
-│   ├── step-verifier.md
-│   ├── integration-agent.md
-│   ├── verification-agent.md
-│   └── review-processor.md
 ├── skills/                   # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/

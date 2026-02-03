@@ -1,6 +1,6 @@
 ---
 name: 5:review-code
-description: Reviews code changes using CodeRabbit CLI by delegating execution and parsing to review-processor agent. Handles user interaction and fix application in main context.
+description: Reviews code changes using CodeRabbit CLI. Handles user interaction and fix application in main context.
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Task, mcp__jetbrains__*
 model: sonnet
 context: fork
@@ -16,7 +16,7 @@ This skill automates code review using the CodeRabbit CLI. It supports two workf
 **Workflow A: Interactive Review** (default)
 1. Checks prerequisites in main context
 2. Asks user what to review
-3. Delegates CodeRabbit execution and output parsing to review-processor agent
+3. Delegates CodeRabbit execution and output parsing to a spawned agent
 4. Presents structured results and asks user for decisions
 5. Applies fixes based on user approval
 6. Reports results
@@ -28,7 +28,7 @@ This skill automates code review using the CodeRabbit CLI. It supports two workf
 
 **Architecture:** `Command -> Agent -> CodeRabbit CLI`
 - This command stays in the main context (user interaction, fix application)
-- review-processor agent runs CodeRabbit and categorizes findings (forked context)
+- Spawned agent runs CodeRabbit and categorizes findings (forked context)
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
 
@@ -37,7 +37,7 @@ This skill automates code review using the CodeRabbit CLI. It supports two workf
 Your job in this phase:
 ✅ Check CodeRabbit prerequisites
 ✅ Ask user what to review
-✅ Spawn review-processor agent
+✅ Spawn review agent
 ✅ Present findings overview to user
 ✅ Ask user which fixes to apply
 ✅ Apply ONLY user-approved fixes
@@ -59,8 +59,8 @@ Your job is NOT:
 
 **CRITICAL:** This command has a LIMITED scope. Do NOT:
 
-- ❌ **Run CodeRabbit directly** - review-processor agent handles this
-- ❌ **Parse CodeRabbit output directly** - review-processor agent handles this
+- ❌ **Run CodeRabbit directly** - spawned agent handles this
+- ❌ **Parse CodeRabbit output directly** - spawned agent handles this
 - ❌ **Apply fixes without approval** - ALWAYS ask user first
 - ❌ **Auto-apply refactoring** - Even if CodeRabbit suggests it
 - ❌ **Skip the overview** - User must see all findings first
@@ -126,29 +126,68 @@ Ask the user what to review and how to present results using AskUserQuestion:
 1. **Interactive** (default) - Show findings and apply fixes immediately
 2. **Save to file** - Save findings to `.5/{feature-name}/` for later annotation
 
-### Step 4: Spawn review-processor Agent
+### Step 4: Spawn Review Agent
 
-Read `.claude/agents/review-processor.md` for agent instructions, then spawn via Task tool:
+Spawn an agent with inline instructions:
 
 ```
 Task tool call:
   subagent_type: general-purpose
+  model: sonnet
   description: "Run CodeRabbit review"
   prompt: |
-    {Contents of review-processor.md}
+    Run CodeRabbit CLI and categorize findings.
 
-    ---
-
-    ## Your Task
-
-    Review Scope: {scope from Step 3}
+    ## Review Scope
+    Scope: {scope from Step 3}
     Base Branch: {branch-name if scope is "branch"}
     Files: [{file-paths if scope is "files"}]
+
+    ## Process
+
+    1. **Run CodeRabbit** based on scope:
+       - staged: `coderabbit review --plain`
+       - files: `coderabbit review --plain {file1} {file2}`
+       - branch: `coderabbit review --plain --base {base-branch}`
+
+    2. **Parse output** - Extract file paths, line numbers, severity, descriptions, suggested fixes
+
+    3. **Categorize each finding:**
+       - **Fixable**: Mechanical fixes (unused imports, null checks, formatting, typos)
+       - **Questions**: Clarifications needed (validation logic, trade-offs)
+       - **Manual**: Requires judgment (refactoring, architecture, security)
+
+    ## Output Format
+    Return:
+    ```
+    Status: success | failed
+    Error: {if failed}
+
+    Summary:
+      total: {N}, fixable: {N}, questions: {N}, manual: {N}
+
+    Fixable Issues:
+    - file: {path}, line: {N}, description: {what}, fix: {suggestion}
+
+    Questions:
+    - file: {path}, line: {N}, question: {what CodeRabbit asks}
+
+    Manual Review:
+    - file: {path}, line: {N}, description: {what}, severity: {level}
+
+    Raw Output:
+    {full CodeRabbit output}
+    ```
+
+    ## Rules
+    - DO NOT apply fixes (parent handles with user consent)
+    - DO NOT interact with user
+    - Include ALL findings - let parent decide what to apply
 ```
 
 ### Step 5: Process Agent Results
 
-Receive structured results from review-processor:
+Receive structured results from the agent:
 - Total issues count
 - Categorized findings: fixable, questions, manual
 - Raw CodeRabbit output
@@ -417,7 +456,7 @@ Follow these steps **IN ORDER**:
 1. **Check prerequisites** - CodeRabbit installed and logged in
 2. **Ask what to review** - Staged, unstaged, branch, or specific files
 3. **Ask review mode** - Interactive or save to file
-4. **Spawn review-processor** - Delegate CodeRabbit execution and parsing
+4. **Spawn review agent** - Delegate CodeRabbit execution and parsing
 5. **Process results** - Receive categorized findings
 6. **Provide overview** - Show concise summary to user (MANDATORY - don't skip)
 7. **Ask user** - Which fixes to apply, how to handle questions
@@ -435,7 +474,7 @@ Follow these steps **IN ORDER**:
 1. **Check prerequisites** - CodeRabbit installed and logged in
 2. **Ask what to review** - Staged, unstaged, branch, or specific files
 3. **User selects "Save to file"**
-4. **Spawn review-processor** - Delegate CodeRabbit execution and parsing
+4. **Spawn review agent** - Delegate CodeRabbit execution and parsing
 5. **Process results** - Receive categorized findings
 6. **Save findings file** - Store structured findings in `.5/{feature-name}/review-{timestamp}-findings.md`
 7. **Tell user** - Edit the file and run `/5:review-code apply`
@@ -544,5 +583,4 @@ Action: Please review the suggested fix manually.
 
 ## Related Documentation
 
-- [Agent: review-processor](../agents/review-processor.md)
 - [Workflow Guide](../docs/workflow-guide.md)

@@ -173,24 +173,44 @@ For each component:
 
 #### Step-Executor Delegation
 
-Read `.claude/agents/step-executor.md` and spawn:
+Spawn an agent with inline instructions:
 
 ```
 Task tool call:
-  subagent_type: step-executor
+  subagent_type: general-purpose
+  model: haiku
   description: "Execute quick implementation for ${feature_name}"
   prompt: |
-    {Contents of step-executor.md}
+    Implement components for a feature by finding patterns in existing code.
 
-    ---
+    ## Feature
+    ${feature_name}
 
-    ## Your Task
+    ## Components
+    {component list from plan}
 
-    Feature: ${feature_name}
-    Components:
-    {component list from plan with full skill prompts}
+    ## Process
+    For each component:
 
-    Execution mode: {parallel | sequential}
+    **If creating a new file:**
+    1. Find a similar file using Glob (e.g., *Service.ts for services)
+    2. Read it to understand the pattern (imports, structure, exports)
+    3. Create the new file following that pattern
+    4. Verify the file exists
+
+    **If modifying a file:**
+    1. Read the file
+    2. Make the described change using Edit tool
+    3. Verify the change
+
+    ## Output
+    Report what you created/modified:
+    - {path}: {brief description}
+
+    ## Rules
+    - Find patterns from existing code, don't invent conventions
+    - Don't skip components - attempt all
+    - Don't interact with user - just execute and report
 ```
 
 Process results and **update state file** (MANDATORY):

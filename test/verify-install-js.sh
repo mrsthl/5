@@ -56,22 +56,29 @@ compare_lists() {
     echo ""
 }
 
-# Check agents
+# Check agents (now empty - instructions are embedded inline)
 echo "Checking agents..."
-AGENT_FILES=$(ls -1 src/agents/*.md 2>/dev/null | xargs -n1 basename | sort || echo "")
-AGENT_LIST=$(grep -A 20 "agents: \[" bin/install.js | grep "\.md" | sed "s/.*'\(.*\)'.*/\1/" | sort)
+if [ -d "src/agents" ] && [ "$(ls -1 src/agents/*.md 2>/dev/null)" ]; then
+    AGENT_FILES=$(ls -1 src/agents/*.md 2>/dev/null | xargs -n1 basename | sort)
+else
+    AGENT_FILES=""
+fi
+# Extract only the agents array (stop at the closing bracket)
+AGENT_LIST=$(grep -A 5 "agents: \[" bin/install.js | sed -n '/agents: \[/,/\]/p' | grep "\.md" | sed "s/.*'\(.*\)'.*/\1/" | sort || echo "")
 compare_lists "Agents" "$AGENT_FILES" "$AGENT_LIST"
 
 # Check skills
 echo "Checking skills..."
 SKILL_DIRS=$(ls -1 src/skills/ 2>/dev/null | sort || echo "")
-SKILL_LIST=$(grep -A 20 "skills: \[" bin/install.js | grep "'" | grep -v "//" | sed "s/.*'\(.*\)'.*/\1/" | grep -v "^skills:" | sort)
+# Extract only the skills array (stop at the closing bracket)
+SKILL_LIST=$(grep -A 10 "skills: \[" bin/install.js | sed -n '/skills: \[/,/\]/p' | grep "'" | sed "s/.*'\(.*\)'.*/\1/" | sort)
 compare_lists "Skills" "$SKILL_DIRS" "$SKILL_LIST"
 
 # Check hooks
 echo "Checking hooks..."
 HOOK_FILES=$(ls -1 src/hooks/*.js 2>/dev/null | xargs -n1 basename | sort || echo "")
-HOOK_LIST=$(grep -A 20 "hooks: \[" bin/install.js | grep "\.js" | sed "s/.*'\(.*\)'.*/\1/" | sort)
+# Extract only the hooks array (stop at the closing bracket)
+HOOK_LIST=$(grep -A 10 "hooks: \[" bin/install.js | sed -n '/hooks: \[/,/\]/p' | grep "\.js" | sed "s/.*'\(.*\)'.*/\1/" | sort)
 compare_lists "Hooks" "$HOOK_FILES" "$HOOK_LIST"
 
 # Check templates

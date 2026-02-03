@@ -1,6 +1,6 @@
 {
   "name": "5-phase-workflow",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A 5-phase feature development workflow for Claude Code",
   "bin": {
     "5-phase-workflow": "bin/install.js"

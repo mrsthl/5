@@ -1,5 +1,18 @@
 # Release Notes
 
+## v1.2.1
+
+**Release Date:** February 3, 2026
+
+### Bug Fixes
+
+**Update Notification Hook**
+- Fixed `check-updates.js` hook not displaying update notifications
+- Hook now queries npm registry directly instead of looking for the package in `node_modules`
+- Works correctly for users who install via `npx` (without a local dependency)
+
+---
+
 ## v1.2.0
 
 **Release Date:** February 3, 2026

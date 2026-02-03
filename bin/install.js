@@ -233,7 +233,8 @@ function getWorkflowManagedFiles() {
       'workflow/VERIFICATION-REPORT.md',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',
-      'workflow/QUICK-PLAN.md'
+      'workflow/QUICK-PLAN.md',
+      'workflow/FIX-PLAN.md'
     ]
   };
 }

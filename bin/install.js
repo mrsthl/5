@@ -372,7 +372,7 @@ function getDefaultConfig(projectType) {
       command: 'auto',
       testCommand: 'auto'
     },
-    reviewTool: 'auto'
+    reviewTool: 'claude'
   };
 
   // Project-specific overrides

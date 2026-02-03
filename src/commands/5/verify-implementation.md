@@ -133,5 +133,6 @@ Fix the issues and re-run: /5:verify-implementation {feature-name}
 
 Tell user:
 ```
-Next: /5:review-code (optional, requires CodeRabbit)
+Next: /clear
+Then: /5:review-code
 ```

@@ -184,11 +184,24 @@ fi
 - "Suggested test command: `{command}`. Use this?"
   - Options: "Yes (recommended)", "Customize", "None (no test step)"
 
-**2f. Confirm CLAUDE.md generation:**
+**2f. Review tool preference:**
+- "Which code review tool would you like to use?"
+  - Options:
+    1. "Claude (built-in, no setup needed)" — always available
+    2. "CodeRabbit CLI (requires installation)" — external tool
+    3. "None (skip automated review)"
+- If user selects CodeRabbit and it was not detected in Step 1d:
+  - Inform: "CodeRabbit CLI is not installed. You can install it later:"
+    - macOS: `brew install --cask coderabbit`
+    - Other: `curl -fsSL https://cli.coderabbit.ai/install.sh | sh`
+    - Then: `coderabbit auth login`
+  - Record the preference as `coderabbit` regardless (will prompt at review time if still missing)
+
+**2g. Confirm CLAUDE.md generation:**
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
-**2g. Confirm project-specific skills:**
+**2h. Confirm project-specific skills:**
 - Present proposed skills based on detected project type (see skill table in configure-project/SKILL.md)
 - "These project-specific skills were detected for your {project-type} project: {skill-list}. Confirm or customize?"
   - Options: "Use these (recommended)", "Customize", "Skip skill generation"
@@ -217,7 +230,7 @@ Create `.claude/.5/config.json` with the following values:
 - Test timeout: 300000ms
 - CodeRabbit: {available/not-available}, authenticated: {yes/no}
 - IDE integration: {available/not-available}, type: {type}
-- Review tool: {coderabbit/none}
+- Review tool: {claude/coderabbit/none}
 
 ### Requirement 2: Generate Documentation Files
 Analyze the codebase and generate modular documentation:

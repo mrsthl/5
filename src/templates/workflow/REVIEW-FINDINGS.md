@@ -28,14 +28,14 @@ The apply command will read your annotations and apply marked fixes.
 **Severity:** {error|warning|suggestion}
 
 **Description:**
-{what CodeRabbit found}
+{what the reviewer found}
 
 **Suggested Fix:**
 {how to fix it - can be multi-line}
 
-**Original CodeRabbit Message:**
+**Original Reviewer Message:**
 ```
-{raw output from CodeRabbit}
+{raw output from reviewer}
 ```
 
 **Action:** [FIX]

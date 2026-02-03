@@ -57,7 +57,7 @@ It handles three distinct tasks, invoked with different parameters per component
       "type": null
     }
   },
-  "reviewTool": "coderabbit" or "none"
+  "reviewTool": "claude" or "coderabbit" or "none"
 }
 ```
 

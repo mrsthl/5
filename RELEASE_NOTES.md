@@ -1,5 +1,56 @@
 # Release Notes
 
+## v1.2.0
+
+**Release Date:** February 3, 2026
+
+### What's New
+
+**Simplified Architecture**
+- Removed all standalone agent files (`step-executor`, `step-verifier`, `integration-agent`, `verification-agent`, `review-processor`, `step-fixer`) and embedded their instructions inline within commands
+- Merged atomic plan files back into a single `plan.md` for simplicity
+- Reduced overall complexity: net reduction of ~1,200 lines across the codebase
+
+**Parallel Component Execution**
+- Components within the same step now execute in parallel using the Task tool
+- Updated model selection logic for dynamic agent assignment based on component complexity
+
+**Configurable Review Tool**
+- Phase 5 (`/5:review-code`) now supports choosing between Claude-native review or CodeRabbit CLI
+- Users can select their preferred review tool during the review phase
+
+**Workflow Templates**
+- Added standardized templates in `src/templates/workflow/`:
+  - `FEATURE-SPEC.md` - Feature specification template
+  - `PLAN.md` - Implementation plan template
+  - `QUICK-PLAN.md` - Quick implementation plan template
+  - `STATE.json` - State tracking template
+  - `VERIFICATION-REPORT.md` - Multi-layer verification report template
+  - `REVIEW-FINDINGS.md` - Review findings template
+  - `REVIEW-SUMMARY.md` - Review summary template
+  - `FIX-PLAN.md` - Issue tracking and resolution template for verification fixes
+
+**Enhanced Verification (Phase 4)**
+- Structured steps for generating, applying, and tracking fixes
+- Multi-layer verification checks: infrastructure, feature completeness, and quality
+- FIX-PLAN.md integration for detailed issue tracking during verification
+
+### Improvements
+
+**Context Management**
+- Commands now recommend running `/clear` before proceeding to the next phase
+- Reduced prompt sizes across all commands for better context efficiency
+
+**Documentation**
+- Moved `findings.md` and `progress.md` to `docs/` directory
+- Simplified CLAUDE.md to reflect the new embedded-agent architecture
+- Updated workflow guide with current plan format and architecture
+
+**Project Setup**
+- Added `.nvmrc` for consistent Node.js version management
+
+---
+
 ## v1.1.2
 
 **Release Date:** February 2, 2026

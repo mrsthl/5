@@ -67,6 +67,8 @@ Then start your first feature:
 /5:review-code
 ```
 
+**Tip:** Running `/clear` between phases resets context and keeps conversations focused. Each phase reads necessary artifacts from previous phases, so no context is lost.
+
 ## Supported Tech Stacks
 
 The workflow auto-detects and supports:
@@ -362,11 +364,6 @@ When adding new commands, agents, skills, hooks, or templates:
 
 See `CLAUDE.md` for detailed development guidelines.
 
-## Contributing
-
-Found a bug or have a suggestion? Please open an issue or PR at:
-https://github.com/anthropics/claude-code/issues
-
 ## License
 
 MIT
@@ -375,8 +372,3 @@ MIT
 
 - [Full Workflow Guide](./docs/workflow-guide.md) - Detailed documentation
 - [Claude Code Docs](https://docs.anthropic.com/claude/docs/claude-code) - Claude Code features
-- [Examples](./docs/examples/) - Real-world usage examples
-
-## Credits
-
-Built with [Claude Code](https://claude.com/claude-code) by Anthropic.

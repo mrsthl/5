@@ -133,6 +133,7 @@ Fix the issues and re-run: /5:verify-implementation {feature-name}
 
 Tell user:
 ```
-Next: /clear
-Then: /5:review-code
+Next steps:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:review-code`
 ```

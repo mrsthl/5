@@ -254,45 +254,18 @@ After applying fixes:
 
 ### Step 9c: Generate Review Summary
 
-Create comprehensive summary report:
+Create comprehensive summary report using the template structure.
 
-```markdown
-# CodeRabbit Review Summary
+**Template Reference:** Use the structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`
 
-**Reviewed:** {scope}
-**Timestamp:** {timestamp in ISO 8601 format, e.g., 2026-01-28T10:30:45Z}
-**User Decisions:** {summary of user choices}
-
-## Summary
-
-- **Total Issues:** {N}
-- **Applied with User Approval:** {N}
-- **User-Resolved Questions:** {N}
-- **Manual Review Needed:** {N}
-- **Skipped by User:** {N}
-
-## Applied Fixes (User Approved)
-
-- `ProductFactory.ts:45` - Added null check for parameter
-- `OrderValidator.ts:23` - Removed unused import
-
-## User-Resolved Questions
-
-- `ProductFactory.ts:67` - Added empty string validation (user answered: yes)
-
-## Manual Review Needed
-
-- `ProductFactory.ts:120` - Consider extracting this method (complexity: 15)
-
-## Skipped Issues
-
-- `ProductFactory.ts:200` - User chose not to apply
-
-## Files Modified
-
-- ProductFactory.ts (2 fixes applied)
-- OrderValidator.ts (1 fix applied)
-```
+The template contains placeholders for:
+- **Header:** Reviewed scope, timestamp, user decisions summary
+- **Summary:** Counts for total issues, applied fixes, user-resolved questions, manual review, skipped
+- **Applied Fixes:** List of fixes applied with user approval (file:line - description)
+- **User-Resolved Questions:** Questions answered by user with their decisions
+- **Manual Review Needed:** Issues requiring human judgment
+- **Skipped Issues:** Fixes user chose not to apply
+- **Files Modified:** Summary of modified files with fix counts
 
 ### Step 10: Save Findings to File (File-Based Mode)
 
@@ -321,72 +294,20 @@ Example: 20260128-103045
 
 **File format:**
 
-```markdown
-# Code Review Findings
+**Template Reference:** Use the structure from `.claude/templates/workflow/REVIEW-FINDINGS.md`
 
-**Generated:** {timestamp in ISO 8601 format, e.g., 2026-01-28T10:30:45Z}
-**Scope:** {what was reviewed}
-**Total Findings:** {N}
-
----
-
-## How to Use This File
-
-1. Review each finding below
-2. For each finding, choose an action:
-   - `[FIX]` - Apply this fix automatically (leave as-is)
-   - `[SKIP]` - Don't apply this fix (change FIX to SKIP)
-   - `[MANUAL]` - Custom instructions (change FIX to MANUAL and add instructions)
-3. Save this file
-4. Run: `/review-code apply`
-
-The apply command will read your annotations and apply marked fixes.
-
----
-
-## Finding 1/{total}
-
-**File:** {file-path}
-**Line:** {line-number}
-**Category:** {Fixable|Question|Manual}
-**Severity:** {error|warning|suggestion}
-
-**Description:**
-{what CodeRabbit found}
-
-**Suggested Fix:**
-{how to fix it - can be multi-line}
-
-**Original CodeRabbit Message:**
-```
-{raw output from CodeRabbit}
-```
-
-**Action:** [FIX]
-
-**Custom Instructions:** (only if you selected [MANUAL])
-<!-- Add detailed instructions here if you want a custom fix -->
-
-
----
-
-## Finding 2/{total}
-
-...
-
----
-
-## Summary
-
-- Total: {N}
-- Fixable: {N}
-- Questions: {N}
-- Manual Review: {N}
-
-**Next Steps:**
-1. Edit this file to mark which findings to fix
-2. Run: `/review-code apply`
-```
+The template contains:
+- **Header:** Generated timestamp, scope, total findings count
+- **How to Use This File:** Instructions for user annotation with [FIX], [SKIP], [MANUAL] actions
+- **Finding sections:** Repeated for each finding with:
+  - File path, line number, category, severity
+  - Description of what CodeRabbit found
+  - Suggested fix
+  - Original CodeRabbit message
+  - Action placeholder (default [FIX])
+  - Custom instructions field for [MANUAL] fixes
+- **Summary:** Counts of total, fixable, questions, manual review
+- **Next Steps:** Instructions to edit and run `/review-code apply`
 
 **After saving file:**
 - Inform user: "Findings saved to .5/{feature-name}/review-{timestamp}-findings.md"

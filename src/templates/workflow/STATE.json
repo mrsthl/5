@@ -1,0 +1,9 @@
+{
+  "ticket": "{TICKET-ID}",
+  "feature": "{feature-name}",
+  "status": "in-progress",
+  "currentStep": 1,
+  "completed": [],
+  "failed": [],
+  "startedAt": "{ISO-timestamp}"
+}

@@ -86,27 +86,16 @@ feature_name="${TICKET_ID}-${slug}"
 
 ### Step 5: Create Plan
 
-Write plan to `.5/${feature_name}/plan.md`:
+Write plan to `.5/${feature_name}/plan.md` using the template structure.
 
-```markdown
-# Quick Implementation: ${TICKET_ID}
+**Template Reference:** Use the structure from `.claude/templates/workflow/QUICK-PLAN.md`
 
-## Task
-${DESCRIPTION}
-
-## Components
-
-| # | Type | Name | Skill | Module |
-|---|------|------|-------|--------|
-| 1 | {type} | {name} | {skill} | {module} |
-
-## Affected Modules
-- {module-1}
-- {module-2}
-
-## Execution
-{parallel | sequential | direct}
-```
+The template contains placeholders for:
+- **Header:** `# Quick Implementation: {TICKET-ID}`
+- **Task:** The task description
+- **Components table:** Columns for #, Type, Name, Skill, Module
+- **Affected Modules:** List of modules that will be modified
+- **Execution:** Mode (parallel, sequential, or direct)
 
 ### Step 6: Present Plan and Iterate
 

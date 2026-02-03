@@ -164,95 +164,25 @@ Based on the feature description and discussion:
 
 ### Step 6: Create Feature Specification
 
-Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` with the following structure.
+Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` using the template structure.
 
 **THIS IS YOUR FINAL OUTPUT. After creating this file, proceed immediately to Step 7.**
 
-```markdown
-# Feature: {TICKET-ID} - {Title}
+**Template Reference:** Use the structure from `.claude/templates/workflow/FEATURE-SPEC.md`
 
-## Ticket ID
-{TICKET-ID}
+The template contains placeholders like `{TICKET-ID}`, `{Title}`, `{1-2 sentence overview}`, etc. Replace all placeholders with actual values based on your research and the Q&A session.
 
-## Summary
-{1-2 sentence overview of what will be implemented}
-
-## Problem Statement
-{Why is this feature needed? What problem does it solve?}
-
-## Requirements
-
-### Functional Requirements
-- {Requirement 1}
-- {Requirement 2}
-- ...
-
-### Non-Functional Requirements
-- {Performance requirements}
-- {Compatibility requirements}
-- ...
-
-## Constraints
-- {Business constraints}
-- {Technical constraints}
-- {Time/resource constraints}
-
-## Affected Components
-- **{component/module-1}** - {What changes here}
-- **{component/module-2}** - {What changes here}
-- **{component/module-3}** - {What changes here}
-- ...
-
-## Entity/Component Definitions
-
-### {EntityName} (if applicable)
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| id | {Entity}Id | Yes | Unique identifier |
-| name | String | Yes | Entity name |
-| ... | ... | ... | ... |
-
-### Business Rules
-- {Rule 1}
-- {Rule 2}
-- ...
-
-## Acceptance Criteria
-- [ ] {Criterion 1 - how to verify success}
-- [ ] {Criterion 2}
-- [ ] {Criterion 3}
-- ...
-
-## Alternatives Considered
-
-### Option 1: {Alternative approach}
-**Pros:** {Benefits}
-**Cons:** {Drawbacks}
-**Decision:** Rejected because {reason}
-
-### Option 2: {Another alternative}
-**Pros:** {Benefits}
-**Cons:** {Drawbacks}
-**Decision:** Rejected because {reason}
-
-### Chosen Approach: {Selected approach}
-**Rationale:** {Why this approach was chosen}
-
-## Questions & Answers
-
-### Q1: {Question from collaboration phase}
-**A:** {Answer from developer}
-
-### Q2: {Question}
-**A:** {Answer}
-
-...
-
-## Next Steps
-After approval:
-1. Run `/clear` to reset context
-2. Run `/5:plan-implementation {TICKET-ID}-{description}`
-```
+Key sections to populate:
+- **Ticket ID & Summary** - From branch extraction and feature description
+- **Problem Statement** - Why this feature is needed
+- **Requirements** - Functional and non-functional requirements from discussion
+- **Constraints** - Business, technical, and time constraints identified
+- **Affected Components** - Discovered from codebase exploration
+- **Entity Definitions** - If the feature involves new data structures
+- **Acceptance Criteria** - Verifiable criteria for success
+- **Alternatives Considered** - Options discussed and why chosen approach was selected
+- **Questions & Answers** - Document the Q&A from the collaboration phase
+- **Next Steps** - Instructions for proceeding to Phase 2
 
 ## Instructions
 

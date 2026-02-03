@@ -202,11 +202,7 @@ function getWorkflowManagedFiles() {
     // Agents: specific agent files
     agents: [
       'step-executor.md',
-      'step-verifier.md',
-      'integration-agent.md',
-      'verification-agent.md',
-      'review-processor.md',
-      'step-fixer.md'
+      'review-processor.md'
     ],
 
     // Skills: specific skill directories
@@ -225,13 +221,22 @@ function getWorkflowManagedFiles() {
 
     // Templates: specific template files
     templates: [
+      // Project documentation templates
       'ARCHITECTURE.md',
       'CONCERNS.md',
       'CONVENTIONS.md',
       'INTEGRATIONS.md',
       'STACK.md',
       'STRUCTURE.md',
-      'TESTING.md'
+      'TESTING.md',
+      // Workflow output templates
+      'workflow/FEATURE-SPEC.md',
+      'workflow/PLAN.md',
+      'workflow/STATE.json',
+      'workflow/VERIFICATION-REPORT.md',
+      'workflow/REVIEW-FINDINGS.md',
+      'workflow/REVIEW-SUMMARY.md',
+      'workflow/QUICK-PLAN.md'
     ]
   };
 }
@@ -299,7 +304,7 @@ function selectiveUpdate(targetPath, sourcePath) {
   }
   log.success('Updated hooks/ (workflow files only)');
 
-  // Update specific templates
+  // Update specific templates (including nested directories like workflow/)
   const templatesSrc = path.join(sourcePath, 'templates');
   const templatesDest = path.join(targetPath, 'templates');
   if (!fs.existsSync(templatesDest)) {
@@ -309,6 +314,11 @@ function selectiveUpdate(targetPath, sourcePath) {
     const src = path.join(templatesSrc, template);
     const dest = path.join(templatesDest, template);
     if (fs.existsSync(src)) {
+      // Ensure parent directory exists for nested paths (e.g., workflow/FEATURE-SPEC.md)
+      const destDir = path.dirname(dest);
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
       fs.copyFileSync(src, dest);
     }
   }

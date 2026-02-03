@@ -174,6 +174,35 @@ Add emergency schedule tracking to products with date validation.
 - Test: npm test
 ```
 
+## Structuring Steps for Parallel Execution
+
+Components in the same step run in parallel. Structure your plan accordingly:
+
+**Good - parallel-friendly:**
+```
+| Step | Component | File |
+| 1 | Model | src/models/Schedule.ts |        ← parallel (no deps)
+| 1 | Types | src/types/schedule.ts |         ← parallel (no deps)
+| 2 | Service | src/services/ScheduleService.ts |  ← parallel
+| 2 | Repository | src/repositories/ScheduleRepo.ts | ← parallel
+| 3 | Controller | src/controllers/ScheduleCtrl.ts | ← needs service
+| 3 | Routes | src/routes/index.ts |           ← needs controller
+```
+
+**Bad - forces sequential:**
+```
+| Step | Component | File |
+| 1 | Model | ... |
+| 2 | Types | ... |        ← could be step 1
+| 3 | Service | ... |
+| 4 | Repository | ... |   ← could be step 3
+```
+
+**Rules:**
+- Group independent components in the same step
+- Only separate into different steps when there's a real dependency
+- More components per step = more parallelization = faster execution
+
 ## What NOT To Do
 
 - Don't write complete code in the plan
@@ -181,3 +210,4 @@ Add emergency schedule tracking to products with date validation.
 - Don't create multiple plan files (meta.md, step-N.md, etc.)
 - Don't over-analyze the codebase - the executor will do detailed pattern matching
 - Don't ask more than 3 questions
+- Don't create unnecessary sequential steps - group independent work together

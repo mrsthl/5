@@ -57,20 +57,70 @@ Create `.5/{feature-name}/state.json`:
 
 Group components by step number from the plan. For each step:
 
-**3a. Determine model for this step**
+**3a. Analyze step for parallel execution**
 
-Look at the Complexity column for components in this step:
-- If ALL components are `simple` → use `haiku`
-- If ANY component is `complex` → use `sonnet`
-- If mixed `simple`/`moderate` → use `haiku`
-- If ANY component is `moderate` and involves business logic → use `sonnet`
+Components within the same step are independent by design. For steps with multiple components:
+- **2+ simple components** → spawn parallel agents (one per component)
+- **1 complex component** → single agent
+- **Mixed complexity** → group by complexity, parallel within groups
 
-**3b. Spawn step-executor agent**
+**3b. Determine model per component**
+
+Based on Complexity column:
+- `simple` → `haiku` (fast, cheap)
+- `moderate` → `haiku` (default) or `sonnet` (if business logic heavy)
+- `complex` → `sonnet` (better reasoning)
+
+**3c. Spawn agents (parallel when possible)**
+
+For steps with multiple independent components, spawn agents in parallel using multiple Task calls in a single message:
+
+```
+# Example: Step 1 has 3 simple components - spawn all 3 in parallel
+
+Task tool call #1:
+  subagent_type: general-purpose
+  model: haiku
+  description: "Create {component-1} for {feature-name}"
+  prompt: |
+    Create a single component for a feature.
+
+    ## Component
+    - Name: {component-name}
+    - Action: create
+    - File: {file-path}
+    - Description: {what it does}
+
+    ## Pattern Reference
+    {relevant implementation note for this component}
+
+    ## Instructions
+    1. Find a similar existing file using Glob (e.g., *Service.ts for services)
+    2. Read that file to understand the pattern
+    3. Create the new file following that pattern
+    4. Verify the file exists
+
+Task tool call #2:
+  subagent_type: general-purpose
+  model: haiku
+  description: "Create {component-2} for {feature-name}"
+  prompt: |
+    [same structure, different component]
+
+Task tool call #3:
+  subagent_type: general-purpose
+  model: haiku
+  description: "Create {component-3} for {feature-name}"
+  prompt: |
+    [same structure, different component]
+```
+
+For steps with a single component or complex interdependencies, use a single agent:
 
 ```
 Task tool call:
   subagent_type: general-purpose
-  model: {haiku or sonnet based on step complexity}
+  model: {based on complexity}
   description: "Execute Step {N} for {feature-name}"
   prompt: |
     You are implementing components for a feature.
@@ -94,9 +144,9 @@ Task tool call:
     Use Glob to find similar files. Use Read to understand patterns. Use Write/Edit to create/modify files.
 ```
 
-**3c. Process results**
+**3d. Process results**
 
-From the agent's response, identify:
+Collect results from all agents (parallel or sequential). For each:
 - Components completed successfully
 - Components that failed
 
@@ -109,7 +159,7 @@ Update state.json:
 }
 ```
 
-**3d. Handle failures**
+**3e. Handle failures**
 
 If any component failed:
 - Log the failure in state.json
@@ -173,28 +223,35 @@ User: /implement-feature PROJ-1234-add-emergency-schedule
 [You read plan.md]
 [You create state.json]
 
-[You spawn agent for Step 1: Foundation]
-  Agent creates: Schedule.ts, schedule.ts (types)
-[You update state: Step 1 complete]
+[Step 1: Foundation - 2 simple components → PARALLEL]
+  Spawn 2 agents in single message:
+  - Agent A creates: Schedule.ts (model)
+  - Agent B creates: schedule.ts (types)
+  Both complete → update state
 
-[You spawn agent for Step 2: Logic]
-  Agent creates: ScheduleService.ts, ScheduleRepository.ts
-[You update state: Step 2 complete]
+[Step 2: Logic - 2 moderate components → PARALLEL]
+  Spawn 2 agents in single message:
+  - Agent A creates: ScheduleService.ts
+  - Agent B creates: ScheduleRepository.ts
+  Both complete → update state
 
-[You spawn agent for Step 3: Integration]
-  Agent creates: ScheduleController.ts
-  Agent modifies: routes/index.ts
-[You update state: Step 3 complete]
+[Step 3: Integration - mixed complexity → SEQUENTIAL or grouped]
+  Option A: Single sonnet agent handles both
+  Option B: Parallel if truly independent
+  - Agent creates: ScheduleController.ts
+  - Agent modifies: routes/index.ts
+  Complete → update state
 
-[You spawn agent for Step 4: Tests]
+[Step 4: Tests - 1 component → SINGLE agent]
   Agent creates: ScheduleService.test.ts
-[You update state: Step 4 complete]
+  Complete → update state
 
-[You run: npm run build]
-  Build successful
-[You run: npm test]
-  Tests passing
+[Verification]
+  Run: npm run build → successful
+  Run: npm test → passing
 
-[You update state: completed]
-[You report to user]
+[Update state: completed]
+[Report to user]
 ```
+
+**Performance gain:** Steps 1 and 2 run in half the time by parallelizing components.

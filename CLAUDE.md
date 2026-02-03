@@ -190,7 +190,21 @@ Each component in the plan has a `Complexity` column:
 - **moderate** → haiku or sonnet depending on context
 - **complex** → sonnet (better reasoning) - business logic, integrations, refactoring
 
-The orchestrator (`implement-feature`) selects the model per step based on the highest complexity component in that step.
+The orchestrator (`implement-feature`) selects the model per component.
+
+#### Parallel Execution
+
+Components within the same step are independent and run in parallel:
+
+```
+Step 1: [Model, Types] ← 2 parallel haiku agents
+Step 2: [Service, Repository] ← 2 parallel agents
+Step 3: [Controller, Routes] ← may be sequential if dependent
+```
+
+Plan structure determines parallelization:
+- Group independent components in the same step → parallel
+- Separate dependent components into different steps → sequential
 
 ## Installation Process (bin/install.js)
 

@@ -1,4 +1,4 @@
-# CodeRabbit Review Summary
+# Code Review Summary
 
 **Reviewed:** {scope}
 **Timestamp:** {ISO-timestamp}

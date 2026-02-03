@@ -195,7 +195,7 @@ Follow these steps **IN ORDER** and **STOP after step 8**:
 5. **Challenge assumptions** - Present alternatives, question complexity
 6. **Determine feature name** - Create short kebab-case description
 7. **Create feature specification** in `.5/{TICKET-ID}-{description}/feature.md`
-8. **Inform the developer** to review the spec and then run `/clear` followed by `/5:plan-implementation {TICKET-ID}-{description}`
+8. **Inform the developer** to review the spec, run `/clear` to reset context, and then run `/5:plan-implementation {TICKET-ID}-{description}`
 
 **🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT PROCEED TO IMPLEMENTATION.**
 
@@ -245,7 +245,9 @@ Follow these steps **IN ORDER** and **STOP after step 8**:
     **Next steps:**
     1. Review the feature spec
     2. If changes needed: `/5:discuss-feature PROJ-1234-add-emergency-schedule`
-    3. If approved: `/clear` then `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
+    3. If approved:
+       - **Run `/clear` to reset context** (recommended between phases)
+       - Then run `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
 
 **🛑 COMMAND COMPLETE. The skill stops here and waits for user to proceed to Phase 2.**
 

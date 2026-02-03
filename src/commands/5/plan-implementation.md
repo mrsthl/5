@@ -132,8 +132,9 @@ Plan created at `.5/{feature-name}/plan.md`
 
 {N} components across {M} steps.
 
-Review the plan, then run:
-/5:implement-feature {feature-name}
+Review the plan, then:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:implement-feature {feature-name}`
 ```
 
 ## Example Plan

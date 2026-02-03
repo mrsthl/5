@@ -205,7 +205,9 @@ Implementation complete!
 
 {If any failures: list them}
 
-Next: /5:verify-implementation {feature-name}
+Next steps:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:verify-implementation {feature-name}`
 ```
 
 ## Handling Interruptions

@@ -541,7 +541,11 @@ Claude: What's the ticket ID for this feature?
 You: PROJ-1234
 
 Claude: Feature spec created at .5/PROJ-1234-add-user-profile/feature.md
-Please review and then run: /plan-implementation PROJ-1234-add-user-profile
+
+Next steps:
+1. Review the feature spec
+2. Run `/clear` to reset context (recommended between phases)
+3. Then run `/5:plan-implementation PROJ-1234-add-user-profile`
 ```
 
 ### Step 2: Review Feature Spec
@@ -552,11 +556,14 @@ Open `.5/PROJ-1234-add-user-profile/feature.md` and review:
 - Acceptance criteria verifiable?
 - Alternatives make sense?
 
-If satisfied, proceed to next phase.
+If satisfied, clear context and proceed to next phase.
 
-### Step 3: Start Implementation Planning
+### Step 3: Clear Context and Start Implementation Planning
 
 ```bash
+You: /clear
+[Context cleared]
+
 You: /plan-implementation PROJ-1234-add-user-profile
 
 Claude: Reading feature spec...
@@ -591,12 +598,17 @@ Step 1 (Foundation): User model update, ProfileValidator
 Step 2 (Logic): ProfileService with business logic
 Step 3 (Integration): API route registration, tests
 
-Please review the plan files and then run: /implement-feature PROJ-1234-add-user-profile
+Review the plan, then:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:implement-feature PROJ-1234-add-user-profile`
 ```
 
-### Step 4: Start Implementation (with Agents)
+### Step 4: Clear Context and Start Implementation (with Agents)
 
 ```bash
+You: /clear
+[Context cleared]
+
 You: /implement-feature PROJ-1234-add-user-profile
 
 Claude: Reading implementation plan...
@@ -629,11 +641,18 @@ Feature implementation complete!
 - All 4 components created/updated
 - State file updated
 - Ready for verification!
+
+Next steps:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:verify-implementation PROJ-1234-add-user-profile`
 ```
 
-### Step 5: Verify Implementation
+### Step 5: Clear Context and Verify Implementation
 
 ```bash
+You: /clear
+[Context cleared]
+
 You: /verify-implementation
 
 Claude: Loading implementation state...
@@ -647,11 +666,18 @@ Claude: Loading implementation state...
 Verification Status: PASSED WITH WARNINGS
 
 Would you like to commit these changes now?
+
+Next steps:
+1. Run `/clear` to reset context (recommended between phases)
+2. Run `/5:review-code`
 ```
 
-### Step 6: Code Review
+### Step 6: Clear Context and Code Review
 
 ```bash
+You: /clear
+[Context cleared]
+
 You: /review-code
 
 Claude: Checking CodeRabbit CLI... installed
@@ -720,11 +746,12 @@ Tests: All passing
 
 ### General Tips
 
-1. **Use git branches**: Create feature branch before starting
-2. **Commit often**: Commit after Phase 3 completes successfully
-3. **Run verification manually**: Re-run /verify-implementation after fixes
-4. **Review state files**: Check `.5/{feature-name}/state.json` for progress tracking
-5. **Save verification reports**: Keep reports for documentation/debugging
+1. **Clear context between phases**: Run `/clear` before starting each new phase to reset context. This keeps conversations focused, prevents context pollution, and improves efficiency. Each phase reads necessary artifacts from previous phases.
+2. **Use git branches**: Create feature branch before starting
+3. **Commit often**: Commit after Phase 3 completes successfully
+4. **Run verification manually**: Re-run /verify-implementation after fixes
+5. **Review state files**: Check `.5/{feature-name}/state.json` for progress tracking
+6. **Save verification reports**: Keep reports for documentation/debugging
 
 ---
 

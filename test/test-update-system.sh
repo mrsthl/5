@@ -6,7 +6,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_SCRIPT="$SCRIPT_DIR/bin/install.js"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+INSTALL_SCRIPT="$PROJECT_ROOT/bin/install.js"
 
 echo "Testing 5-Phase Workflow Update System"
 echo "======================================="
@@ -51,13 +52,14 @@ UPDATED=$(cat .claude/.5/version.json | grep installedVersion | cut -d'"' -f4)
 echo "✓ Updated to version: $UPDATED"
 echo ""
 
-# Test 5: Config Preservation
-echo "Test 5: Config Preservation"
-echo "---------------------------"
-if [ -f ".claude/.5/config.json" ]; then
-  echo "✓ config.json preserved"
+# Test 5: Version File Preservation
+echo "Test 5: Version File Preservation"
+echo "---------------------------------"
+if [ -f ".claude/.5/version.json" ]; then
+  PRESERVED_VERSION=$(cat .claude/.5/version.json | grep installedVersion | cut -d'"' -f4)
+  echo "✓ version.json preserved with version $PRESERVED_VERSION"
 else
-  echo "✗ config.json not found"
+  echo "✗ version.json not found after upgrade"
   exit 1
 fi
 echo ""

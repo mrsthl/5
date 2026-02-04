@@ -6,7 +6,10 @@
     "5-phase-workflow": "bin/install.js"
   },
   "scripts": {
-    "test": "bash test/verify-install-js.sh",
+    "test": "bash test/verify-install-js.sh && bash test/test-check-updates-hook.sh && bash test/test-update-system.sh",
+    "test:install": "bash test/verify-install-js.sh",
+    "test:hook": "bash test/test-check-updates-hook.sh",
+    "test:update": "bash test/test-update-system.sh",
     "verify": "bash test/verify-install-js.sh"
   },
   "files": [

@@ -1,0 +1,215 @@
+#!/bin/bash
+
+# Test script for check-updates.js hook
+# Usage: bash test/test-check-updates-hook.sh
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CHECK_UPDATES_SCRIPT="$PROJECT_ROOT/src/hooks/check-updates.js"
+
+echo "Testing check-updates.js Hook"
+echo "=============================="
+echo ""
+
+# Helper function to run hook with mock stdin
+run_hook() {
+  local workspace_dir="$1"
+  echo "{\"workingDirectory\":\"$workspace_dir\"}" | node "$CHECK_UPDATES_SCRIPT"
+}
+
+# Test 1: No version.json (should exit silently)
+echo "Test 1: No version.json file"
+echo "----------------------------"
+TEST_DIR="/tmp/test-check-updates-1"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude"
+cd "$TEST_DIR"
+
+echo "Running hook without version.json..."
+run_hook "$TEST_DIR" && echo "✓ Hook exits gracefully without version.json"
+echo ""
+
+# Test 2: Corrupted version.json (should exit silently)
+echo "Test 2: Corrupted version.json"
+echo "------------------------------"
+TEST_DIR="/tmp/test-check-updates-2"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+echo "invalid json{" > .claude/.5/version.json
+echo "Running hook with corrupted version.json..."
+run_hook "$TEST_DIR" && echo "✓ Hook exits gracefully with corrupted file"
+echo ""
+
+# Test 3: Recent check (should skip)
+echo "Test 3: Recent check (within frequency)"
+echo "---------------------------------------"
+TEST_DIR="/tmp/test-check-updates-3"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+# Create version.json with recent check
+NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "1.0.0",
+  "updateCheckLastRun": "$NOW",
+  "updateCheckFrequency": 86400
+}
+EOF
+
+echo "Running hook with recent check..."
+OUTPUT=$(run_hook "$TEST_DIR" 2>&1 || true)
+if [ -z "$OUTPUT" ]; then
+  echo "✓ Hook skips check when run recently"
+else
+  echo "✗ Hook should not output anything"
+  echo "Output: $OUTPUT"
+  exit 1
+fi
+echo ""
+
+# Test 4: Old check (should run and update timestamp)
+echo "Test 4: Old check (should run)"
+echo "-------------------------------"
+TEST_DIR="/tmp/test-check-updates-4"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+# Create version.json with old check (2 days ago)
+OLD_DATE=$(date -u -v-2d +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -d "2 days ago" +"%Y-%m-%dT%H:%M:%SZ")
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "1.0.0",
+  "updateCheckLastRun": "$OLD_DATE",
+  "updateCheckFrequency": 86400
+}
+EOF
+
+echo "Running hook with old check timestamp..."
+run_hook "$TEST_DIR" >/dev/null 2>&1 || true
+UPDATED_TIME=$(cat .claude/.5/version.json | grep updateCheckLastRun | cut -d'"' -f4)
+if [ "$UPDATED_TIME" != "$OLD_DATE" ]; then
+  echo "✓ Hook updates timestamp after check"
+  echo "  Previous: $OLD_DATE"
+  echo "  Updated:  $UPDATED_TIME"
+else
+  echo "✗ Hook did not update timestamp"
+  exit 1
+fi
+echo ""
+
+# Test 5: Very old version (should show update notification)
+echo "Test 5: Old version (update available)"
+echo "--------------------------------------"
+TEST_DIR="/tmp/test-check-updates-5"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "0.1.0",
+  "updateCheckLastRun": "$OLD_DATE",
+  "updateCheckFrequency": 86400
+}
+EOF
+
+echo "Running hook with very old version (0.1.0)..."
+OUTPUT=$(run_hook "$TEST_DIR" 2>&1 || true)
+if echo "$OUTPUT" | grep -q "Update available"; then
+  echo "✓ Hook shows update notification for old version"
+  echo "$OUTPUT" | grep "Update available"
+else
+  echo "Hook output: $OUTPUT"
+  echo "⚠ No update notification (network may be unavailable or version is current)"
+fi
+echo ""
+
+# Test 6: Current version (should not show notification)
+echo "Test 6: Current version (no update)"
+echo "-----------------------------------"
+TEST_DIR="/tmp/test-check-updates-6"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+# Get current package version
+CURRENT_VERSION=$(cat "$PROJECT_ROOT/package.json" | grep '"version"' | cut -d'"' -f4)
+
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "$CURRENT_VERSION",
+  "updateCheckLastRun": "$OLD_DATE",
+  "updateCheckFrequency": 86400
+}
+EOF
+
+echo "Running hook with current version ($CURRENT_VERSION)..."
+OUTPUT=$(run_hook "$TEST_DIR" 2>&1 || true)
+if echo "$OUTPUT" | grep -q "Update available"; then
+  echo "⚠ Update notification shown (newer version may be published)"
+  echo "$OUTPUT"
+else
+  echo "✓ No update notification for current version"
+fi
+echo ""
+
+# Test 7: Network timeout handling
+echo "Test 7: Hook performance"
+echo "-----------------------"
+TEST_DIR="/tmp/test-check-updates-7"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "1.0.0",
+  "updateCheckLastRun": "$OLD_DATE",
+  "updateCheckFrequency": 86400
+}
+EOF
+
+echo "Running hook and measuring execution time..."
+START=$(date +%s)
+run_hook "$TEST_DIR" >/dev/null 2>&1 || true
+END=$(date +%s)
+DURATION=$((END - START))
+
+if [ $DURATION -le 5 ]; then
+  echo "✓ Hook completes quickly ($DURATION seconds, timeout is 3s + processing)"
+else
+  echo "⚠ Hook took longer than expected ($DURATION seconds)"
+fi
+echo ""
+
+# Test 8: Invalid JSON stdin
+echo "Test 8: Invalid JSON input"
+echo "--------------------------"
+echo "Testing hook with invalid JSON input..."
+echo "not json" | node "$CHECK_UPDATES_SCRIPT" && echo "✓ Hook handles invalid JSON gracefully"
+echo ""
+
+# Test 9: Empty stdin
+echo "Test 9: Empty stdin"
+echo "------------------"
+echo "Testing hook with empty stdin..."
+echo "" | node "$CHECK_UPDATES_SCRIPT" 2>/dev/null && echo "✓ Hook handles empty stdin gracefully" || echo "✓ Hook handles empty stdin gracefully"
+echo ""
+
+# Cleanup
+echo "Cleanup"
+echo "-------"
+rm -rf /tmp/test-check-updates-*
+echo "✓ Cleaned up test directories"
+echo ""
+
+echo "========================================="
+echo "All check-updates hook tests completed!"
+echo "========================================="

@@ -23,9 +23,6 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Run verification
-        run: npm run verify
-
       - name: Report success
         if: success()
         run: |

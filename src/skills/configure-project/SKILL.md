@@ -250,74 +250,230 @@ If CLAUDE.md already exists:
 
 ## C. Generate Project-Specific Skills
 
+**Reads:** Pattern selections from feature spec (`.5/CONFIGURE/feature.md`)
+
 **Creates:** SKILL.md files in `.claude/skills/{name}/SKILL.md`
 
-Each skill follows the standard frontmatter pattern and contains instructions derived from analyzing the actual project structure (reads existing files to derive patterns/templates).
+### Pattern-Based Skill Generation
 
-### Skill Detection by Project Type
+Skills are determined by what patterns exist in the codebase (detected during `/5:configure`) and what the user selected—NOT by project type.
 
-| Project Type | Skills |
-|---|---|
-| Next.js | create-page, create-api-route, create-component |
-| NestJS | create-module, create-service, create-controller |
-| Express | create-route, create-middleware, create-service |
-| React | create-component, create-hook, create-context |
-| Django | create-model, create-view, create-serializer |
-| Flask | create-blueprint, create-model |
-| Java (Gradle/Maven) | create-entity, create-service, create-controller, create-repository |
-| Rust | create-module |
-| Go | create-handler, create-service |
-| Rails | create-model, create-controller |
-| Generic | create-module |
+For EACH pattern selected by the user in the feature spec:
 
-### Skill Generation Process
+1. **Find examples** - Read 2-3 files from the pattern's location
+2. **Extract conventions:**
+   - File naming (PascalCase, kebab-case, suffix patterns)
+   - Directory structure (flat, nested, co-located tests)
+   - Import patterns (absolute, relative, aliases)
+   - Export patterns (default, named, barrel files)
+   - Common boilerplate (decorators, annotations, base classes)
+3. **Generate SKILL.md** with:
+   - Detected conventions as instructions
+   - Template derived from actual code
+   - Checklist based on common elements found
 
-For each skill to generate:
-1. Identify existing examples of that pattern in the codebase (e.g., find existing components for `create-component`)
-2. Read 1-2 examples to extract the project's conventions and structure
-3. Create a SKILL.md that instructs the agent to follow those conventions
-4. Each generated SKILL.md should include:
-   - Standard frontmatter (name, description, allowed-tools, model: sonnet, context: fork, user-invocable: false)
-   - What the skill creates
-   - File naming and location conventions (derived from existing code)
-   - Template/pattern to follow (derived from existing code)
-   - Checklist of what to include
+### Skill Template Structure
 
-### Example Generated Skill
+For each skill, create `.claude/skills/create-{pattern}/SKILL.md`:
 
 ```yaml
 ---
-name: create-component
-description: Creates a React component following project conventions.
+name: create-{pattern}
+description: Creates a {Pattern} following project conventions at {location}.
 allowed-tools: Read, Write, Glob, Grep
-model: sonnet
+model: haiku
 context: fork
-user-invocable: false
+user-invocable: true
 ---
 ```
 
 ```markdown
-# Create Component
+# Create {Pattern}
 
 ## What This Skill Creates
-A React component following this project's conventions.
+A {pattern} following this project's conventions.
 
-## Conventions (from project analysis)
-- Location: `src/components/{ComponentName}/`
-- Files: `index.tsx`, `{ComponentName}.tsx`, `{ComponentName}.test.tsx`
-- Style: CSS Modules at `{ComponentName}.module.css`
-- Exports: Named export from component file, re-exported from index
+## Detected Conventions
+- **Location:** {detected-location}
+- **Naming:** {detected-naming-pattern}
+- **Structure:** {detected-structure}
+- **Imports:** {detected-import-pattern}
 
 ## Template
-{Derived from existing components in the project}
+Based on {example-file}, new {patterns} should follow:
+
+\`\`\`{language}
+{template-derived-from-analysis}
+\`\`\`
 
 ## Checklist
-- [ ] Component file created
-- [ ] Props interface defined
-- [ ] Test file created
-- [ ] Index file with re-export
-- [ ] Follows naming conventions
+- [ ] File created at correct location
+- [ ] Naming convention followed
+- [ ] Required imports added
+- [ ] {pattern-specific-items}
 ```
+
+### Pattern to Skill Name Mapping
+
+| Detected Pattern | Skill Name |
+|------------------|------------|
+| **Core Architecture** | |
+| controller | create-controller |
+| service | create-service |
+| repository | create-repository |
+| model/entity | create-model |
+| handler | create-handler |
+| **Data Transfer** | |
+| dto | create-dto |
+| request | create-request |
+| response | create-response |
+| mapper | create-mapper |
+| validator | create-validator |
+| schema | create-schema |
+| **Frontend** | |
+| component | create-component |
+| hook | create-hook |
+| context | create-context |
+| store | create-store |
+| page | create-page |
+| layout | create-layout |
+| **API/Routes** | |
+| api-route | create-api-route |
+| middleware | create-middleware |
+| guard | create-guard |
+| interceptor | create-interceptor |
+| filter | create-filter |
+| **Testing** | |
+| test | create-test |
+| spec | create-spec |
+| fixture | create-fixture |
+| factory | create-factory |
+| mock | create-mock |
+| **Utilities** | |
+| util | create-util |
+| helper | create-helper |
+| constant | create-constant |
+| type | create-type |
+| config | create-config |
+| **Framework-Specific** | |
+| module | create-module |
+| pipe | create-pipe |
+| decorator | create-decorator |
+| blueprint | create-blueprint |
+| view | create-view |
+| serializer | create-serializer |
+| **Background/Async** | |
+| job | create-job |
+| worker | create-worker |
+| event | create-event |
+| listener | create-listener |
+| command | create-command |
+| **Database** | |
+| migration | create-migration |
+| seed | create-seed |
+| **Error Handling** | |
+| exception | create-exception |
+| error | create-error |
+
+### Why `user-invocable: true`
+
+Generated skills are user-invocable so users can invoke them directly:
+- `/create-controller UserController`
+- `/create-component Button`
+- `/create-service AuthService`
+
+This is more useful than internal-only skills.
+
+### Why `model: haiku`
+
+Pattern-following is simple once conventions are documented:
+- Faster and cheaper than sonnet
+- Deep analysis already happened during generation
+- The skill just needs to follow the documented template
+
+---
+
+## C2. Generate Command Skills (run-*)
+
+**Reads:** Command selections from feature spec (`.5/CONFIGURE/feature.md`)
+
+**Creates:** SKILL.md files in `.claude/skills/run-{command}/SKILL.md`
+
+### Command-Based Skill Generation
+
+For EACH command selected by the user in the feature spec:
+
+1. **Read the source** - Check package.json scripts, Makefile, etc.
+2. **Document the command:**
+   - Exact command syntax
+   - Available variants (e.g., test:unit, test:e2e)
+   - Common flags and options
+   - Expected output format
+3. **Generate SKILL.md** with:
+   - Command execution instructions
+   - Output parsing guidance
+   - Error handling patterns
+
+### Command Skill Template Structure
+
+For each skill, create `.claude/skills/run-{command}/SKILL.md`:
+
+```yaml
+---
+name: run-{command}
+description: Runs {command} for this project using {source}.
+allowed-tools: Bash
+model: haiku
+context: fork
+user-invocable: true
+---
+```
+
+```markdown
+# Run {Command}
+
+## What This Skill Does
+Executes the project's {command} command.
+
+## Command
+\`\`\`bash
+{exact-command}
+\`\`\`
+
+## Variants
+{if variants exist}
+- `{variant1}` - {description}
+- `{variant2}` - {description}
+
+## Common Options
+- `--watch` - Run in watch mode (if available)
+- `--coverage` - Generate coverage report (for tests)
+- `--fix` - Auto-fix issues (for lint/format)
+
+## Expected Output
+{describe what success/failure looks like}
+
+## Error Handling
+- If command fails, report the error output
+- Common issues: {list common problems and solutions}
+```
+
+### Command to Skill Name Mapping
+
+| Detected Command | Skill Name |
+|------------------|------------|
+| build | run-build |
+| test, spec | run-tests |
+| lint, eslint | run-lint |
+| format, prettier | run-format |
+| typecheck, tsc | run-typecheck |
+| dev, start | run-dev |
+| db:migrate, migrate | run-migrate |
+| db:seed, seed | run-seed |
+| docker:build | run-docker-build |
+| docker:up, compose up | run-docker-up |
+| clean | run-clean |
+| generate, codegen | run-generate |
 
 ---
 
@@ -336,7 +492,8 @@ Component B (Documentation): SUCCESS - Created 7 documentation files + index
   - .5/INTEGRATIONS.md (PostgreSQL, 2 APIs, GitHub Actions)
   - .5/CONCERNS.md (3 TODO items, 1 deprecated dependency)
   - CLAUDE.md (index with references)
-Component C (Skills): SUCCESS - Generated 3 skills (create-component, create-hook, create-context)
+Component C (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
+Component D (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
 ```
 
 Or on failure:
@@ -350,6 +507,8 @@ Component B (Documentation): FAILED - Unable to read template files
 
 - DO NOT overwrite existing user-written CLAUDE.md sections
 - DO NOT generate skills for patterns that don't exist in the project
+- DO NOT generate command skills for commands that don't exist in the project
 - DO NOT include `steps` in config.json
 - DO NOT hardcode conventions - always derive from actual project analysis
 - DO NOT generate empty or placeholder skill files
+- DO NOT assume command syntax - always read from actual config files (package.json, Makefile, etc.)

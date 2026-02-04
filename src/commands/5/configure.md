@@ -149,6 +149,129 @@ fi
 **1f. Scan existing skills:**
 - Check `.claude/skills/` for existing project-specific skills
 
+**1g. Detect codebase patterns** for potential skills:
+
+Use Glob to count files matching common architectural patterns:
+
+| Pattern | Glob Patterns                                                                 | Typical Location |
+|---------|-------------------------------------------------------------------------------|------------------|
+| **Core Architecture** |                                                                               | |
+| Controllers | `**/*Controller.{ts,js,java,py,rb}`, `**/controllers/**`                      | src/controllers/ |
+| Services | `**/*Service.{ts,js,java,py,rb}`, `**/services/**`                            | src/services/ |
+| Repositories | `**/*Repository.{ts,js,java,py}`, `**/repositories/**`                        | src/repositories/ |
+| Models/Entities | `**/*Model.{ts,js}`, `**/*Entity.java`, `**/models/**`                        | src/models/ |
+| Handlers | `**/*Handler.{ts,js,java,go}`, `**/handlers/**`                               | src/handlers/ |
+| **Data Transfer** |                                                                               | |
+| DTOs | `**/*Dto.{ts,js,java}`, `**/*DTO.{ts,js,java}`, `**/dto/**`                   | src/dto/ |
+| Requests | `**/*Request.{ts,js,java}`, `**/requests/**`                                  | src/requests/ |
+| Responses | `**/*Response.{ts,js,java}`, `**/responses/**`                                | src/responses/ |
+| Mappers | `**/*Mapper.{ts,js,java}`, `**/mappers/**`                                    | src/mappers/ |
+| Validators | `**/*Validator.{ts,js,java}`, `**/validators/**`                              | src/validators/ |
+| Schemas | `**/*Schema.{ts,js}`, `**/schemas/**`                                         | src/schemas/ |
+| **Frontend (React/Vue)** |                                                                               | |
+| Components | `**/components/**/*.{tsx,jsx,vue}`                                            | src/components/ |
+| Hooks | `**/hooks/**/*.{ts,js}`, `**/use*.{ts,js}`                                    | src/hooks/ |
+| Contexts | `**/contexts/**/*.{tsx,jsx}`, `**/*Context.{tsx,jsx}`                         | src/contexts/ |
+| Stores | `**/stores/**/*.{ts,js}`, `**/*Store.{ts,js}`                                 | src/stores/ |
+| Pages | `**/pages/**/*.{tsx,jsx}`, `**/app/**/page.{tsx,jsx}`                         | pages/, app/ |
+| Layouts | `**/layouts/**/*.{tsx,jsx,vue}`, `**/*Layout.{tsx,jsx}`                       | src/layouts/ |
+| **API/Routes** |                                                                               | |
+| API Routes | `**/api/**/*.{ts,js}`, `**/routes/**`                                         | src/api/, pages/api/ |
+| Middleware | `**/*Middleware.{ts,js,java}`, `**/middleware/**`                             | src/middleware/ |
+| Guards | `**/*.guard.{ts,js}`, `**/guards/**`                                          | src/guards/ |
+| Interceptors | `**/*.interceptor.{ts,js}`, `**/interceptors/**`                              | src/interceptors/ |
+| Filters | `**/*.filter.{ts,js}`, `**/*Filter.java`                                      | src/filters/ |
+| **Testing** |                                                                               | |
+| Tests | `**/*.test.{ts,js,tsx,jsx}`, `**/*.spec.{ts,js,tsx,jsx}`, `**/tests/**`       | src/, tests/ |
+| Specs | `**/*_spec.rb`, `**/spec/**/*.rb`, `**/*_test.go`, `**/test_*.py`             | spec/, tests/ |
+| Test Fixtures | `**/fixtures/**`,`**/testFixtures/**`, `**/__fixtures__/**`, `**/testdata/**` | fixtures/, testdata/ |
+| Factories | `**/*Factory.{ts,js,java,rb}`, `**/factories/**`                              | factories/ |
+| Mocks | `**/__mocks__/**`, `**/mocks/**`, `**/*Mock.{ts,js}`                          | __mocks__/, mocks/ |
+| **Utilities** |                                                                               | |
+| Utils | `**/utils/**/*.{ts,js,java,py}`, `**/*Utils.{ts,js,java}`                     | src/utils/ |
+| Helpers | `**/helpers/**/*.{ts,js,java,py,rb}`, `**/*Helper.{ts,js,java}`               | src/helpers/ |
+| Constants | `**/constants/**/*.{ts,js}`, `**/*Constants.{ts,js}`                          | src/constants/ |
+| Types/Interfaces | `**/types/**/*.{ts,js}`, `**/interfaces/**/*.{ts,java}`                       | src/types/ |
+| Config | `**/config/**/*.{ts,js,py}`, `**/*Config.{ts,js}`                             | src/config/ |
+| **Framework-Specific** |                                                                               | |
+| Modules (NestJS/Angular) | `**/*.module.{ts,js}`                                                         | src/modules/ |
+| Pipes (NestJS) | `**/*.pipe.{ts,js}`, `**/pipes/**`                                            | src/pipes/ |
+| Decorators | `**/decorators/**/*.{ts,js}`, `**/*.decorator.{ts,js}`                        | src/decorators/ |
+| Blueprints (Flask) | `**/blueprints/**/*.py`                                                       | blueprints/ |
+| Views (Django) | `**/views.py`, `**/views/**/*.py`                                             | app/views/ |
+| Serializers (Django) | `**/serializers.py`, `**/serializers/**/*.py`                                 | app/serializers/ |
+| **Background/Async** |                                                                               | |
+| Jobs | `**/jobs/**/*.{ts,js,rb}`, `**/*Job.{ts,js,rb}`                               | src/jobs/ |
+| Workers | `**/workers/**/*.{ts,js}`, `**/*Worker.{ts,js}`                               | src/workers/ |
+| Events | `**/events/**/*.{ts,js,java}`, `**/*Event.{ts,js,java}`                       | src/events/ |
+| Listeners | `**/listeners/**/*.{ts,js,java}`, `**/*Listener.{ts,js}`                      | src/listeners/ |
+| Commands (CLI) | `**/commands/**/*.{ts,js,java}`, `**/*Command.{ts,js}`                        | src/commands/ |
+| **Database** |                                                                               | |
+| Migrations | `**/migrations/**/*.{ts,js,sql,rb,py}`                                        | migrations/ |
+| Seeds | `**/seeds/**/*.{ts,js,rb}`, `**/seeders/**`                                   | seeds/ |
+| **Error Handling** |                                                                               | |
+| Exceptions | `**/exceptions/**/*.{ts,js,java}`, `**/*Exception.{ts,js,java}`               | src/exceptions/ |
+| Errors | `**/errors/**/*.{ts,js}`, `**/*Error.{ts,js}`                                 | src/errors/ |
+
+For each pattern found:
+- Count matching files
+- Identify primary location (most common directory)
+- Sample 1 file name to show convention
+
+**1h. Detect runnable commands** for potential command skills:
+
+Scan project configuration files for commands that can become skills:
+
+| Source | How to Detect | Example Commands |
+|--------|---------------|------------------|
+| package.json | Read `scripts` object | build, test, lint, format, dev, start, typecheck |
+| Makefile | Grep for targets (lines ending with `:`) | build, test, lint, clean, docker-build |
+| pyproject.toml | Read `[tool.poetry.scripts]` or `[project.scripts]` | test, lint, format, typecheck |
+| Cargo.toml | Check for `[[bin]]` sections, common cargo commands | build, test, clippy, fmt |
+| build.gradle | Grep for `task` definitions | build, test, lint, spotlessApply |
+| composer.json | Read `scripts` object | test, lint, format, analyse |
+| Rakefile | Grep for `task :name` patterns | test, lint, db:migrate, db:seed |
+
+**Common command categories to detect:**
+
+| Category | Common Names | Skill Name |
+|----------|--------------|------------|
+| **Build** | build, compile, bundle, pack | run-build |
+| **Test** | test, test:unit, test:integration, test:e2e, spec | run-tests |
+| **Lint** | lint, eslint, pylint, rubocop, clippy | run-lint |
+| **Format** | format, prettier, fmt, black, gofmt | run-format |
+| **Type Check** | typecheck, tsc, mypy, type-check | run-typecheck |
+| **Dev Server** | dev, start, serve, watch | run-dev |
+| **Database** | db:migrate, migrate, db:seed, seed, db:reset | run-db-migrate, run-db-seed |
+| **Docker** | docker:build, docker:up, docker:down, compose | run-docker |
+| **Deploy** | deploy, release, publish | run-deploy |
+| **Clean** | clean, reset, purge | run-clean |
+| **Generate** | generate, codegen, gen | run-generate |
+
+For each command found:
+- Record the exact command syntax
+- Identify any required environment or flags
+- Note if it has watch/CI variants
+
+Store results internally as:
+```json
+{
+  "detectedPatterns": {
+    "controller": { "count": 12, "location": "src/controllers/", "example": "UserController.ts" },
+    "service": { "count": 8, "location": "src/services/", "example": "AuthService.ts" },
+    "component": { "count": 25, "location": "src/components/", "example": "Button.tsx" }
+  },
+  "detectedCommands": {
+    "build": { "source": "package.json", "command": "npm run build", "variants": ["build:prod", "build:dev"] },
+    "test": { "source": "package.json", "command": "npm test", "variants": ["test:unit", "test:e2e"] },
+    "lint": { "source": "package.json", "command": "npm run lint", "variants": ["lint:fix"] },
+    "format": { "source": "package.json", "command": "npm run format", "variants": [] }
+  }
+}
+```
+
+Only include patterns/commands that are actually detected.
+
 ### Step 2: Gather User Preferences (interactive via AskUserQuestion)
 
 **2a. If config exists:**
@@ -201,10 +324,46 @@ fi
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
-**2h. Confirm project-specific skills:**
-- Present proposed skills based on detected project type (see skill table in configure-project/SKILL.md)
-- "These project-specific skills were detected for your {project-type} project: {skill-list}. Confirm or customize?"
-  - Options: "Use these (recommended)", "Customize", "Skip skill generation"
+**2h. Review detected patterns for skill generation:**
+
+Present ONLY patterns that were actually detected in steps 1g and 1h.
+
+**Part 1: Architectural patterns (create-* skills)**
+
+"I analyzed your codebase and found these architectural patterns:
+
+| Pattern | Files Found | Location | Example |
+|---------|-------------|----------|---------|
+| Controller | 12 files | src/controllers/ | UserController.ts |
+| Service | 8 files | src/services/ | AuthService.ts |
+| Component | 25 files | src/components/ | Button.tsx |
+
+Which patterns would you like `create-*` skills generated for?"
+
+- Options: Multi-select checkboxes for each detected pattern (use AskUserQuestion with multiSelect: true)
+- Include descriptions like: "Controller (12 files) - Generate `create-controller` skill"
+- Plus "Other" option for patterns not detected but desired
+
+**Part 2: Command skills (run-* skills)**
+
+"I also found these runnable commands:
+
+| Command | Source | Full Command | Variants |
+|---------|--------|--------------|----------|
+| build | package.json | npm run build | build:prod, build:dev |
+| test | package.json | npm test | test:unit, test:e2e |
+| lint | package.json | npm run lint | lint:fix |
+| format | Makefile | make format | - |
+
+Which commands would you like `run-*` skills generated for?"
+
+- Options: Multi-select checkboxes for each detected command
+- Include descriptions like: "test - Generate `run-tests` skill"
+- Plus "Other" option for commands not detected
+
+If no patterns/commands detected:
+- Inform user: "No common patterns detected. Would you like to specify patterns manually?"
+- Allow manual entry of pattern names/locations or command names
 
 ### Step 3: Create Feature Spec
 
@@ -260,17 +419,58 @@ Analyze the codebase and generate modular documentation:
 - If CLAUDE.md already exists, preserve user-written custom sections
 
 ### Requirement 3: Generate Project-Specific Skills
-Generate the following skills in `.claude/skills/`:
-{List of confirmed skills, e.g.:}
-- create-component: Creates a React component following project conventions
-- create-hook: Creates a custom React hook following project conventions
-- create-context: Creates a React context provider following project conventions
 
-Each skill should:
+#### 3a. Create-* Skills (Architectural Patterns)
+
+Generate skills based on detected file patterns:
+
+| Pattern | Files | Location | Skill Name | Generate |
+|---------|-------|----------|------------|----------|
+| Controller | {count} | {location} | create-controller | ✓ |
+| Service | {count} | {location} | create-service | ✓ |
+| Component | {count} | {location} | create-component | ✓ |
+| {pattern} | {count} | {location} | create-{pattern} | ✗ (user skipped) |
+
+{Include only patterns where user selected "Generate = ✓"}
+
+For each selected pattern skill:
+1. Analyze 2-3 existing files from the pattern location
+2. Extract naming conventions, file structure, imports
+3. Generate SKILL.md with project-specific template
+
+Each create-* skill should:
 - Follow standard SKILL.md frontmatter pattern
+- Set `user-invocable: true` so users can invoke directly (e.g., `/create-controller UserController`)
+- Set `model: haiku` for fast, cheap pattern-following
 - Derive patterns from existing code in the project
 - Include file naming and location conventions
 - Include template/pattern based on existing examples
+
+#### 3b. Run-* Skills (Command Skills)
+
+Generate skills based on detected commands:
+
+| Command | Source | Full Command | Skill Name | Generate |
+|---------|--------|--------------|------------|----------|
+| build | {source} | {command} | run-build | ✓ |
+| test | {source} | {command} | run-tests | ✓ |
+| lint | {source} | {command} | run-lint | ✓ |
+| {command} | {source} | {full-command} | run-{command} | ✗ (user skipped) |
+
+{Include only commands where user selected "Generate = ✓"}
+
+For each selected command skill:
+1. Document the exact command and any variants
+2. Include common flags and options
+3. Document expected output and error handling
+
+Each run-* skill should:
+- Follow standard SKILL.md frontmatter pattern
+- Set `user-invocable: true` so users can invoke directly (e.g., `/run-tests`, `/run-lint`)
+- Set `model: haiku` for simple command execution
+- Include the exact command syntax
+- Document any environment requirements
+- Include common options/flags
 
 ## Acceptance Criteria
 - [ ] `.claude/.5/config.json` exists with correct values (no `steps` array)
@@ -339,8 +539,27 @@ User: "Yes"
 Claude: "Generate CLAUDE.md with codebase analysis?"
 User: "Yes"
 
-Claude: "Proposed skills for Next.js: create-page, create-api-route, create-component. Confirm?"
-User: "Use these"
+Claude: "I analyzed your codebase and found these patterns:
+| Pattern | Files | Location | Example |
+|---------|-------|----------|---------|
+| Component | 25 files | src/components/ | Button.tsx |
+| Hook | 8 files | src/hooks/ | useAuth.ts |
+| API Route | 12 files | pages/api/ | users.ts |
+| Page | 15 files | pages/ | index.tsx |
+
+Which patterns would you like `create-*` skills generated for?"
+User: [Selects Component, Hook, API Route]
+
+Claude: "I also found these runnable commands:
+| Command | Source | Full Command |
+|---------|--------|--------------|
+| build | package.json | npm run build |
+| test | package.json | npm test |
+| lint | package.json | npm run lint |
+| typecheck | package.json | npm run typecheck |
+
+Which commands would you like `run-*` skills generated for?"
+User: [Selects test, lint]
 
 Claude: [Writes .5/CONFIGURE/feature.md]
 Claude: "Configuration feature planned at `.5/CONFIGURE/feature.md`"

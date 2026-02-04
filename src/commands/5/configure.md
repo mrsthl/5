@@ -491,13 +491,13 @@ Each run-* skill should:
 - [ ] If CLAUDE.md existed before, user-written sections are preserved
 ```
 
-**Important:** Use `mkdir -p .5/CONFIGURE` before writing the feature spec.
+**Important:** Use `mkdir -p .5/features/CONFIGURE` before writing the feature spec.
 
 ### Step 4: Guide User to Next Phase
 
 Tell the user:
 
-1. "Configuration feature planned at `.5/CONFIGURE/feature.md`"
+1. "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
 2. "Next steps:"
    - "Run `/clear` to reset context"
    - "Then run `/5:plan-implementation CONFIGURE`"
@@ -561,8 +561,8 @@ Claude: "I also found these runnable commands:
 Which commands would you like `run-*` skills generated for?"
 User: [Selects test, lint]
 
-Claude: [Writes .5/CONFIGURE/feature.md]
-Claude: "Configuration feature planned at `.5/CONFIGURE/feature.md`"
+Claude: [Writes .5/features/CONFIGURE/feature.md]
+Claude: "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
 Claude: "Next: Run `/clear` followed by `/5:plan-implementation CONFIGURE`"
 ```
 

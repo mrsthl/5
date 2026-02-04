@@ -27,7 +27,7 @@ Both tools produce the same structured output format, so all downstream steps (p
 6. Reports results
 
 **Workflow B: File-Based Annotation** (user preference)
-1. Runs review and saves findings to `.5/{feature-name}/review-{timestamp}-findings.md`
+1. Runs review and saves findings to `.5/features/{feature-name}/review-{timestamp}-findings.md`
 2. User edits the file to mark which findings to fix ([FIX], [SKIP], [MANUAL])
 3. User runs `/review-code apply` to read annotations and apply marked fixes
 
@@ -395,13 +395,13 @@ The template contains placeholders for:
 When user selects "Save to file", create a structured findings file that allows user annotation.
 
 **Determine feature name:**
-- Check most recent state file in `.5/*/state.json` to find current feature
+- Check most recent state file in `.5/features/*/state.json` to find current feature
 - Or ask user which feature they're reviewing
 - Use feature name for organizing review files
 
 **Create directory if needed:**
 ```bash
-mkdir -p .5/{feature-name}
+mkdir -p .5/features/{feature-name}
 ```
 
 **Generate timestamp:**
@@ -412,7 +412,7 @@ Example: 20260128-103045
 
 **File path:**
 ```
-.5/{feature-name}/review-{timestamp}-findings.md
+.5/features/{feature-name}/review-{timestamp}-findings.md
 ```
 
 **File format:**
@@ -433,7 +433,7 @@ The template contains:
 - **Next Steps:** Instructions to edit and run `/review-code apply`
 
 **After saving file:**
-- Inform user: "Findings saved to .5/{feature-name}/review-{timestamp}-findings.md"
+- Inform user: "Findings saved to .5/features/{feature-name}/review-{timestamp}-findings.md"
 - Provide instructions: "Edit the file to mark findings, then run: /review-code apply"
 - Skip remaining steps (don't apply fixes interactively)
 
@@ -442,13 +442,13 @@ The template contains:
 When user runs `/review-code apply`, read the most recent findings file and apply marked fixes.
 
 **Determine feature name:**
-- Check most recent state file in `.5/*/state.json` to find current feature
+- Check most recent state file in `.5/features/*/state.json` to find current feature
 - Or ask user which feature they're reviewing
 
 **Find the most recent findings file:**
 ```bash
 # Find most recent review findings file in the feature folder
-ls -t .5/{feature-name}/review-*-findings.md | head -1
+ls -t .5/features/{feature-name}/review-*-findings.md | head -1
 ```
 
 **If no findings file exists:**
@@ -528,7 +528,7 @@ After applying fixes from an annotated file, update the findings file with resul
 
 For interactive mode only, save the review summary to:
 ```
-.5/{feature-name}/review-{timestamp}.md
+.5/features/{feature-name}/review-{timestamp}.md
 ```
 
 ## Error Handling
@@ -614,7 +614,7 @@ Action: Please review the suggested fix manually.
 
 ## Configuration
 
-**Directory:** `.5/{feature-name}/` (organized by feature)
+**Directory:** `.5/features/{feature-name}/` (organized by feature)
 
 **File Types:**
 - `review-{timestamp}-findings.md` - Annotatable findings (file-based mode)
@@ -623,7 +623,7 @@ Action: Please review the suggested fix manually.
 **Timestamp Format:** Custom format `YYYYMMDD-HHmmss` (e.g., `20260128-103045`)
 
 **Feature Detection:** Review files are organized by feature. The command will:
-- Check most recent state file in `.5/*/state.json` to find current feature
+- Check most recent state file in `.5/features/*/state.json` to find current feature
 - Or ask user which feature they're reviewing if unclear
 
 ## Related Documentation

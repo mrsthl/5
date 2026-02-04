@@ -88,7 +88,7 @@ feature_name="${TICKET_ID}-${slug}"
 
 ### Step 5: Create Plan
 
-Write plan to `.5/${feature_name}/plan.md` using the template structure.
+Write plan to `.5/features/${feature_name}/plan.md` using the template structure.
 
 **Template Reference:** Use the structure from `.claude/templates/workflow/QUICK-PLAN.md`
 
@@ -130,7 +130,7 @@ Use AskUserQuestion:
 
 **CRITICAL**: You MUST create the state file before starting implementation. This enables resumability if work is interrupted.
 
-Create state file at `.5/${feature_name}/state.json` using Write tool:
+Create state file at `.5/features/${feature_name}/state.json` using Write tool:
 
 ```json
 {
@@ -283,7 +283,7 @@ Components created/modified:
 Build: Success
 Tests: {Success | Skipped}
 
-State: .5/${feature_name}/state.json
+State: .5/features/${feature_name}/state.json
 
 Next steps:
 1. Review and commit changes

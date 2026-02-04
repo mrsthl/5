@@ -26,11 +26,11 @@ If verification finds gaps, it generates a fix plan and offers to apply fixes au
 Read all workflow artifacts for the feature:
 
 **Required:**
-- `.5/{feature-name}/plan.md` — implementation plan (Phase 2)
-- `.5/{feature-name}/state.json` — implementation state (Phase 3)
+- `.5/features/{feature-name}/plan.md` — implementation plan (Phase 2)
+- `.5/features/{feature-name}/state.json` — implementation state (Phase 3)
 
 **Optional:**
-- `.5/{feature-name}/feature.md` — feature spec (Phase 1)
+- `.5/features/{feature-name}/feature.md` — feature spec (Phase 1)
 
 **If `plan.md` or `state.json` is missing:** hard stop.
 ```
@@ -198,7 +198,7 @@ Evaluate all three layers:
 
 ### Step 6: Generate Verification Report
 
-Write `.5/{feature-name}/verification.md` using the template structure from `.claude/templates/workflow/VERIFICATION-REPORT.md`.
+Write `.5/features/{feature-name}/verification.md` using the template structure from `.claude/templates/workflow/VERIFICATION-REPORT.md`.
 
 The report covers:
 - **Header:** ticket, feature, status, timestamp
@@ -209,7 +209,7 @@ The report covers:
 
 ### Step 7: Update State
 
-Update `.5/{feature-name}/state.json`:
+Update `.5/features/{feature-name}/state.json`:
 ```json
 {
   "verificationStatus": "passed | partial | failed",
@@ -264,7 +264,7 @@ Continue to Step 9.
 
 ### Step 9: Generate Fix Plan (PARTIAL or FAILED only)
 
-Write `.5/{feature-name}/fix-plan.md` using the template structure from `.claude/templates/workflow/FIX-PLAN.md`.
+Write `.5/features/{feature-name}/fix-plan.md` using the template structure from `.claude/templates/workflow/FIX-PLAN.md`.
 
 Build fix entries from verification results:
 

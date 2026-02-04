@@ -2,14 +2,81 @@
 
 ## v1.2.2
 
-**Release Date:** February 4, 2026
+**Release Date:** TBD
 
-### Improvements
+### Breaking Changes
 
-**Configure Step Enhancement**
-- Added automatic detection of installed skills during `/5:configure`
-- Configure now scans for available skills and displays them to the user
-- Helps users understand which skills are available for their workflow
+**Feature Folder Organization**
+
+Feature-specific folders now nest under `.5/features/` for better organization and simpler gitignore patterns.
+
+**Structure Change:**
+```
+Before:
+.5/
+├── PROJ-1234-feature/     ← Feature folders at root
+├── ARCHITECTURE.md         ← Mixed with features
+└── version.json
+
+After:
+.5/
+├── features/               ← NEW container directory
+│   └── PROJ-1234-feature/
+├── ARCHITECTURE.md         ← Global docs stay at root
+└── version.json
+```
+
+**Migration Instructions:**
+
+Users with NO in-progress features:
+- Simply upgrade: `npx 5-phase-workflow --upgrade`
+- New features automatically use new structure
+
+Users with in-progress features:
+1. Upgrade: `npx 5-phase-workflow --upgrade`
+2. Migrate existing features:
+   ```bash
+   mkdir -p .claude/.5/features
+   mv .claude/.5/{TICKET-ID}-* .claude/.5/features/ 2>/dev/null || true
+   mv .claude/.5/CONFIGURE .claude/.5/features/ 2>/dev/null || true
+   ```
+3. Continue work normally
+
+**Benefits:**
+- Simpler gitignore: Just `.5/features/` instead of complex patterns with exceptions
+- Clearer organization: Features separated from global docs
+- Easier to understand: New users can see structure at a glance
+
+**Read-Only Sub-Agent Architecture for Planning Commands**
+
+Refactored `plan-feature` and `plan-implementation` commands to prevent agents from "breaking out" and starting implementation prematurely.
+
+**Changes to `/5:plan-feature`:**
+- Main agent no longer has direct codebase read access (removed `Read`, `Glob`, `Grep`)
+- All codebase exploration delegated to read-only Explore sub-agent
+- Sub-agent returns structured report; main agent uses it for informed Q&A
+- Added optional targeted re-exploration during Q&A when user mentions new components
+- Main agent can only: ask questions, spawn Explore agents, write `feature.md`
+
+**Changes to `/5:plan-implementation`:**
+- Main agent can only read `.5/{feature-name}/feature.md` directly
+- All source code exploration delegated to read-only Explore sub-agent
+- Added optional targeted re-exploration during Q&A for specific patterns
+- Main agent can only write `.5/{feature-name}/plan.md` - no other files
+- Clear boundaries prevent premature code writing
+
+**New Flow:**
+```
+plan-feature:       Ask → Explore-Agent → Q&A (+ re-explore) → Write feature.md
+plan-implementation: Read feature.md → Explore-Agent → Q&A (+ re-explore) → Write plan.md
+```
+
+### Benefits
+
+- **Prevents Scope Creep**: Agents physically cannot read/write beyond their boundaries
+- **Structured Information Flow**: Codebase knowledge comes only through sub-agent reports
+- **Flexible Re-Exploration**: Can gather additional context when user mentions new components
+- **Consistent Architecture**: Both planning commands follow the same pattern
 
 ---
 

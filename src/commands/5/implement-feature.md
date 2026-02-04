@@ -27,7 +27,7 @@ Do NOT write code directly. Spawn agents to do the work.
 
 ### Step 1: Load Plan
 
-Read `.5/{feature-name}/plan.md` (where `{feature-name}` is the argument provided).
+Read `.5/features/{feature-name}/plan.md` (where `{feature-name}` is the argument provided).
 
 Parse:
 - YAML frontmatter for ticket and feature name
@@ -39,7 +39,7 @@ If the plan doesn't exist, tell the user to run `/5:plan-implementation` first.
 
 ### Step 2: Initialize State
 
-Create `.5/{feature-name}/state.json`:
+Create `.5/features/{feature-name}/state.json`:
 
 ```json
 {

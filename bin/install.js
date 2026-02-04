@@ -467,6 +467,13 @@ function initializeConfig(targetPath) {
     fs.mkdirSync(configDir, { recursive: true });
   }
 
+  // Create features subdirectory
+  const featuresDir = path.join(configDir, 'features');
+  if (!fs.existsSync(featuresDir)) {
+    fs.mkdirSync(featuresDir, { recursive: true });
+    log.success('Created .5/features/ directory');
+  }
+
   const projectType = detectProjectType();
   const config = getDefaultConfig(projectType);
 
@@ -630,6 +637,14 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
     fs.mkdirSync(configDir, { recursive: true });
   }
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+
+  // Create features directory if it doesn't exist
+  const featuresDir = path.join(configDir, 'features');
+  if (!fs.existsSync(featuresDir)) {
+    fs.mkdirSync(featuresDir, { recursive: true });
+    log.info('📁 Feature folders now nest under .5/features/');
+    log.info('📋 See RELEASE_NOTES.md for migration if you have in-progress features');
+  }
 
   log.header('Update Complete!');
   log.success(`Now running version ${versionInfo.available}`);

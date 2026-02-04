@@ -231,7 +231,7 @@ Based on the feature description and discussion:
 
 ### Step 6: Create Feature Specification
 
-Write a comprehensive feature spec to `.5/{TICKET-ID}-{description}/feature.md` using the Write tool.
+Write a comprehensive feature spec to `.5/features/{TICKET-ID}-{description}/feature.md` using the Write tool.
 
 **THIS IS YOUR FINAL OUTPUT. After creating this file, proceed immediately to Step 7.**
 
@@ -262,7 +262,7 @@ Follow these steps **IN ORDER** and **STOP after step 8**:
    - **4b. Re-explore as needed** - If user mentions unknown components during Q&A, spawn targeted Explore agents
 5. **Challenge assumptions** - Present alternatives, question complexity
 6. **Determine feature name** - Create short kebab-case description
-7. **Create feature specification** in `.5/{TICKET-ID}-{description}/feature.md` using Write tool
+7. **Create feature specification** in `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool
 8. **Inform the developer** to review the spec, run `/clear` to reset context, and then run `/5:plan-implementation {TICKET-ID}-{description}`
 
 **🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT PROCEED TO IMPLEMENTATION.**
@@ -313,8 +313,8 @@ Follow these steps **IN ORDER** and **STOP after step 8**:
 11. Main agent continues Q&A with better context about notifications
 12. Main agent challenges: "The sub-agent found existing ScheduleService - could we reuse it instead of creating new scheduling infrastructure?"
 13. Main agent determines: Feature name `add-emergency-schedule`
-14. Main agent creates: `.5/PROJ-1234-add-emergency-schedule/feature.md` using Write tool
-15. Main agent tells user: "✅ Feature spec created at `.5/PROJ-1234-add-emergency-schedule/feature.md`
+14. Main agent creates: `.5/features/PROJ-1234-add-emergency-schedule/feature.md` using Write tool
+15. Main agent tells user: "✅ Feature spec created at `.5/features/PROJ-1234-add-emergency-schedule/feature.md`
 
     **Next steps:**
     1. Review the feature spec

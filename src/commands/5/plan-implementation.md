@@ -42,7 +42,7 @@ After creating the plan, tell the user to run `/5:implement-feature`.
 
 ### Step 1: Load Feature Spec
 
-Read `.5/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
+Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
 
 **This is the ONLY file you may read directly.**
 
@@ -142,7 +142,7 @@ Not every feature needs all steps. Use what makes sense.
 
 ### Step 5: Write the Plan
 
-Create a single file at `.5/{feature-name}/plan.md`:
+Create a single file at `.5/features/{feature-name}/plan.md`:
 
 **THIS IS THE ONLY FILE YOU MAY WRITE.**
 
@@ -205,7 +205,7 @@ created: {ISO-timestamp}
 
 Tell the user:
 ```
-Plan created at `.5/{feature-name}/plan.md`
+Plan created at `.5/features/{feature-name}/plan.md`
 
 {N} components across {M} steps.
 
@@ -219,14 +219,14 @@ Review the plan, then:
 ## Example Workflow
 
 1. User runs: `/5:plan-implementation PROJ-1234-add-emergency-schedule`
-2. Main agent reads: `.5/PROJ-1234-add-emergency-schedule/feature.md`
+2. Main agent reads: `.5/features/PROJ-1234-add-emergency-schedule/feature.md`
 3. **Main agent spawns Explore sub-agent** for codebase scan
 4. **Sub-agent returns:** Project uses src/{models,services,controllers}, services follow UserService.ts pattern...
 5. Main agent asks: "Should the schedule validation be in the service or a separate validator?"
 6. User: "In the service, like we do in OrderService"
 7. **Main agent spawns targeted Re-Explore** for OrderService pattern
 8. Main agent asks one more question about testing approach
-9. Main agent creates: `.5/PROJ-1234-add-emergency-schedule/plan.md`
+9. Main agent creates: `.5/features/PROJ-1234-add-emergency-schedule/plan.md`
 10. Main agent tells user the plan is ready and to run `/5:implement-feature`
 
 **🛑 COMMAND COMPLETE.**

@@ -62,7 +62,7 @@ It handles three distinct tasks, invoked with different parameters per component
 ```
 
 **Process:**
-1. Read all values from the feature spec (`.5/CONFIGURE/feature.md`)
+1. Read all values from the feature spec (`.5/features/CONFIGURE/feature.md`)
 2. Ensure `.claude/.5/` directory exists (create with `mkdir -p` if needed)
 3. Write `config.json` with pretty-printed JSON
 4. Read back to verify correctness

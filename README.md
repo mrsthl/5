@@ -178,10 +178,10 @@ Claude maps your feature to technical components:
 - Maps components to implementation steps
 - Creates dependency graph
 
-The output is an **atomic plan structure** at `.5/{ticket-id}/plan/`:
-- `meta.md` - Feature metadata and risks
-- `step-1.md`, `step-2.md`, ... - Per-step components with pre-built prompts (YAML format)
-- `verification.md` - Build/test configuration
+The output is an **atomic plan structure** at `.5/features/{ticket-id}/`:
+- `feature.md` - Feature specification (Phase 1)
+- `plan.md` - Implementation plan (Phase 2)
+- `state.json` - Implementation state tracking (Phase 3)
 
 Each step file is self-contained and independently loadable, making large plans manageable and improving agent efficiency.
 

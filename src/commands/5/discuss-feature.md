@@ -76,7 +76,7 @@ Before invoking this skill, ensure:
 ### Step 1: Extract Feature Name
 
 If user provides only ticket ID (e.g., "PROJ-1234"), find the feature file:
-- Use Glob: `.5/{TICKET-ID}-*-*/feature.md` (pattern from config)
+- Use Glob: `.5/features/{TICKET-ID}-*/feature.md` (pattern from config)
 - Match the ticket ID
 - If multiple matches, ask user to specify
 - If no match found, inform user and suggest running `/plan-feature` first
@@ -85,7 +85,7 @@ If user provides full feature name (e.g., "PROJ-1234-add-feature"), use directly
 
 ### Step 2: Read Feature Specification
 
-Read the feature spec from `.5/{feature-name}/feature.md`.
+Read the feature spec from `.5/features/{feature-name}/feature.md`.
 
 Extract current state:
 - Ticket ID
@@ -184,7 +184,7 @@ Allow multiple rounds of discussion until user is satisfied.
 
 ### Step 7: Update Feature Specification
 
-When user indicates they're done discussing, update `.5/{feature-name}/feature.md`:
+When user indicates they're done discussing, update `.5/features/{feature-name}/feature.md`:
 
 **Update these sections based on discussion:**
 
@@ -219,7 +219,7 @@ When user indicates they're done discussing, update `.5/{feature-name}/feature.m
 
 After updating the spec, tell the developer:
 
-1. "Feature specification updated at `.5/{feature-name}/feature.md`"
+1. "Feature specification updated at `.5/features/{feature-name}/feature.md`"
 2. Summarize key changes:
    - "Added: {X}"
    - "Modified: {Y}"
@@ -234,7 +234,7 @@ After updating the spec, tell the developer:
 Follow these steps **IN ORDER** and **STOP after step 9**:
 
 1. **Extract feature name** - From user input or by matching ticket ID
-2. **Read feature spec** - Load current state from `.5/{feature-name}/feature.md`
+2. **Read feature spec** - Load current state from `.5/features/{feature-name}/feature.md`
 3. **Ask initial question** - What do they want to discuss?
 4. **Explore if needed** - Understand codebase context
 5. **Interactive Q&A** - Multiple rounds of clarifying questions

@@ -110,7 +110,7 @@ Commands used to call skills directly, consuming main context for heavy operatio
 |                                                                   |
 | Developer: /plan-feature                                         |
 | Claude: Asks 6-10 questions, challenges assumptions              |
-| Output: .5/{TICKET-ID}-{description}/feature.md                  |
+| Output: .5/features/{TICKET-ID}-{description}/feature.md                  |
 | Developer: Reviews and approves spec                              |
 +-----------------------------+-------------------------------------+
                               |
@@ -196,7 +196,7 @@ Understand requirements, challenge assumptions, and create a comprehensive featu
 
 5. **Feature Spec Creation**: Claude writes structured spec to:
    ```
-   .5/{TICKET-ID}-{description}/feature.md
+   .5/features/{TICKET-ID}-{description}/feature.md
    ```
 
 ### Your Role
@@ -258,7 +258,7 @@ Map feature requirements to technical components, skills, and dependency steps.
 
 6. **Implementation Plan Creation**: Claude writes an **atomic plan structure** to:
    ```
-   .5/{TICKET-ID}-{description}/plan/
+   .5/features/{TICKET-ID}-{description}/plan/
    ├── meta.md              # Feature metadata and risks
    ├── step-1.md            # Step 1 components (YAML format)
    ├── step-2.md            # Step 2 components
@@ -315,7 +315,7 @@ Execute the implementation plan with state tracking, using agents in forked cont
 
 2. **Initialize State File**: Creates tracking file
    ```
-   .5/{TICKET-ID}-{description}/state.json
+   .5/features/{TICKET-ID}-{description}/state.json
    ```
 
 3. **Create Task List**: One item per step (default 3 steps, configurable)
@@ -380,7 +380,7 @@ Tracks progress in JSON format:
 
 ### Output Files
 
-- **State file**: `.5/{ticket}/state.json`
+- **State file**: `.5/features/{ticket}/state.json`
 - **All created files**: As specified in implementation plan
 
 ### Next Steps
@@ -420,7 +420,7 @@ Systematically verify that the implementation is complete, correct, and ready fo
 4. **Process Results**: Command receives structured verification data
 
 5. **Save Report**: Writes verification report to:
-   `.5/{ticket}/verification.md`
+   `.5/features/{ticket}/verification.md`
 
 6. **Update State File**: Marks verification status
 
@@ -497,7 +497,7 @@ Use automated code review to catch quality issues, apply auto-fixes, and ensure 
 
 8. **Verify**: Compile and test after applying fixes
 
-9. **Save Report**: Store review summary in `.5/{feature-name}/`
+9. **Save Report**: Store review summary in `.5/features/{feature-name}/`
 
 ### Your Role
 
@@ -750,7 +750,7 @@ Tests: All passing
 2. **Use git branches**: Create feature branch before starting
 3. **Commit often**: Commit after Phase 3 completes successfully
 4. **Run verification manually**: Re-run /verify-implementation after fixes
-5. **Review state files**: Check `.5/{feature-name}/state.json` for progress tracking
+5. **Review state files**: Check `.5/features/{feature-name}/state.json` for progress tracking
 6. **Save verification reports**: Keep reports for documentation/debugging
 
 ---
@@ -798,7 +798,7 @@ Tests: All passing
 **Symptom**: JSON parse error when reading state file
 
 **Solution**:
-1. Open `.5/{ticket}/state.json`
+1. Open `.5/features/{ticket}/state.json`
 2. Fix JSON syntax error
 3. Or delete and re-run /implement-feature (will restart from beginning)
 
@@ -835,7 +835,7 @@ Tests: All passing
 ### Resuming Interrupted Implementation
 
 If implementation was interrupted:
-1. Check state file: `.5/{ticket}/state.json`
+1. Check state file: `.5/features/{ticket}/state.json`
 2. Note `currentStep` value
 3. Re-run `/implement-feature {ticket}`
 4. Claude will resume from `currentStep`
@@ -930,11 +930,11 @@ If working on multiple features:
 
 | File | Purpose | Committed? |
 |------|---------|------------|
-| `.5/{ticket}/feature.md` | Feature spec | Yes (after approval) |
-| `.5/{ticket}/plan/` | Atomic implementation plan (meta.md, step-N.md, verification.md) | Yes (after approval) |
-| `.5/{ticket}/state.json` | Progress tracking | No (gitignored) |
-| `.5/{ticket}/verification.md` | Verification report | No (gitignored) |
-| `.5/{ticket}/review-{timestamp}.md` | CodeRabbit review report | No (gitignored) |
+| `.5/features/{ticket}/feature.md` | Feature spec | Yes (after approval) |
+| `.5/features/{ticket}/plan/` | Atomic implementation plan (meta.md, step-N.md, verification.md) | Yes (after approval) |
+| `.5/features/{ticket}/state.json` | Progress tracking | No (gitignored) |
+| `.5/features/{ticket}/verification.md` | Verification report | No (gitignored) |
+| `.5/features/{ticket}/review-{timestamp}.md` | CodeRabbit review report | No (gitignored) |
 
 ### State File Status Values
 

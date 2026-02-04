@@ -94,19 +94,19 @@ bin/
 1. **Feature Planning** (`/5:plan-feature`)
    - Intensive Q&A (5-10 questions) to understand requirements
    - Challenges assumptions, explores edge cases
-   - Creates feature spec at `.5/{ticket-id}/feature.md`
+   - Creates feature spec at `.5/features/{ticket-id}/feature.md`
 
 2. **Implementation Planning** (`/5:plan-implementation`)
    - Quick codebase scan to understand structure
    - Asks 2-3 technical questions
-   - Creates simple plan at `.5/{ticket-id}/plan.md`
+   - Creates simple plan at `.5/features/{ticket-id}/plan.md`
    - Plan describes WHAT to build, not complete code
 
 3. **Orchestrated Implementation** (`/5:implement-feature`)
    - Reads plan.md
    - Spawns agents for each step (instructions embedded inline)
    - Agents explore codebase to find patterns
-   - State tracked in `.5/{ticket-id}/state.json`
+   - State tracked in `.5/features/{ticket-id}/state.json`
 
 4. **Verify Implementation** (`/5:verify-implementation`)
    - Checks files exist
@@ -159,7 +159,7 @@ Add emergency schedule tracking.
 
 #### State Tracking
 
-Simple state file (`.5/{feature-name}/state.json`):
+Simple state file (`.5/features/{feature-name}/state.json`):
 
 ```json
 {

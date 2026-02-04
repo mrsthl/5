@@ -203,7 +203,24 @@ Plan structure determines parallelization:
 - Group independent components in the same step → parallel
 - Separate dependent components into different steps → sequential
 
-## Installation Process (bin/install.js)
+## Installation and Configuration
+
+### Required First Step: Configure
+
+After installing the workflow with `node bin/install.js` or `npx 5-phase-workflow`, you **must** run the configure command:
+
+```bash
+/5:configure
+```
+
+**What configure does:**
+1. Analyzes project (detects type, build commands, tools)
+2. Gathers user preferences (ticket patterns, branch conventions, review tool)
+3. Creates feature spec at `.5/features/CONFIGURE/feature.md`
+4. User runs standard workflow: plan-implementation → implement → verify
+5. Results in: config.json, CLAUDE.md, project-specific skills
+
+### Installation Process (bin/install.js)
 
 The installer:
 
@@ -211,8 +228,7 @@ The installer:
 2. **Detects Project Type**: Examines package.json, pom.xml, Cargo.toml, etc.
 3. **Copies Directories**: Commands, agents, skills, hooks, templates → target `.claude/`
 4. **Merges settings.json**: Preserves user settings
-5. **Creates config.json**: At `.claude/.5/config.json` with detected build/test commands
-6. **Tracks Version**: In `.5/version.json`
+5. **Tracks Version**: In `.5/version.json`
 
 **Selective Updates:** Only workflow-managed files are updated. User-created content is preserved.
 

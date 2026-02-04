@@ -48,6 +48,47 @@ For small, well-understood tasks (1-5 files). Uses same state tracking and skill
 
 ---
 
+## Getting Started
+
+### Installation
+
+```bash
+npx 5-phase-workflow
+```
+
+The installer copies workflow files to `.claude/` directory. **It does NOT create configuration.**
+
+### Required First Step: Configuration
+
+```bash
+/5:configure
+```
+
+**This is a required setup step.** The configure command uses the 5-phase workflow itself:
+
+1. **Phase 1** (`/5:configure`): Analyzes project, gathers preferences, creates feature spec
+2. **Phase 2** (`/5:plan-implementation CONFIGURE`): Creates implementation plan
+3. **Phase 3** (`/5:implement-feature CONFIGURE`): Executes configuration
+4. **Phase 4** (`/5:verify-implementation`): Verifies configuration
+
+After completing these steps, you have:
+- `.claude/.5/config.json` with your project settings
+- `CLAUDE.md` with comprehensive project documentation
+- `.5/STRUCTURE.md`, `.5/STACK.md`, etc. with modular documentation
+- Project-specific skills in `.claude/skills/`
+
+**Without configuration, workflow commands will fail.**
+
+### Your First Feature
+
+After configuration is complete, start your first feature:
+
+```bash
+/5:plan-feature
+```
+
+---
+
 ## Architecture
 
 The workflow uses a **4-layer architecture**:

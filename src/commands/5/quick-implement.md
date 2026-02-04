@@ -8,6 +8,27 @@ user-invocable: true
 
 # Quick Implement
 
+## Prerequisites Check
+
+**CRITICAL: Check for configuration before proceeding**
+
+```bash
+if [ ! -f ".claude/.5/config.json" ]; then
+  echo "❌ Configuration not found"
+  echo ""
+  echo "Please run /5:configure first to set up your project."
+  echo ""
+  echo "The configure command will:"
+  echo "  • Detect your project type and build commands"
+  echo "  • Set up ticket tracking conventions"
+  echo "  • Generate documentation (CLAUDE.md)"
+  echo "  • Create project-specific skills"
+  exit 1
+fi
+```
+
+**If config doesn't exist, STOP IMMEDIATELY. Do not proceed with the workflow.**
+
 Fast path for small, well-understood tasks (1-5 files). Skips extensive planning phases but preserves state tracking and skill-based implementation.
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT

@@ -59,7 +59,11 @@ Perform all detection silently, collecting results for Step 2.
 **1a. Check for existing config:**
 ```bash
 if [ -f ".claude/.5/config.json" ]; then
-  # Config exists - will ask user in Step 2
+  # Config exists - will ask user in Step 2 what to do
+  config_exists=true
+else
+  # No config - this is expected for first run after installation
+  config_exists=false
 fi
 ```
 
@@ -275,9 +279,24 @@ Only include patterns/commands that are actually detected.
 ### Step 2: Gather User Preferences (interactive via AskUserQuestion)
 
 **2a. If config exists:**
-- "Configuration already exists. What would you like to do?"
-  - Options: "Update existing", "Start fresh", "Cancel"
-  - If Cancel: stop here
+"Configuration already exists. What would you like to do?"
+- Options:
+  - "Update existing configuration" (merge with current values)
+  - "Start fresh" (delete and reconfigure from scratch)
+  - "Cancel" (exit without changes)
+
+If "Start fresh" selected:
+- Confirm: "This will delete existing config. Are you sure?"
+- If confirmed: delete .claude/.5/config.json
+- Proceed to detection and questions
+
+If "Update existing configuration":
+- Read current values
+- Pre-fill questions with current values
+- Allow user to change any value
+- Merge updated values back
+
+If "Cancel": Exit immediately with message "Configuration unchanged."
 
 **2b. Confirm project type:**
 - "Detected project type: {detected-type}. Is this correct?"

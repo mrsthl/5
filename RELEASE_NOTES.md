@@ -1,8 +1,36 @@
 # Release Notes
 
-## v1.2.2
+## v1.3.0
 
-**Release Date:** TBD
+**Release Date:** 2026-02-04
+
+### Bug Fix: Configure Command Contradiction
+
+Fixed contradiction where installer auto-created config but `/5:configure` was designed to create it through workflow.
+
+**What changed:**
+- Installer no longer auto-creates `.claude/.5/config.json`
+- `/5:configure` is now required first step (as originally designed)
+- Workflow commands fail gracefully if config missing, direct user to run `/5:configure`
+- Clear error messages guide users through setup
+
+**For existing installations:**
+- No action needed, config preserved during upgrade
+- Run `npx 5-phase-workflow --upgrade` to update workflow commands
+
+**For fresh installations:**
+- Must run `/5:configure` before using workflow
+- Configure uses standard workflow: plan → implement → verify
+- Results in config.json, CLAUDE.md, and project-specific skills
+
+**Technical changes:**
+- Removed `initializeConfig()` call from `performFreshInstall()` in `bin/install.js`
+- Updated installation completion message to guide users to `/5:configure`
+- Added prerequisite checks to all workflow commands (plan-feature, plan-implementation, implement-feature, verify-implementation, review-code, quick-implement)
+- Updated README, CLAUDE.md, and workflow-guide.md with configuration requirements
+- Enhanced configure command to handle existing config (update/start fresh/cancel options)
+
+---
 
 ### Breaking Changes
 

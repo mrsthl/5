@@ -33,22 +33,36 @@ npx 5-phase-workflow --global
 ```
 
 The installer will:
-- Auto-detect your project type (JavaScript, Python, Java, etc.)
 - Copy workflow commands, agents, and skills to `.claude/`
-- Create a config file at `.claude/.5/config.json`
-- Configure build and test commands for your project
+- Set up hooks and settings
+- Create `.5/features/` directory for feature tracking
 
-## Quick Start
+**After installation, you must configure your project:**
 
-After installation, configure the workflow for your project:
+## Required: Configure Your Project
 
 ```bash
 # Open Claude Code in your project
-# Run the configuration wizard
 /5:configure
 ```
 
-Then start your first feature:
+This will:
+- Auto-detect your project type (JavaScript, Python, Java, etc.)
+- Set up build and test commands
+- Configure ticket tracking patterns
+- Generate comprehensive CLAUDE.md documentation
+- Create project-specific skills (create-component, create-service, etc.)
+
+Follow the standard workflow after `/5:configure`:
+1. `/5:plan-implementation CONFIGURE` - Plan the configuration
+2. `/5:implement-feature CONFIGURE` - Execute configuration
+3. `/5:verify-implementation` - Verify setup
+
+**The workflow is ready to use after completing configuration.**
+
+## Start Your First Feature
+
+After configuration is complete, start your first feature:
 
 ```bash
 # Phase 1: Plan the feature

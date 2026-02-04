@@ -590,15 +590,21 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   // Merge settings
   mergeSettings(targetPath, sourcePath);
 
-  // Initialize config (local only)
-  if (!isGlobal) {
-    initializeConfig(targetPath);
-  }
-
   // Initialize version tracking
   initializeVersionJson(targetPath, isGlobal);
 
   log.header('Installation Complete!');
+  log.info('');
+  log.info('Next step: Configure your project');
+  log.info('Run: /5:configure');
+  log.info('');
+  log.info('This will:');
+  log.info('  • Detect your project type and build commands');
+  log.info('  • Set up ticket tracking conventions');
+  log.info('  • Generate comprehensive documentation (CLAUDE.md)');
+  log.info('  • Create project-specific skills');
+  log.info('');
+
   showCommandsHelp(targetPath);
 }
 

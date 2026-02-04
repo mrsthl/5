@@ -9,6 +9,27 @@ user-invocable: true
 
 # Review Code (Phase 5)
 
+## Prerequisites Check
+
+**CRITICAL: Check for configuration before proceeding**
+
+```bash
+if [ ! -f ".claude/.5/config.json" ]; then
+  echo "❌ Configuration not found"
+  echo ""
+  echo "Please run /5:configure first to set up your project."
+  echo ""
+  echo "The configure command will:"
+  echo "  • Detect your project type and build commands"
+  echo "  • Set up ticket tracking conventions"
+  echo "  • Generate documentation (CLAUDE.md)"
+  echo "  • Create project-specific skills"
+  exit 1
+fi
+```
+
+**If config doesn't exist, STOP IMMEDIATELY. Do not proceed with the workflow.**
+
 ## Overview
 
 This command automates code review using a configurable review tool. The review tool is set in `.claude/.5/config.json` (`reviewTool` field). Two tools are supported:

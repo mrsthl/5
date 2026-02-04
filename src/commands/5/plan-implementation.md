@@ -1,7 +1,7 @@
 ---
 name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
-allowed-tools: Read, Glob, Grep, Task, AskUserQuestion, Write
+allowed-tools: Bash, Read, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
 ---
@@ -10,17 +10,41 @@ user-invocable: true
 
 Create an implementation plan that maps a feature spec to concrete components.
 
+## ⚠️ CRITICAL ARCHITECTURE
+
+**This command uses a READ-ONLY sub-agent for codebase exploration.**
+
+You (the main agent) orchestrate the process:
+- You read ONLY `.5/{feature-name}/feature.md` using Read tool
+- You spawn a read-only Explore agent to scan the codebase
+- You receive findings from the sub-agent
+- You ask 2-3 technical questions
+- You write ONLY `.5/{feature-name}/plan.md` using Write tool
+
+**The sub-agent CANNOT write files. It can only read and report.**
+
+**YOU may only write to `.5/{feature-name}/plan.md` - NO other files.**
+
 ## Scope
 
 **This command creates the plan. It does NOT implement.**
 
 After creating the plan, tell the user to run `/5:implement-feature`.
 
+## ❌ Boundaries
+
+- ❌ **Do NOT read source code files directly** - Use Explore sub-agent
+- ❌ **Do NOT write any file except plan.md** - No source code, no other files
+- ❌ **Do NOT start implementation** - That's Phase 3
+- ❌ **Do NOT write complete code in the plan** - Only describe WHAT to build
+
 ## Process
 
 ### Step 1: Load Feature Spec
 
 Read `.5/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
+
+**This is the ONLY file you may read directly.**
 
 Extract:
 - Ticket ID
@@ -30,14 +54,36 @@ Extract:
 
 If the file doesn't exist, tell the user to run `/5:plan-feature` first.
 
-### Step 2: Quick Codebase Scan
+### Step 2: Spawn Read-Only Explore Agent for Codebase Scan
 
-Understand the project structure:
-- Use Glob to find source directories
-- Identify where similar components live (models, services, controllers, tests)
-- Note naming conventions from existing files
+**CRITICAL: Delegate ALL codebase exploration to a sub-agent.**
 
-This is a quick scan, not deep analysis. The executor agent will do detailed pattern matching.
+Spawn a Task with `subagent_type=Explore` with the following prompt:
+
+```
+Quick codebase scan for implementation planning.
+
+**Feature:** {one-line summary from feature.md}
+**Affected Components:** {list from feature.md}
+
+**Your Task:**
+1. Find source directories and understand project structure
+2. Identify where similar components live (models, services, controllers, tests)
+3. Note naming conventions from existing files
+4. Find example files that can serve as patterns for new components
+
+**Report Format:**
+Return a structured report with:
+- Project structure (key directories)
+- Naming conventions observed
+- Pattern files for each component type (e.g., "services follow pattern in src/services/UserService.ts")
+- Where new files should be placed
+
+**IMPORTANT:** This is a QUICK scan, not deep analysis. Focus on structure and patterns.
+**READ-ONLY:** Only use Read, Glob, and Grep tools.
+```
+
+**Wait for the sub-agent to return its findings before proceeding.**
 
 ### Step 3: Ask 2-3 Technical Questions (ONE AT A TIME)
 
@@ -54,11 +100,34 @@ Keep it brief. Don't over-question. Don't ask feature questions already answered
 
 - **ONE question at a time** - wait for answer before next question
 - Do NOT list multiple questions in one message
-- Do NOT skip to creating plan.md before asking your questions 
+- Do NOT skip to creating plan.md before asking your questions
+
+#### Step 3b: Optional Targeted Re-Exploration
+
+If during Q&A the user mentions specific patterns, files, or conventions not covered in the initial scan, you MAY spawn additional targeted Explore agents.
+
+**When to trigger:**
+- User mentions a specific file as a pattern to follow
+- User asks about a component not in the initial report
+- Understanding a specific pattern is critical for the plan
+
+**How to re-explore:**
+
+```
+Targeted scan for implementation planning.
+
+**Context:** User mentioned {specific pattern/file/convention}.
+
+**Task:** Find and analyze {specific target} to understand the pattern.
+
+**Report:** How this pattern works and how to apply it.
+
+**READ-ONLY:** Only use Read, Glob, and Grep tools.
+```
 
 ### Step 4: Design Components
 
-Based on the feature spec and codebase scan, identify:
+Based on the feature spec and sub-agent's codebase scan, identify:
 - What files need to be created
 - What files need to be modified
 - The order of implementation (dependencies)
@@ -74,6 +143,8 @@ Not every feature needs all steps. Use what makes sense.
 ### Step 5: Write the Plan
 
 Create a single file at `.5/{feature-name}/plan.md`:
+
+**THIS IS THE ONLY FILE YOU MAY WRITE.**
 
 ```markdown
 ---
@@ -142,6 +213,23 @@ Review the plan, then:
 1. Run `/clear` to reset context (recommended between phases)
 2. Run `/5:implement-feature {feature-name}`
 ```
+
+**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT PROCEED TO IMPLEMENTATION.**
+
+## Example Workflow
+
+1. User runs: `/5:plan-implementation PROJ-1234-add-emergency-schedule`
+2. Main agent reads: `.5/PROJ-1234-add-emergency-schedule/feature.md`
+3. **Main agent spawns Explore sub-agent** for codebase scan
+4. **Sub-agent returns:** Project uses src/{models,services,controllers}, services follow UserService.ts pattern...
+5. Main agent asks: "Should the schedule validation be in the service or a separate validator?"
+6. User: "In the service, like we do in OrderService"
+7. **Main agent spawns targeted Re-Explore** for OrderService pattern
+8. Main agent asks one more question about testing approach
+9. Main agent creates: `.5/PROJ-1234-add-emergency-schedule/plan.md`
+10. Main agent tells user the plan is ready and to run `/5:implement-feature`
+
+**🛑 COMMAND COMPLETE.**
 
 ## Example Plan
 
@@ -215,8 +303,9 @@ Components in the same step run in parallel. Structure your plan accordingly:
 - Don't write complete code in the plan
 - Don't spend time on "haiku-ready prompts"
 - Don't create multiple plan files (meta.md, step-N.md, etc.)
-- Don't over-analyze the codebase - the executor will do detailed pattern matching
+- Don't read source code directly - use Explore sub-agent
 - Don't ask more than 3 questions
 - Don't create unnecessary sequential steps - group independent work together
 - **Don't skip to implementation** - This command ONLY creates the plan
 - **Don't batch questions** - Ask one question at a time
+- **Don't write any file except plan.md** - No source code files

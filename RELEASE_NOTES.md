@@ -1,5 +1,18 @@
 # Release Notes
 
+## v1.2.2
+
+**Release Date:** February 4, 2026
+
+### Improvements
+
+**Configure Step Enhancement**
+- Added automatic detection of installed skills during `/5:configure`
+- Configure now scans for available skills and displays them to the user
+- Helps users understand which skills are available for their workflow
+
+---
+
 ## v1.2.1
 
 **Release Date:** February 3, 2026

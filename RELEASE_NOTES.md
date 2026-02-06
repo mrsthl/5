@@ -1,5 +1,49 @@
 # Release Notes
 
+## v1.4.0
+
+**Release Date:** 2026-02-06
+
+### What's New
+
+**Auto-Commit During Implementation**
+
+New optional feature that creates atomic commits after each implementation step, enabling progress tracking and easy rollback.
+
+- Configurable via `/5:configure` — disabled by default
+- Commits only the specific files from each step's components (never `git add .`)
+- Configurable commit message patterns:
+  - Default: `{ticket-id} {short-description}`
+  - Conventional: `feat({ticket-id}): {short-description}`
+  - Custom user-defined pattern
+- Commit body includes one bullet per completed component
+- Integrated into `/5:implement-feature` (per-step commits), `/5:quick-implement` (single commit), and `/5:verify-implementation` (fix commits)
+- Graceful failure handling — commit errors are logged but don't block the workflow
+- Config stored in `git.autoCommit` and `git.commitMessage.pattern` in `config.json`
+
+**Context7 Documentation Plugin Support**
+
+Integration with Context7 MCP server for up-to-date, version-specific documentation directly in prompts.
+
+- `/5:configure` detects existing Context7 installation (checks for `resolve-library-id` and `query-docs` tools)
+- Offers one-command install if not detected: `claude mcp add context7 -- npx -y @anthropic-ai/claude-code-mcp-server-context7`
+- Helps avoid hallucinated APIs and deprecated code patterns from outdated training data
+- Recorded in `config.json` under `tools.context7.available`
+
+### Improvements
+
+**Update Check Hook**
+- Simplified stdin handling in `check-updates.js` for more robust JSON parsing
+- Added `matcher` and `timeout` (10s) fields to hook settings for better reliability
+- Hook now reads `cwd` field from hook data for correct workspace detection
+
+**Test Infrastructure**
+- Added comprehensive test suite for `check-updates.js` hook (`test/test-check-updates-hook.sh`)
+- Updated package.json with dedicated `test:hook` script
+- Streamlined GitHub Actions workflow
+
+---
+
 ## v1.3.0
 
 **Release Date:** 2026-02-04

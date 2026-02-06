@@ -1,5 +1,26 @@
 # Release Notes
 
+## v1.4.1
+
+**Release Date:** 2026-02-06
+
+### Bug Fix
+
+**CONFIGURE workflow blocked by missing config check**
+
+Fixed a chicken-and-egg bug where `/5:plan-implementation CONFIGURE` (and subsequent phases) would fail with "Configuration not found" because the config file doesn't exist yet — it's the CONFIGURE workflow itself that creates it.
+
+- All workflow commands now skip the config prerequisite check when the feature argument is `CONFIGURE`
+- Non-CONFIGURE features still require config to exist as before
+
+**Affected files:**
+- `src/commands/5/plan-implementation.md`
+- `src/commands/5/implement-feature.md`
+- `src/commands/5/verify-implementation.md`
+- `src/commands/5/review-code.md`
+
+---
+
 ## v1.4.0
 
 **Release Date:** 2026-02-06

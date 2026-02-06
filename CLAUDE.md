@@ -274,10 +274,11 @@ When adding/removing/renaming workflow files, update `getWorkflowManagedFiles()`
 
 ## Versioning & Publishing
 
-1. Update version in package.json
-2. Add release notes to `RELEASE_NOTES.md`
-3. Commit and tag: `git tag v1.x.x && git push --tags`
-4. Publish: `npm publish`
+**NEVER manually update the `version` field in `package.json`.** The version is bumped automatically during the release process.
+
+1. Add release notes to `RELEASE_NOTES.md`
+2. Commit & Push
+3. Create a new Release in GitHub
 
 ## References
 

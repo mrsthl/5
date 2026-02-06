@@ -373,7 +373,11 @@ function getDefaultConfig(projectType) {
       command: 'auto',
       testCommand: 'auto'
     },
-    reviewTool: 'claude'
+    reviewTool: 'claude',
+    git: {
+      autoCommit: false,
+      commitMessage: { pattern: '{ticket-id} {short-description}' }
+    }
   };
 
   // Project-specific overrides

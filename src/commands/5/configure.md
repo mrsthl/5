@@ -329,7 +329,21 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
 - "Suggested test command: `{command}`. Use this?"
   - Options: "Yes (recommended)", "Customize", "None (no test step)"
 
-**2f. Review tool preference:**
+**2f. Auto-commit during implementation:**
+- "Should Claude make atomic commits during implementation? This creates a commit after each step, enabling progress tracking and easy rollback."
+  - Options:
+    1. "No (recommended)" → `git.autoCommit: false`
+    2. "Yes - commit after each implementation step" → `git.autoCommit: true`
+
+**2g. Commit message pattern (only if auto-commit = Yes):**
+- "What commit message format would you like?"
+  - Options:
+    1. "Default: `{ticket-id} {short-description}` (Recommended)"
+    2. "Conventional: `feat({ticket-id}): {short-description}`"
+    3. "Custom pattern" → free text
+- Note: "Body will automatically include bullet points of changes."
+
+**2h. Review tool preference:**
 - "Which code review tool would you like to use?"
   - Options:
     1. "Claude (built-in, no setup needed)" — always available
@@ -342,7 +356,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     - Then: `coderabbit auth login`
   - Record the preference as `coderabbit` regardless (will prompt at review time if still missing)
 
-**2g. Context7 documentation plugin:**
+**2i. Context7 documentation plugin:**
 
 Context7 provides up-to-date, version-specific documentation and code examples directly in your prompts. It solves a common problem with LLMs: outdated training data leading to hallucinated APIs and deprecated code patterns.
 
@@ -355,11 +369,11 @@ Context7 provides up-to-date, version-specific documentation and code examples d
     2. "Skip"
   - If user selects "Install now": execute the install command
 
-**2h. Confirm CLAUDE.md generation:**
+**2j. Confirm CLAUDE.md generation:**
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
-**2i. Review detected patterns for skill generation:**
+**2k. Review detected patterns for skill generation:**
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
 
@@ -426,6 +440,8 @@ Create `.claude/.5/config.json` with the following values:
 - IDE integration: {available/not-available}, type: {type}
 - Context7: {available/not-available}
 - Review tool: {claude/coderabbit/none}
+- Auto-commit: {yes/no}
+- Commit message pattern: {pattern or "default"}
 
 ### Requirement 2: Generate Documentation Files
 Analyze the codebase and generate modular documentation:
@@ -571,6 +587,12 @@ User: "Yes"
 
 Claude: "Test command: `npm test`. Use this?"
 User: "Yes"
+
+Claude: "Should Claude make atomic commits during implementation?"
+User: "No"
+
+Claude: "Which code review tool would you like to use?"
+User: "Claude (built-in)"
 
 Claude: "Generate CLAUDE.md with codebase analysis?"
 User: "Yes"

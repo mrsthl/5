@@ -51,7 +51,7 @@ Your job is NOT:
 ❌ Skip clarifying questions if unclear
 ❌ Skip state file updates
 ❌ Create feature spec files (use full workflow)
-❌ Commit changes (user handles this)
+❌ Commit without config - Only commit if git.autoCommit is enabled
 
 **This is a FAST PATH for well-understood, small tasks. For anything complex, use the full workflow.**
 
@@ -63,7 +63,7 @@ Your job is NOT:
 - ❌ **Skip clarifying questions** - If implementation is unclear, ask first
 - ❌ **Skip state updates** - State file updates are MANDATORY
 - ❌ **Create feature specs** - This is for quick tasks, not full features
-- ❌ **Auto-commit** - User handles commits
+- ❌ **Commit without config** - Only commit if git.autoCommit is enabled
 - ❌ **Skip plan approval** - Always show plan and get user approval first
 
 **If the task involves more than 5 files or multiple domains, STOP and recommend the full workflow instead.**
@@ -79,13 +79,17 @@ Use AskUserQuestion:
 
 Store as `$DESCRIPTION`.
 
-### Step 2: Extract Ticket ID
+### Step 2: Extract Ticket ID and Load Config
 
 ```bash
 git branch --show-current
 ```
 
 Extract ticket ID using configurable pattern from config (e.g., `PROJ-\d+` or `\d+`). If not found, ask developer.
+
+Also read `.claude/.5/config.json` and extract:
+- `git.autoCommit` (boolean, default `false`)
+- `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
 ### Step 3: Generate Identifiers
 
@@ -268,6 +272,32 @@ Skill tool call:
   args: "{affected test modules}"
 ```
 
+### Step 9b: Auto-Commit (if enabled)
+
+Only fires if `git.autoCommit: true` AND build passed in Step 9.
+
+Creates a **single commit** for all components (not per-component — quick-implement is for small tasks):
+
+1. Stage **only** the specific files from the plan's components (never `git add .`)
+2. Commit using the configured `git.commitMessage.pattern`:
+   - `{ticket-id}` → ticket ID
+   - `{short-description}` → auto-generated summary (imperative mood, max 50 chars for full first line)
+   - Body: one bullet per component
+
+```bash
+# Stage only specific files
+git add {file-1} {file-2} ...
+
+# Commit with configured pattern + body
+git commit -m "{ticket-id} {short-description}
+
+- {concise change 1}
+- {concise change 2}"
+```
+
+3. If commit fails → log warning, record in `state.json`, continue
+4. If build failed in Step 9 → skip commit entirely
+
 ### Step 10: Update State and Report (MANDATORY)
 
 **CRITICAL**: You MUST update the state file to mark completion.
@@ -303,10 +333,14 @@ Components created/modified:
 
 Build: Success
 Tests: {Success | Skipped}
+{If git.autoCommit was true: "Commit: {Success | Failed | Skipped (build failed)}"}
 
 State: .5/features/${feature_name}/state.json
 
 Next steps:
+{If auto-commit fired successfully:}
+1. For a new task, run `/clear` before starting
+{If auto-commit not enabled or commit skipped:}
 1. Review and commit changes
 2. For a new task, run `/clear` before starting
 ```

@@ -1,7 +1,7 @@
 ---
 name: 5:implement-feature
 description: Executes an implementation plan by delegating to agents. Phase 3 of the 5-phase workflow.
-allowed-tools: Task, Read, Write, Glob, Grep
+allowed-tools: Task, Read, Write, Glob, Grep, Bash
 context: fork
 user-invocable: true
 ---
@@ -46,7 +46,7 @@ Do NOT write code directly. Spawn agents to do the work.
 
 ## Process
 
-### Step 1: Load Plan
+### Step 1: Load Plan and Config
 
 Read `.5/features/{feature-name}/plan.md` (where `{feature-name}` is the argument provided).
 
@@ -57,6 +57,10 @@ Parse:
 - Verification commands
 
 If the plan doesn't exist, tell the user to run `/5:plan-implementation` first.
+
+Also read `.claude/.5/config.json` and extract:
+- `git.autoCommit` (boolean, default `false`)
+- `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
 ### Step 2: Initialize State
 
@@ -180,7 +184,39 @@ Update state.json:
 }
 ```
 
-**3e. Handle failures**
+**3e. Auto-Commit Step (if enabled)**
+
+Only fires if `git.autoCommit: true` AND at least one component in the step succeeded.
+
+1. Stage **only** the specific files from the plan's components table for this step (never `git add .`)
+2. Commit using the configured `git.commitMessage.pattern`:
+   - `{ticket-id}` → ticket ID from plan frontmatter
+   - `{short-description}` → auto-generated summary of the step (imperative mood, max 50 chars for the full first line)
+   - Body: one bullet per completed component
+
+```bash
+# Stage only specific files from this step's components
+git add {file-1} {file-2} ...
+
+# Commit with configured pattern + body
+git commit -m "{ticket-id} {short-description}
+
+- {concise change 1}
+- {concise change 2}"
+```
+
+3. If commit fails → log warning, record in `state.json` under `commitResults` array, continue
+4. If all components in the step failed → skip commit entirely
+
+**Example commit:**
+```
+PROJ-1234 add schedule model and types
+
+- Create Schedule.ts entity model
+- Create schedule.ts type definitions
+```
+
+**3f. Handle failures**
 
 If any component failed:
 - Log the failure in state.json
@@ -223,6 +259,7 @@ Implementation complete!
 - {N} components created/modified
 - Build: {status}
 - Tests: {status}
+{If git.autoCommit was true: "- Commits: {N} atomic commits created"}
 
 {If any failures: list them}
 

@@ -60,12 +60,18 @@ It handles three distinct tasks, invoked with different parameters per component
       "available": false
     }
   },
-  "reviewTool": "claude" or "coderabbit" or "none"
+  "reviewTool": "claude" or "coderabbit" or "none",
+  "git": {
+    "autoCommit": false,
+    "commitMessage": {
+      "pattern": "{ticket-id} {short-description}"
+    }
+  }
 }
 ```
 
 **Process:**
-1. Read all values from the feature spec (`.5/features/CONFIGURE/feature.md`)
+1. Read all values from the feature spec (`.5/features/CONFIGURE/feature.md`), including `git.autoCommit` and `git.commitMessage.pattern`
 2. Ensure `.claude/.5/` directory exists (create with `mkdir -p` if needed)
 3. Write `config.json` with pretty-printed JSON
 4. Read back to verify correctness

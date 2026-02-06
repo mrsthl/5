@@ -70,11 +70,16 @@ Note: feature.md not found — skipping feature completeness checks.
 This is normal for quick-implement workflows. Infrastructure and quality checks will still run.
 ```
 
+Also read `.claude/.5/config.json` and extract:
+- `git.autoCommit` (boolean, default `false`)
+- `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
+
 Extract from artifacts:
 - Components table from `plan.md` (step, component, action, file, description, complexity)
 - Build and test commands from `plan.md`
 - Completed/failed components from `state.json`
 - Acceptance criteria and functional requirements from `feature.md` (if present)
+- Number of commits created from `state.json` `commitResults` (if auto-commit was used)
 
 ### Step 2: Infrastructure Verification (Layer 1)
 
@@ -255,7 +260,11 @@ Layer 2 (Feature Completeness): {N}/{N} criteria satisfied, {N}/{N} requirements
 Layer 3 (Quality): {N}/{N} new files have tests
 
 Report: .5/{feature-name}/verification.md
+```
 
+**If `git.autoCommit: false` (default):** offer to commit.
+
+```
 Would you like to commit these changes?
 ```
 
@@ -264,6 +273,12 @@ Use AskUserQuestion with options:
 2. "No - I'll commit later"
 
 If yes: stage and commit with message format `{TICKET-ID} {description}`.
+
+**If `git.autoCommit: true`:** skip the commit offer.
+
+```
+Changes were already committed during implementation ({N} atomic commits).
+```
 
 Then go to Step 11 (Next Steps).
 
@@ -359,6 +374,22 @@ After all fixes are applied, re-run build and tests:
 {test-command}
 ```
 
+**If `git.autoCommit: true` and fixes succeeded (build + tests pass):**
+
+Auto-commit the fix files:
+```bash
+# Stage only the specific fix files
+git add {fix-file-1} {fix-file-2} ...
+
+# Commit with ticket ID
+git commit -m "{ticket-id} fix verification issues
+
+- {concise fix 1}
+- {concise fix 2}"
+```
+
+If commit fails → log warning, continue.
+
 Update `fix-plan.md` with results:
 - Mark each fix as APPLIED / FAILED
 - Record build and test results after fixes
@@ -369,6 +400,7 @@ Applied {N} fixes.
 
 Build: {status}
 Tests: {status}
+{If git.autoCommit was true: "Commit: {Success | Failed | Skipped}"}
 
 {If any fixes failed, list them}
 

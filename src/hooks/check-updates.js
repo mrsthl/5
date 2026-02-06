@@ -53,24 +53,21 @@ async function checkForUpdates(workspaceDir) {
 
   // Update last check time
   versionData.updateCheckLastRun = new Date().toISOString();
-  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
 
   // Compare versions
   const installed = versionData.installedVersion;
   const latestVersion = await getLatestVersion();
 
-  if (!latestVersion || installed === latestVersion) {
-    // No update available
-    process.exit(0);
+  if (latestVersion && compareVersions(installed, latestVersion) < 0) {
+    // Update available — persist for statusline to display
+    versionData.latestAvailableVersion = latestVersion;
+  } else {
+    // No update (or network failure) — clear any stale value
+    versionData.latestAvailableVersion = null;
   }
 
-  // Check if update is available (installed < latest)
-  if (compareVersions(installed, latestVersion) < 0) {
-    // Show update notification
-    console.log(`\n\x1b[34mℹ\x1b[0m Update available: ${installed} → ${latestVersion}`);
-    console.log(`  Run: \x1b[1mnpx 5-phase-workflow --upgrade\x1b[0m\n`);
-  }
-
+  // Single consolidated write
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
   process.exit(0);
 }
 

@@ -43,11 +43,36 @@ process.stdin.on('end', () => {
     // Shorten directory path for display
     const shortDir = dir.replace(os.homedir(), '~');
 
-    // Build and output statusline: model | directory | context
-    const statusline = `\x1b[36m${model}\x1b[0m | \x1b[90m${shortDir}\x1b[0m${ctx}`;
+    // Check for available update
+    let updateIndicator = '';
+    try {
+      const versionFile = path.join(dir, '.claude', '.5', 'version.json');
+      const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      const latest = versionData.latestAvailableVersion;
+      const installed = versionData.installedVersion;
+      if (latest && installed && compareVersions(installed, latest) < 0) {
+        updateIndicator = ` | \x1b[33m↑${latest} → /5:update\x1b[0m`;
+      }
+    } catch (e) {
+      // No version file or parse error — no indicator
+    }
+
+    // Build and output statusline: model | directory | context | update
+    const statusline = `\x1b[36m${model}\x1b[0m | \x1b[90m${shortDir}\x1b[0m${ctx}${updateIndicator}`;
     process.stdout.write(statusline);
 
   } catch (e) {
     // Silent fail - don't break statusline on parse errors
   }
 });
+
+// Compare semver versions: returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+function compareVersions(v1, v2) {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (parts1[i] > parts2[i]) return 1;
+    if (parts1[i] < parts2[i]) return -1;
+  }
+  return 0;
+}

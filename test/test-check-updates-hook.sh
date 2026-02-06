@@ -104,7 +104,7 @@ else
 fi
 echo ""
 
-# Test 5: Very old version (should show update notification)
+# Test 5: Very old version (should persist latestAvailableVersion in version.json)
 echo "Test 5: Old version (update available)"
 echo "--------------------------------------"
 TEST_DIR="/tmp/test-check-updates-5"
@@ -121,17 +121,16 @@ cat > .claude/.5/version.json <<EOF
 EOF
 
 echo "Running hook with very old version (0.1.0)..."
-OUTPUT=$(run_hook "$TEST_DIR" 2>&1 || true)
-if echo "$OUTPUT" | grep -q "Update available"; then
-  echo "✓ Hook shows update notification for old version"
-  echo "$OUTPUT" | grep "Update available"
+run_hook "$TEST_DIR" >/dev/null 2>&1 || true
+LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.claude/.5/version.json','utf8')); console.log(d.latestAvailableVersion || '')")
+if [ -n "$LATEST" ]; then
+  echo "✓ Hook persists latestAvailableVersion in version.json: $LATEST"
 else
-  echo "Hook output: $OUTPUT"
-  echo "⚠ No update notification (network may be unavailable or version is current)"
+  echo "⚠ No latestAvailableVersion set (network may be unavailable or version is current)"
 fi
 echo ""
 
-# Test 6: Current version (should not show notification)
+# Test 6: Current version (should clear latestAvailableVersion)
 echo "Test 6: Current version (no update)"
 echo "-----------------------------------"
 TEST_DIR="/tmp/test-check-updates-6"
@@ -140,23 +139,25 @@ mkdir -p "$TEST_DIR/.claude/.5"
 cd "$TEST_DIR"
 
 # Get current package version
-CURRENT_VERSION=$(cat "$PROJECT_ROOT/package.json" | grep '"version"' | cut -d'"' -f4)
+CURRENT_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/package.json','utf8')).version)")
 
+# Seed with a stale latestAvailableVersion to verify it gets cleared
 cat > .claude/.5/version.json <<EOF
 {
   "installedVersion": "$CURRENT_VERSION",
   "updateCheckLastRun": "$OLD_DATE",
-  "updateCheckFrequency": 86400
+  "updateCheckFrequency": 86400,
+  "latestAvailableVersion": "99.0.0"
 }
 EOF
 
-echo "Running hook with current version ($CURRENT_VERSION)..."
-OUTPUT=$(run_hook "$TEST_DIR" 2>&1 || true)
-if echo "$OUTPUT" | grep -q "Update available"; then
-  echo "⚠ Update notification shown (newer version may be published)"
-  echo "$OUTPUT"
+echo "Running hook with current version ($CURRENT_VERSION) and stale latestAvailableVersion..."
+run_hook "$TEST_DIR" >/dev/null 2>&1 || true
+LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.claude/.5/version.json','utf8')); console.log(d.latestAvailableVersion || 'null')")
+if [ "$LATEST" = "null" ]; then
+  echo "✓ Hook clears latestAvailableVersion for current version"
 else
-  echo "✓ No update notification for current version"
+  echo "⚠ latestAvailableVersion not cleared (newer version may be published): $LATEST"
 fi
 echo ""
 
@@ -201,6 +202,71 @@ echo "Test 9: Empty stdin"
 echo "------------------"
 echo "Testing hook with empty stdin..."
 echo "" | node "$CHECK_UPDATES_SCRIPT" 2>/dev/null && echo "✓ Hook handles empty stdin gracefully" || echo "✓ Hook handles empty stdin gracefully"
+echo ""
+
+# Test 10: Statusline update indicator
+echo "Test 10: Statusline update indicator"
+echo "------------------------------------"
+STATUSLINE_SCRIPT="$PROJECT_ROOT/src/hooks/statusline.js"
+TEST_DIR="/tmp/test-check-updates-10"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/.claude/.5"
+cd "$TEST_DIR"
+
+# 10a: version.json with latestAvailableVersion set — should show indicator
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "1.0.0",
+  "latestAvailableVersion": "2.0.0"
+}
+EOF
+
+echo "Running statusline with update available..."
+SL_OUTPUT=$(echo '{"model":{"display_name":"Claude"},"workspace":{"current_dir":"'"$TEST_DIR"'"},"context_window":{"remaining_percentage":80}}' | node "$STATUSLINE_SCRIPT" 2>/dev/null || true)
+if echo "$SL_OUTPUT" | grep -q "2.0.0"; then
+  echo "✓ Statusline shows version number in update indicator"
+else
+  echo "✗ Statusline missing version in update indicator"
+  echo "Output: $SL_OUTPUT"
+  exit 1
+fi
+if echo "$SL_OUTPUT" | grep -q "/5:update"; then
+  echo "✓ Statusline shows /5:update command hint"
+else
+  echo "✗ Statusline missing /5:update hint"
+  echo "Output: $SL_OUTPUT"
+  exit 1
+fi
+
+# 10b: latestAvailableVersion is null — should NOT show indicator
+cat > .claude/.5/version.json <<EOF
+{
+  "installedVersion": "1.0.0",
+  "latestAvailableVersion": null
+}
+EOF
+
+echo "Running statusline with no update available..."
+SL_OUTPUT=$(echo '{"model":{"display_name":"Claude"},"workspace":{"current_dir":"'"$TEST_DIR"'"},"context_window":{"remaining_percentage":80}}' | node "$STATUSLINE_SCRIPT" 2>/dev/null || true)
+if echo "$SL_OUTPUT" | grep -q "/5:update"; then
+  echo "✗ Statusline should not show indicator when latestAvailableVersion is null"
+  echo "Output: $SL_OUTPUT"
+  exit 1
+else
+  echo "✓ No update indicator when latestAvailableVersion is null"
+fi
+
+# 10c: No version.json — should NOT show indicator
+rm -rf "$TEST_DIR/.claude/.5/version.json"
+echo "Running statusline with no version.json..."
+SL_OUTPUT=$(echo '{"model":{"display_name":"Claude"},"workspace":{"current_dir":"'"$TEST_DIR"'"},"context_window":{"remaining_percentage":80}}' | node "$STATUSLINE_SCRIPT" 2>/dev/null || true)
+if echo "$SL_OUTPUT" | grep -q "/5:update"; then
+  echo "✗ Statusline should not show indicator when version.json is absent"
+  echo "Output: $SL_OUTPUT"
+  exit 1
+else
+  echo "✓ No update indicator when version.json is absent"
+fi
 echo ""
 
 # Cleanup

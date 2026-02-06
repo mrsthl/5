@@ -1,5 +1,53 @@
 # Release Notes
 
+## v1.4.2
+
+**Release Date:** 2026-02-06
+
+### Planning Phase Breakout Prevention
+
+Previous attempts (v1.1.2–v1.3.0) to prevent the LLM from breaking out of planning phases were purely instruction-based (visual markers, scope constraints, boundary lists). They didn't work reliably because the LLM can ignore instructions.
+
+This release adds a **technical enforcement layer** via a PreToolUse hook that physically prevents breakout, combined with structural command improvements.
+
+**New: `plan-guard.js` PreToolUse Hook**
+
+A hook that runs on every tool call and enforces planning phase boundaries:
+- **Short-circuits** on all tools except `Task` and `Write` (zero overhead for reads/searches)
+- **Planning mode** (no `state.json` exists): blocks `Task` with `subagent_type` other than `Explore`, blocks `Write` to paths outside `.5/`
+- **Post-planning mode** (`state.json` exists): allows everything — implementation, verification, and review phases work unrestricted
+- Registered as `PreToolUse` hook in `settings.json` with 5-second timeout
+
+**Restructured Planning Commands**
+
+`plan-feature.md` and `plan-implementation.md` rewritten with GSD-inspired patterns:
+- `<role>` XML tags at top and bottom for identity constraints
+- `Bash` removed from `allowed-tools` — config check via `Read` instead of bash script
+- Structured `## PLANNING COMPLETE` return format
+- STOP bookend as final line
+- Removed content that triggered implementation thinking (5-phase overview, duplicate instruction sections, post-STOP references)
+- Reduced from ~350/~337 lines to ~150/~210 lines
+
+**Restructured Review Command**
+
+`review-code.md` rewritten with same patterns:
+- `<role>` XML tag: "You are a Code Reviewer" with explicit constraints (no new features, always get consent, always verify, follow exact step sequence)
+- Config check via `Read` instead of bash script
+- Consolidated 12-step process with clear branching (interactive vs file-based)
+- Structured `## REVIEW COMPLETE` return format with STOP bookend
+- Removed verbose error handling templates and configuration sections
+- Reduced from ~657 lines to ~297 lines
+
+**Affected files:**
+- `src/hooks/plan-guard.js` (new)
+- `src/settings.json` (PreToolUse hook registration)
+- `src/commands/5/plan-feature.md` (rewritten)
+- `src/commands/5/plan-implementation.md` (rewritten)
+- `src/commands/5/review-code.md` (rewritten)
+- `bin/install.js` (`plan-guard.js` added to managed files)
+
+---
+
 ## v1.4.1
 
 **Release Date:** 2026-02-06

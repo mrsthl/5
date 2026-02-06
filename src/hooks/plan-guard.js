@@ -5,8 +5,9 @@
 // - Task agents other than Explore (when not in implementation mode)
 // - Write operations outside .5/ (when not in implementation mode)
 //
-// Implementation mode is detected by scanning .5/features/*/state.json
-// for any feature with "status": "in-progress"
+// Planning mode is detected by absence of any state.json in .5/features/.
+// Once state.json exists (created in Phase 3), the feature has passed planning
+// and all tools are allowed (implementation, verification, review phases).
 
 const fs = require('fs');
 const path = require('path');
@@ -76,7 +77,9 @@ function isInsideDotFive(filePath, workspaceDir) {
 }
 
 function isImplementationMode(workspaceDir) {
-  // Scan .5/features/*/state.json for any "in-progress" status
+  // If any state.json exists, the feature has passed planning phases.
+  // state.json is created in Phase 3 (implement-feature) and persists
+  // through Phase 4 (verify) and Phase 5 (review) with status "completed".
   const featuresDir = path.join(workspaceDir, '.claude', '.5', 'features');
 
   if (!fs.existsSync(featuresDir)) {
@@ -88,14 +91,8 @@ function isImplementationMode(workspaceDir) {
     for (const entry of features) {
       if (!entry.isDirectory()) continue;
       const stateFile = path.join(featuresDir, entry.name, 'state.json');
-      if (!fs.existsSync(stateFile)) continue;
-      try {
-        const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-        if (state.status === 'in-progress') {
-          return true;
-        }
-      } catch (e) {
-        // Skip corrupted state files
+      if (fs.existsSync(stateFile)) {
+        return true;
       }
     }
   } catch (e) {

@@ -10,7 +10,11 @@ user-invocable: true
 
 ## Prerequisites Check
 
-**CRITICAL: Check for configuration before proceeding**
+**CRITICAL: Check for configuration before proceeding (skip for CONFIGURE feature)**
+
+If the feature argument is `CONFIGURE`, skip this check entirely — the CONFIGURE workflow is what creates the config file.
+
+For all other features, run this check:
 
 ```bash
 if [ ! -f ".claude/.5/config.json" ]; then
@@ -27,7 +31,7 @@ if [ ! -f ".claude/.5/config.json" ]; then
 fi
 ```
 
-**If config doesn't exist, STOP IMMEDIATELY. Do not proceed with the workflow.**
+**If config doesn't exist and the feature is NOT `CONFIGURE`, STOP IMMEDIATELY. Do not proceed with the workflow.**
 
 Execute an implementation plan by delegating work to agents.
 

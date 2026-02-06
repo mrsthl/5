@@ -3,19 +3,19 @@
 const fs = require('fs');
 const path = require('path');
 
-// Read stdin (Claude Code passes JSON)
-let inputData = '';
-process.stdin.on('data', (chunk) => {
-  inputData += chunk;
-});
-
-process.stdin.on('end', async () => {
+// Read JSON from stdin
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('end', () => {
   try {
-    // Parse hook input (contains workspace info)
-    const hookData = JSON.parse(inputData);
-    const workspaceDir = hookData.workingDirectory || process.cwd();
+    let workspaceDir = process.cwd();
+    if (input.trim()) {
+      const data = JSON.parse(input);
+      workspaceDir = data.cwd || data.workspace?.current_dir || workspaceDir;
+    }
 
-    await checkForUpdates(workspaceDir);
+    checkForUpdates(workspaceDir).catch(() => process.exit(0));
   } catch (e) {
     // Silent failure - don't block on errors
     process.exit(0);

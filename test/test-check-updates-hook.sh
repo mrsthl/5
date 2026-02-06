@@ -16,7 +16,7 @@ echo ""
 # Helper function to run hook with mock stdin
 run_hook() {
   local workspace_dir="$1"
-  echo "{\"workingDirectory\":\"$workspace_dir\"}" | node "$CHECK_UPDATES_SCRIPT"
+  echo "{\"cwd\":\"$workspace_dir\"}" | node "$CHECK_UPDATES_SCRIPT"
 }
 
 # Test 1: No version.json (should exit silently)

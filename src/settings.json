@@ -6,10 +6,12 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/check-updates.js"
+            "command": "node .claude/hooks/check-updates.js",
+            "timeout": 10
           }
         ]
       }

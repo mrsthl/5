@@ -145,6 +145,9 @@ if command -v coderabbit &> /dev/null; then
 fi
 
 # IDE MCP (JetBrains) - check if MCP tools are available
+
+# Context7 - up-to-date documentation MCP server
+# Check if context7 tools are available (resolve-library-id, query-docs)
 ```
 
 **1e. Check CLAUDE.md:**
@@ -339,11 +342,24 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     - Then: `coderabbit auth login`
   - Record the preference as `coderabbit` regardless (will prompt at review time if still missing)
 
-**2g. Confirm CLAUDE.md generation:**
+**2g. Context7 documentation plugin:**
+
+Context7 provides up-to-date, version-specific documentation and code examples directly in your prompts. It solves a common problem with LLMs: outdated training data leading to hallucinated APIs and deprecated code patterns.
+
+- If Context7 was detected in Step 1d (resolve-library-id and query-docs tools available):
+  - "Context7 is already installed. ✓"
+- If Context7 was NOT detected:
+  - "Would you like to install Context7? It provides up-to-date, version-specific documentation directly in prompts — helping avoid hallucinated APIs and deprecated patterns."
+  - Options:
+    1. "Install now (recommended)" — run `claude mcp add context7 -- npx -y @anthropic-ai/claude-code-mcp-server-context7` via Bash
+    2. "Skip"
+  - If user selects "Install now": execute the install command
+
+**2h. Confirm CLAUDE.md generation:**
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
-**2h. Review detected patterns for skill generation:**
+**2i. Review detected patterns for skill generation:**
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
 
@@ -408,6 +424,7 @@ Create `.claude/.5/config.json` with the following values:
 - Test timeout: 300000ms
 - CodeRabbit: {available/not-available}, authenticated: {yes/no}
 - IDE integration: {available/not-available}, type: {type}
+- Context7: {available/not-available}
 - Review tool: {claude/coderabbit/none}
 
 ### Requirement 2: Generate Documentation Files

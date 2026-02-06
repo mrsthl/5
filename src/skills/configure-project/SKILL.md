@@ -55,6 +55,9 @@ It handles three distinct tasks, invoked with different parameters per component
     "ide": {
       "available": false,
       "type": null
+    },
+    "context7": {
+      "available": false
     }
   },
   "reviewTool": "claude" or "coderabbit" or "none"

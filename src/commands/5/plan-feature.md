@@ -1,139 +1,87 @@
 ---
 name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
-allowed-tools: Bash, Write, Task, AskUserQuestion
+allowed-tools: Read, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
 ---
 
-# Plan Feature Implementation (Phase 1)
+<role>
+You are a Feature Planner. You create feature specifications.
+You do NOT implement. You write NO code.
+You spawn ONLY Explore agents (subagent_type=Explore).
+You write ONLY to .5/features/{name}/feature.md.
+After creating the spec, you are DONE.
+</role>
 
-## Prerequisites Check
+# Plan Feature (Phase 1)
 
-**CRITICAL: Check for configuration before proceeding**
+## Prerequisites
 
-```bash
-if [ ! -f ".claude/.5/config.json" ]; then
-  echo "❌ Configuration not found"
-  echo ""
-  echo "Please run /5:configure first to set up your project."
-  echo ""
-  echo "The configure command will:"
-  echo "  • Detect your project type and build commands"
-  echo "  • Set up ticket tracking conventions"
-  echo "  • Generate documentation (CLAUDE.md)"
-  echo "  • Create project-specific skills"
-  exit 1
-fi
-```
+Read `.claude/.5/config.json`. If the file does not exist, STOP immediately and tell the user:
 
-**If config doesn't exist, STOP IMMEDIATELY. Do not proceed with the workflow.**
+"Configuration not found. Please run `/5:configure` first to set up your project."
 
-## Overview
+Do NOT proceed without configuration.
 
-This skill is the **first phase** of the 5-phase workflow:
-1. **Feature Planning** (this skill) - Understand requirements, create feature spec
-2. **Implementation Planning** - Map to technical components and skills
-3. **Orchestrated Implementation** - Execute with state tracking
-4. **Verify Implementation** - Check completeness and correctness
-5. **Code Review** - Apply automated quality improvements
+## Common Feature Types
 
-This skill guides intensive collaboration with the developer to understand requirements, challenge assumptions, and create a comprehensive feature specification.
+- **New Component/Module** — Core logic, data structures, tests. Questions: Validation rules? Business logic? API design?
+- **Extend Existing Component** — Update existing code, maintain compatibility. Questions: Breaking change? Migration needed?
+- **Add Business Rule** — Logic implementation, validation. Questions: When enforced? Edge cases?
+- **API Endpoint** — Endpoint, request/response handling. Questions: API design? Error handling? Authentication?
 
-## ⚠️ CRITICAL ARCHITECTURE
+## Example Workflow
 
-**This command uses a READ-ONLY sub-agent for codebase exploration.**
+1. User runs `/5:plan-feature`
+2. Agent asks: "Please describe the feature you want to develop"
+3. User provides feature description
+4. Agent extracts Ticket ID from branch name
+5. Agent spawns Explore sub-agent for codebase analysis
+6. Sub-agent returns findings
+7. Agent asks 5-10 clarifying questions (one at a time), informed by findings
+8. Agent creates `.5/features/{TICKET-ID}-{description}/feature.md`
+9. Agent outputs: "Feature spec created. Next: /clear then /5:plan-implementation"
 
-You (the main agent) orchestrate the process:
-- You ask questions via AskUserQuestion
-- You spawn a read-only Explore agent to analyze the codebase
-- You receive findings from the sub-agent
-- You create the feature.md file
-- You inform the user of next steps
-
-**The sub-agent CANNOT write files or implement anything. It can only read and report.**
-
-## ⚠️ CRITICAL SCOPE CONSTRAINT
-
-**THIS COMMAND ONLY CREATES THE FEATURE SPECIFICATION. IT DOES NOT IMPLEMENT.**
-
-Your job in this phase:
-✅ Ask questions
-✅ Spawn read-only sub-agent to explore codebase
-✅ Create feature.md file
-✅ Tell user to run /5:plan-implementation
-
-Your job is NOT:
-❌ Create implementation plans
-❌ Map to technical components
-❌ Write any code
-❌ Start implementation
-
-**After creating feature.md and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
-
-## ❌ Boundaries: What This Command Does NOT Do
-
-**CRITICAL:** This command has a LIMITED scope. Do NOT:
-
-- ❌ **Create implementation plans** - That's Phase 2 (`/5:plan-implementation`)
-- ❌ **Map components to skills** - That's Phase 2's job
-- ❌ **Start any implementation** - That's Phase 3 (`/5:implement-feature`)
-- ❌ **Write any code** - Not even example code
-- ❌ **Create TodoWrite task lists** - Wrong phase
-- ❌ Ask for ticket ID (extract from branch name automatically)
-- ❌ Skip asking for feature description first
-- ❌ Ask questions before exploring the codebase
-- ❌ Skip the intensive Q&A phase
-- ❌ Accept vague requirements
-
-**If you find yourself doing any of the above, STOP IMMEDIATELY. You are exceeding this command's scope.**
-
-## Planning Process
+## Process
 
 ### Step 1: Gather Feature Description
 
-**FIRST ACTION:** Ask the developer for the feature description using AskUserQuestion.
-
-- Expect a **free-text answer**
-- Do NOT provide options
-- Do NOT ask follow-up questions yet
-- This input may be multiple paragraphs
-
-Prompt to use:
+Ask the developer for the feature description using AskUserQuestion:
 
 "Please describe the feature you want to develop. Paste the full ticket description or explain it in your own words."
 
-Do NOT ask for ticket ID - it will be extracted from the branch name automatically.
+- Expect free-text answer, do NOT provide options
+- Do NOT ask follow-up questions yet
 
-### Step 2: Extract Ticket ID from Branch Name
+### Step 2: Extract Ticket ID
 
-Automatically extract the ticket ID from the current git branch:
-- Branch format: `{TICKET-ID}-description` (ticket is prefix)
-- Use `git branch --show-current` to get branch name
-- Extract ticket ID using configurable pattern from config (e.g., `PROJ-\d+` or `\d+`)
-- Ask the developer if the ticket ID is correct
-- If no ticket ID found, ask developer for it
+Extract the ticket ID from the current git branch:
+- Use `git branch --show-current` via a Bash-free approach: spawn a quick Explore agent if needed
+- Branch format: `{TICKET-ID}-description`
+- Extract using configurable pattern from config
+- Ask the developer to confirm the ticket ID
+- If not found, ask for it
 
-### Step 3: Spawn Read-Only Explore Agent
+### Step 3: Spawn Explore Agent for Codebase Analysis
 
-**CRITICAL: Delegate ALL codebase exploration to a sub-agent.**
-
-Spawn a Task with `subagent_type=Explore` with the following prompt structure:
+Spawn a Task with `subagent_type=Explore`:
 
 ```
 Analyze the codebase for a feature planning session.
 
-**Feature Description:** {paste the user's feature description here}
+**Feature Description:** {paste the user's feature description}
 
 **Your Task:**
-1. Explore the project structure to identify modules/components
+1. Explore project structure to identify modules/components
 2. Find existing implementations similar to this feature
-3. Identify coding patterns and conventions used
+3. Identify coding patterns and conventions
 4. Find reusable components or patterns
-5. Identify which existing files/modules would be affected
+5. Identify affected files/modules
+6. Run `git branch --show-current` to get the current branch name
 
 **Report Format:**
-Return a structured report with:
+- Current git branch name
 - Project structure overview
 - Relevant existing patterns found
 - Similar implementations discovered
@@ -141,211 +89,61 @@ Return a structured report with:
 - Reusable components identified
 - Potential integration points
 
-**IMPORTANT:** You are a READ-ONLY agent. Only use Read, Glob, and Grep tools. Do NOT suggest implementations or write any code.
+**IMPORTANT:** READ-ONLY agent. Only use Read, Glob, Grep, and Bash (for git branch) tools.
 ```
 
-**Wait for the sub-agent to return its findings before proceeding.**
+Wait for the sub-agent to return before proceeding.
 
-### Step 4: Intensive Collaboration (5-10 Questions, ONE AT A TIME)
+### Step 4: Intensive Q&A (5-10 Questions, One at a Time)
 
-**CRITICAL:** After receiving the exploration report, engage in intensive Q&A. This is NOT optional.
+After receiving the exploration report, ask 5-10 clarifying questions using AskUserQuestion.
 
-- Ask 5-10 clarifying questions using AskUserQuestion
-- **ONE question at a time** - wait for answer before next question
-- Do NOT list multiple questions in one message
-- Do NOT skip to creating feature.md before asking at least 5 questions
-- **Use the sub-agent's findings to inform your questions**
+**Rules:**
+- ONE question at a time — wait for answer before next
+- Use sub-agent findings to ask informed questions
+- At least 5 questions before creating the spec
+- Provide 2-4 options where meaningful
 
-#### Step 4b: Optional Targeted Re-Exploration
+**Question categories:** Requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points (from findings), alternative approaches (from findings), complexity trade-offs.
 
-During Q&A, the user may mention components, modules, or patterns that weren't covered in the initial exploration. You MAY spawn additional targeted Explore agents to gather more specific information.
+**Challenge assumptions:** "Is this the simplest solution?", "Could we reuse existing X?" (reference findings), "What happens when Y fails?"
 
-**When to trigger re-exploration:**
-- User mentions a specific file, module, or service by name that wasn't in the initial report
-- User's answer reveals a dependency or integration point not previously identified
-- User asks "have you looked at X?" or "what about the Y module?"
-- Understanding a specific component is critical for accurate feature specification
-
-**How to re-explore:**
-
-Spawn a targeted Task with `subagent_type=Explore`:
+**Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
 
 ```
 Targeted exploration for feature planning.
-
-**Context:** During Q&A, the user mentioned {specific component/module/pattern}.
-
-**Focused Task:**
-1. Find and analyze {specific component} mentioned by user
-2. Understand how it works and its patterns
-3. Identify how it might relate to the planned feature
-
-**Report:** Provide a focused summary of:
-- How this component works
-- Relevant patterns or conventions
-- How it could integrate with the planned feature
-
-**IMPORTANT:** READ-ONLY. Only use Read, Glob, and Grep tools.
+**Context:** User mentioned {component/module}.
+**Task:** Find and analyze {component}, understand patterns, identify relation to planned feature.
+**READ-ONLY.** Only use Read, Glob, and Grep tools.
 ```
 
-**Guidelines:**
-- Keep re-explorations focused and specific (not broad searches)
-- Use findings to ask better follow-up questions
-- Document relevant discoveries in the final feature spec
+### Step 5: Create Feature Specification
 
-**Question categories to explore:**
+Determine a feature name: short, kebab-case (e.g., "add-emergency-schedule").
 
-1. **Requirements Clarity**
-   - What exactly should this feature do?
-   - What is the expected user experience?
-   - What are the inputs and outputs?
+Write to `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool.
 
-2. **Scope Boundaries**
-   - What is explicitly IN scope?
-   - What is explicitly OUT of scope?
-   - Are there any constraints or limitations?
+Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`. Populate all sections:
+- Ticket ID & Summary
+- Problem Statement
+- Requirements (functional and non-functional)
+- Constraints
+- Affected Components (from exploration)
+- Acceptance Criteria
+- Alternatives Considered
+- Questions & Answers (from Q&A session)
 
-3. **Edge Cases**
-   - What happens when X fails?
-   - How should the system handle invalid inputs?
-   - What are the boundary conditions?
+## PLANNING COMPLETE
 
-4. **Performance Expectations**
-   - Are there performance requirements?
-   - How much data needs to be handled?
-   - Are there concurrency concerns?
+After writing feature.md, output exactly:
 
-5. **Testing Strategy**
-   - How will we verify this works?
-   - What are the acceptance criteria?
-   - What test scenarios should be covered?
+```
+Feature spec created at `.5/features/{name}/feature.md`
 
-6. **Integration Points** (informed by sub-agent findings)
-   - Which existing components/modules are affected?
-   - Are there API changes?
-   - How does this interact with existing features?
+Next steps:
+1. Review the feature spec
+2. If changes needed: /5:discuss-feature {name}
+3. If approved: /clear then /5:plan-implementation {name}
+```
 
-7. **Alternative Approaches** (informed by sub-agent findings)
-   - Have you considered approach X instead?
-   - Is this the simplest solution?
-   - Could we reuse existing components?
-
-8. **Complexity Trade-offs**
-   - What is the complexity vs value trade-off?
-   - Should this be broken into smaller features?
-   - Are there simpler alternatives?
-
-**Challenge assumptions:**
-- "Is this the simplest solution?"
-- "Have you considered X alternative?"
-- "What happens when Y fails?"
-- "Could we use existing Z component instead?" (reference sub-agent findings)
-- "Is a full factory needed or just simple creation?"
-
-**Ask questions ONE AT A TIME.** Use AskUserQuestion for each question. For clarifying questions, provide 2-4 options where meaningful. Wait for the user's answer before asking the next question. Open questions (like feature description) can use free text.
-
-### Step 5: Determine Feature Name
-
-Based on the feature description and discussion:
-- Create a short, kebab-case description (e.g., "add-emergency-schedule")
-- This will be used for the feature spec filename: `{TICKET-ID}-{description}.md`
-
-### Step 6: Create Feature Specification
-
-Write a comprehensive feature spec to `.5/features/{TICKET-ID}-{description}/feature.md` using the Write tool.
-
-**THIS IS YOUR FINAL OUTPUT. After creating this file, proceed immediately to Step 7.**
-
-**Template Reference:** Use the structure from `.claude/templates/workflow/FEATURE-SPEC.md`
-
-The template contains placeholders like `{TICKET-ID}`, `{Title}`, `{1-2 sentence overview}`, etc. Replace all placeholders with actual values based on your research and the Q&A session.
-
-Key sections to populate:
-- **Ticket ID & Summary** - From branch extraction and feature description
-- **Problem Statement** - Why this feature is needed
-- **Requirements** - Functional and non-functional requirements from discussion
-- **Constraints** - Business, technical, and time constraints identified
-- **Affected Components** - From sub-agent exploration report
-- **Entity Definitions** - If the feature involves new data structures
-- **Acceptance Criteria** - Verifiable criteria for success
-- **Alternatives Considered** - Options discussed and why chosen approach was selected
-- **Questions & Answers** - Document the Q&A from the collaboration phase
-- **Next Steps** - Instructions for proceeding to Phase 2
-
-## Instructions
-
-Follow these steps **IN ORDER** and **STOP after step 8**:
-
-1. **Ask for feature description** - Request task description and additional information from developer
-2. **Extract Ticket ID** - Get current branch name and extract ticket ID using configured pattern
-3. **Spawn Explore sub-agent** - Delegate codebase analysis to read-only agent, wait for report
-4. **Ask 5-10 clarifying questions** - Based on sub-agent findings, ask informed questions using AskUserQuestion - This is MANDATORY
-   - **4b. Re-explore as needed** - If user mentions unknown components during Q&A, spawn targeted Explore agents
-5. **Challenge assumptions** - Present alternatives, question complexity
-6. **Determine feature name** - Create short kebab-case description
-7. **Create feature specification** in `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool
-8. **Inform the developer** to review the spec, run `/clear` to reset context, and then run `/5:plan-implementation {TICKET-ID}-{description}`
-
-**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT PROCEED TO IMPLEMENTATION.**
-
-## Key Principles
-
-1. **Feature description first** - Get context before asking detailed questions
-2. **Auto-extract ticket ID** - Parse from branch name automatically
-3. **Delegate exploration** - Use read-only sub-agent for codebase analysis
-4. **Explore before questioning** - Wait for sub-agent report before asking questions
-5. **Challenge assumptions** - Don't accept requirements at face value
-6. **Explore alternatives** - Present options and trade-offs
-7. **Document decisions** - Capture why choices were made
-8. **Structured output** - Use the feature spec template consistently
-9. **Clear handoff** - Tell developer what to do next
-
-
-## Common Feature Types
-
-### New Component/Module
-- Requires: Core logic, data structures, tests
-- Questions: Validation rules? Business logic? API design?
-
-### Extend Existing Component
-- Requires: Update existing code, maintain compatibility
-- Questions: Breaking change? Migration needed? Impact on existing functionality?
-
-### Add Business Rule
-- Requires: Logic implementation, validation
-- Questions: When is rule enforced? What are edge cases?
-
-### API Endpoint
-- Requires: Endpoint implementation, request/response handling
-- Questions: API design? Error handling? Authentication?
-
-## Example Workflow
-
-1. User runs: `/5:plan-feature`
-2. Main agent asks: "Please describe the feature you want to develop"
-3. User: "I want to add emergency schedule tracking to products. It should allow marking products as emergency and setting a schedule window."
-4. Main agent extracts: Ticket ID `PROJ-1234` from branch `PROJ-1234-add-emergency-schedule`
-5. **Main agent spawns Explore sub-agent** with feature description
-6. **Sub-agent returns report:** Found Product model at src/models/Product.ts, existing ScheduleService at src/services/ScheduleService.ts, similar pattern in src/models/Promotion.ts...
-7. Main agent asks Question 1: "Should emergency schedules support recurring patterns or just one-time windows?"
-8. User answers: "One-time for now, but we have the NotificationService that should trigger alerts"
-9. **Main agent spawns targeted Re-Explore** for NotificationService (wasn't in initial report)
-10. **Sub-agent returns:** Found NotificationService at src/services/NotificationService.ts with event-based triggers...
-11. Main agent continues Q&A with better context about notifications
-12. Main agent challenges: "The sub-agent found existing ScheduleService - could we reuse it instead of creating new scheduling infrastructure?"
-13. Main agent determines: Feature name `add-emergency-schedule`
-14. Main agent creates: `.5/features/PROJ-1234-add-emergency-schedule/feature.md` using Write tool
-15. Main agent tells user: "✅ Feature spec created at `.5/features/PROJ-1234-add-emergency-schedule/feature.md`
-
-    **Next steps:**
-    1. Review the feature spec
-    2. If changes needed: `/5:discuss-feature PROJ-1234-add-emergency-schedule`
-    3. If approved:
-       - **Run `/clear` to reset context** (recommended between phases)
-       - Then run `/5:plan-implementation PROJ-1234-add-emergency-schedule`"
-
-**🛑 COMMAND COMPLETE. The skill stops here and waits for user to proceed to Phase 2.**
-
-## Related Documentation
-
-- [5-Phase Workflow Guide](../docs/workflow-guide.md)
+STOP. You are a planner. Your job is done. Do not implement.

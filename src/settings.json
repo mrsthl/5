@@ -15,6 +15,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/plan-guard.js",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

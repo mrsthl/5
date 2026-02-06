@@ -1,5 +1,41 @@
 # Release Notes
 
+## v1.4.3
+
+**Release Date:** 2026-02-06
+
+### Status Line Update Notifications
+
+Moved update notifications from chat output to the **status line** at the bottom of the terminal, and added a new `/5:update` command for one-step upgrades.
+
+**New: `/5:update` Command**
+- Runs `npx 5-phase-workflow --upgrade` to update to the latest version
+- Shown as a hint directly in the status line when an update is available
+
+**Status Line Integration**
+- `statusline.js` now reads `version.json` and displays a yellow update indicator when a newer version exists
+- Format: `↑{version} → /5:update` appended to the existing status line
+- No indicator shown when up to date or when `version.json` is absent
+
+**Update Check Improvements**
+- `check-updates.js` no longer outputs to `console.log` — the status line is now the sole notification channel
+- Persists `latestAvailableVersion` in `version.json` when an update is found
+- Clears `latestAvailableVersion` (sets to `null`) when no update is available, cleaning up stale values after upgrades
+- Consolidated to a single file write at the end of the check
+
+**Tests**
+- Test 5 now verifies `latestAvailableVersion` is persisted in `version.json` instead of checking console output
+- Test 6 seeds a stale `latestAvailableVersion` and verifies it gets cleared for current versions
+- Test 10 (new) exercises `statusline.js`: verifies indicator appears with version and `/5:update` hint, and verifies no indicator when `null` or absent
+
+**Affected files:**
+- `src/commands/5/update.md` (new)
+- `src/hooks/check-updates.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `test/test-check-updates-hook.sh` (modified)
+
+---
+
 ## v1.4.2
 
 **Release Date:** 2026-02-06

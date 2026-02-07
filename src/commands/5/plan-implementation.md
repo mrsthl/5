@@ -16,16 +16,6 @@ After creating the plan, you are DONE.
 
 # Plan Implementation (Phase 2)
 
-## Prerequisites
-
-If the feature argument is `CONFIGURE`, skip this check — the CONFIGURE workflow creates the config file.
-
-For all other features: Read `.claude/.5/config.json`. If the file does not exist, STOP immediately and tell the user:
-
-"Configuration not found. Please run `/5:configure` first to set up your project."
-
-Do NOT proceed without configuration.
-
 ## Example Workflow
 
 1. User runs `/5:plan-implementation PROJ-1234-add-emergency-schedule`

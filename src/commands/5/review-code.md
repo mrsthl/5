@@ -18,16 +18,6 @@ After saving the review report, you are DONE.
 
 # Review Code (Phase 5)
 
-## Prerequisites
-
-If the feature argument is `CONFIGURE`, skip this check.
-
-For all other features: Read `.claude/.5/config.json`. If the file does not exist, STOP immediately and tell the user:
-
-"Configuration not found. Please run `/5:configure` first to set up your project."
-
-Do NOT proceed without configuration.
-
 ## Review Tools
 
 Two review tools are supported (configured in `.claude/.5/config.json` field `reviewTool`):

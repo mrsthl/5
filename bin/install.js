@@ -214,7 +214,8 @@ function getWorkflowManagedFiles() {
     hooks: [
       'statusline.js',
       'check-updates.js',
-      'plan-guard.js'
+      'plan-guard.js',
+      'config-guard.js'
     ],
 
     // Templates: specific template files

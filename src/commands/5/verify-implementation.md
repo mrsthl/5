@@ -8,31 +8,6 @@ user-invocable: true
 
 # Verify Implementation (Phase 4)
 
-## Prerequisites Check
-
-**CRITICAL: Check for configuration before proceeding (skip for CONFIGURE feature)**
-
-If the feature argument is `CONFIGURE`, skip this check entirely — the CONFIGURE workflow is what creates the config file.
-
-For all other features, run this check:
-
-```bash
-if [ ! -f ".claude/.5/config.json" ]; then
-  echo "❌ Configuration not found"
-  echo ""
-  echo "Please run /5:configure first to set up your project."
-  echo ""
-  echo "The configure command will:"
-  echo "  • Detect your project type and build commands"
-  echo "  • Set up ticket tracking conventions"
-  echo "  • Generate documentation (CLAUDE.md)"
-  echo "  • Create project-specific skills"
-  exit 1
-fi
-```
-
-**If config doesn't exist and the feature is NOT `CONFIGURE`, STOP IMMEDIATELY. Do not proceed with the workflow.**
-
 Verify that an implementation is complete, correct, and meets feature requirements through multi-layer verification.
 
 ## Scope

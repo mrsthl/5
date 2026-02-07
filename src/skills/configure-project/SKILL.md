@@ -1,6 +1,6 @@
 ---
 name: configure-project
-description: Creates project configuration files, analyzes codebase for CLAUDE.md, and generates project-specific skills. Used during /5:implement-feature CONFIGURE.
+description: Analyzes codebase for CLAUDE.md and generates project-specific skills. Used during /5:implement-feature CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
 context: fork
@@ -13,76 +13,20 @@ user-invocable: false
 
 This skill does the heavy lifting during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create the actual configuration files.
 
-It handles three distinct tasks, invoked with different parameters per component:
+It handles two distinct tasks, invoked with different parameters per component:
 
-- **A. Write config.json** - Creates the project configuration file
-- **B. Analyze Codebase and Create/Update CLAUDE.md** - Maps codebase and documents conventions
-- **C. Generate Project-Specific Skills** - Creates SKILL.md files for common project patterns
+- **A. Analyze Codebase and Create/Update CLAUDE.md** - Maps codebase and documents conventions
+- **B. Generate Project-Specific Skills** - Creates SKILL.md files for common project patterns
 
----
-
-## A. Write config.json
-
-**Receives:** project type, ticket config, branch config, build/test commands, tool availability
-
-**Creates:** `.claude/.5/config.json`
-
-**Schema (no `steps` array):**
-
-```json
-{
-  "projectType": "{type}",
-  "ticket": {
-    "pattern": "{regex-pattern-or-null}",
-    "extractFromBranch": true
-  },
-  "branch": {
-    "convention": "{convention}"
-  },
-  "build": {
-    "command": "{build-command}",
-    "testCommand": "{test-command}",
-    "timeout": {
-      "compile": 120000,
-      "test": 300000
-    }
-  },
-  "tools": {
-    "coderabbit": {
-      "available": false,
-      "authenticated": false
-    },
-    "ide": {
-      "available": false,
-      "type": null
-    },
-    "context7": {
-      "available": false
-    }
-  },
-  "reviewTool": "claude" or "coderabbit" or "none",
-  "git": {
-    "autoCommit": false,
-    "commitMessage": {
-      "pattern": "{ticket-id} {short-description}"
-    }
-  }
-}
-```
-
-**Process:**
-1. Read all values from the feature spec (`.5/features/CONFIGURE/feature.md`), including `git.autoCommit` and `git.commitMessage.pattern`
-2. Ensure `.claude/.5/` directory exists (create with `mkdir -p` if needed)
-3. Write `config.json` with pretty-printed JSON
-4. Read back to verify correctness
+Note: config.json is written directly by `/5:configure` during the Q&A phase.
 
 ---
 
-## B. Analyze Codebase and Create/Update CLAUDE.md
+## A. Analyze Codebase and Create/Update CLAUDE.md
 
 **Process:**
 
-### B1. Unified Codebase Analysis
+### A1. Unified Codebase Analysis
 
 Perform comprehensive analysis once to gather data for ALL templates:
 
@@ -140,7 +84,7 @@ Perform comprehensive analysis once to gather data for ALL templates:
 - Identify deprecated dependencies (check for warnings in package manifests)
 - Look for complex code sections (deeply nested conditionals, long functions)
 
-### B2. Fill Templates
+### A2. Fill Templates
 
 For each template in `src/templates/`:
 
@@ -177,7 +121,7 @@ INTEGRATIONS.md:
 CONCERNS.md:
 - `{file paths}` → Actual file paths from grep results
 
-### B3. Write Documentation Files
+### A3. Write Documentation Files
 
 Write filled templates to `.5/` folder:
 
@@ -191,7 +135,7 @@ Write filled templates to `.5/` folder:
    - `.5/INTEGRATIONS.md`
    - `.5/CONCERNS.md`
 
-### B4. Create Master CLAUDE.md
+### A4. Create Master CLAUDE.md
 
 Generate CLAUDE.md as a navigation hub:
 
@@ -247,7 +191,7 @@ When working with this codebase, follow these principles:
 - Reviewing concerns → See [Concerns](./.5/CONCERNS.md)
 ```
 
-### B5. Preserve Existing Content
+### A5. Preserve Existing Content
 
 If CLAUDE.md already exists:
 - Read current content
@@ -257,7 +201,7 @@ If CLAUDE.md already exists:
 
 ---
 
-## C. Generate Project-Specific Skills
+## B. Generate Project-Specific Skills
 
 **Reads:** Pattern selections from feature spec (`.5/CONFIGURE/feature.md`)
 
@@ -402,7 +346,7 @@ Pattern-following is simple once conventions are documented:
 
 ---
 
-## C2. Generate Command Skills (run-*)
+## B2. Generate Command Skills (run-*)
 
 **Reads:** Command selections from feature spec (`.5/CONFIGURE/feature.md`)
 
@@ -491,8 +435,7 @@ Executes the project's {command} command.
 Returns structured results for each component:
 
 ```
-Component A (config.json): SUCCESS - Created .claude/.5/config.json
-Component B (Documentation): SUCCESS - Created 7 documentation files + index
+Component A (Documentation): SUCCESS - Created 7 documentation files + index
   - .5/ARCHITECTURE.md (Pattern: Layered, 4 layers identified)
   - .5/STACK.md (TypeScript + Express, 23 dependencies)
   - .5/STRUCTURE.md (8 top-level directories mapped)
@@ -501,15 +444,15 @@ Component B (Documentation): SUCCESS - Created 7 documentation files + index
   - .5/INTEGRATIONS.md (PostgreSQL, 2 APIs, GitHub Actions)
   - .5/CONCERNS.md (3 TODO items, 1 deprecated dependency)
   - CLAUDE.md (index with references)
-Component C (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
-Component D (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
+Component B (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
+Component C (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
 ```
 
 Or on failure:
 
 ```
-Component A (config.json): FAILED - Permission denied writing to .claude/.5/
-Component B (Documentation): FAILED - Unable to read template files
+Component A (Documentation): FAILED - Unable to read template files
+Component B (Pattern Skills): FAILED - No patterns found in codebase
 ```
 
 ## DO NOT

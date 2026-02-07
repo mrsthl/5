@@ -1,6 +1,6 @@
 ---
 name: 5:configure
-description: Phase 1 of project configuration. Analyzes project, gathers preferences, and creates a configuration feature spec. Follow up with /5:plan-implementation CONFIGURE.
+description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates feature spec for remaining setup. Follow up with /5:plan-implementation CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 context: inherit
 user-invocable: true
@@ -21,34 +21,25 @@ After running this command, proceed through the standard phases:
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
 
-**THIS COMMAND ONLY CREATES THE CONFIGURATION FEATURE SPEC. IT DOES NOT CONFIGURE.**
+**THIS COMMAND WRITES config.json AND CREATES THE FEATURE SPEC. NOTHING ELSE.**
 
 Your job in this command:
 ✅ Analyze project (detect type, build commands, etc.)
 ✅ Gather user preferences via questions
-✅ Create feature spec at `.5/CONFIGURE/feature.md`
+✅ Write `.claude/.5/config.json` directly
+✅ Create feature spec at `.5/features/CONFIGURE/feature.md` for remaining work
 ✅ Tell user to run /5:plan-implementation CONFIGURE
 
 Your job is NOT:
-❌ Write config.json directly (Phase 3 does this)
 ❌ Create CLAUDE.md directly (Phase 3 does this)
+❌ Generate documentation files directly (Phase 3 does this)
 ❌ Generate skills directly (Phase 3 does this)
 ❌ Skip user interaction
 ❌ Assume project structure
 
-**After creating the feature spec and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+**After writing config.json, creating the feature spec, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-## ❌ Boundaries: What This Command Does NOT Do
-
-**CRITICAL:** This command has a LIMITED scope. Do NOT:
-
-- ❌ **Write config.json** - That's Phase 3's job (via configure-project skill)
-- ❌ **Create CLAUDE.md** - That's Phase 3's job
-- ❌ **Generate skills** - That's Phase 3's job
-- ❌ **Skip questions** - Always confirm detected values with user
-- ❌ **Assume structure** - Detect or ask, don't guess
-
-**If you find yourself creating config files or CLAUDE.md, STOP IMMEDIATELY. You should only be creating the feature spec.**
+**If you find yourself creating CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the feature spec.**
 
 ## Configuration Process
 
@@ -414,6 +405,63 @@ If no patterns/commands detected:
 - Inform user: "No common patterns detected. Would you like to specify patterns manually?"
 - Allow manual entry of pattern names/locations or command names
 
+### Step 2.5: Write config.json
+
+Using the values gathered from Steps 1 and 2, write `.claude/.5/config.json` directly.
+
+**If "Update existing" flow:** Read current config, merge updated values.
+**If "Start fresh" or new install:** Write new config.
+
+**Ensure directory exists:**
+```bash
+mkdir -p .claude/.5
+```
+
+**Schema:**
+
+```json
+{
+  "projectType": "{type}",
+  "ticket": {
+    "pattern": "{regex-pattern-or-null}",
+    "extractFromBranch": true
+  },
+  "branch": {
+    "convention": "{convention}"
+  },
+  "build": {
+    "command": "{build-command}",
+    "testCommand": "{test-command}",
+    "timeout": {
+      "compile": 120000,
+      "test": 300000
+    }
+  },
+  "tools": {
+    "coderabbit": {
+      "available": false,
+      "authenticated": false
+    },
+    "ide": {
+      "available": false,
+      "type": null
+    },
+    "context7": {
+      "available": false
+    }
+  },
+  "reviewTool": "claude",
+  "git": {
+    "autoCommit": false,
+    "commitMessage": {
+      "pattern": "{ticket-id} {short-description}"
+    }
+  }
+}
+```
+
+Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
+
 ### Step 3: Create Feature Spec
 
 Write `.5/CONFIGURE/feature.md` containing all gathered data:
@@ -422,28 +470,11 @@ Write `.5/CONFIGURE/feature.md` containing all gathered data:
 # Feature: Project Configuration
 
 ## Summary
-Configure the 5-phase workflow for this {project-type} project. Creates config.json, generates CLAUDE.md with codebase analysis, and creates project-specific skills.
+Generates CLAUDE.md with codebase analysis and creates project-specific skills. (config.json already written.)
 
 ## Requirements
 
-### Requirement 1: Create config.json
-Create `.claude/.5/config.json` with the following values:
-- Project type: {project-type}
-- Ticket pattern: {pattern}
-- Extract from branch: {yes/no}
-- Branch convention: {convention}
-- Build command: {build-command}
-- Test command: {test-command}
-- Build timeout: 120000ms
-- Test timeout: 300000ms
-- CodeRabbit: {available/not-available}, authenticated: {yes/no}
-- IDE integration: {available/not-available}, type: {type}
-- Context7: {available/not-available}
-- Review tool: {claude/coderabbit/none}
-- Auto-commit: {yes/no}
-- Commit message pattern: {pattern or "default"}
-
-### Requirement 2: Generate Documentation Files
+### Requirement 1: Generate Documentation Files
 Analyze the codebase and generate modular documentation:
 
 **Create separate documentation files in `.5/` folder:**
@@ -470,7 +501,7 @@ Analyze the codebase and generate modular documentation:
 **Preserve existing content:**
 - If CLAUDE.md already exists, preserve user-written custom sections
 
-### Requirement 3: Generate Project-Specific Skills
+### Requirement 2: Generate Project-Specific Skills
 
 #### 3a. Create-* Skills (Architectural Patterns)
 
@@ -525,7 +556,6 @@ Each run-* skill should:
 - Include common options/flags
 
 ## Acceptance Criteria
-- [ ] `.claude/.5/config.json` exists with correct values (no `steps` array)
 - [ ] `.5/` directory created
 - [ ] All 7 documentation files exist and are populated:
   - [ ] `.5/ARCHITECTURE.md`
@@ -549,19 +579,21 @@ Each run-* skill should:
 
 Tell the user:
 
-1. "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
-2. "Next steps:"
+1. "Configuration saved to `.claude/.5/config.json`"
+2. "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
+3. "Next steps:"
    - "Run `/clear` to reset context"
    - "Then run `/5:plan-implementation CONFIGURE`"
-3. "After that: Continue with `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code` (clearing context between each phase)"
+4. "After that: Continue with `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code` (clearing context between each phase)"
 
-## DO NOT
+## ❌ DO NOT
 
-- DO NOT write config.json directly (that's Phase 3's job via the configure-project skill)
-- DO NOT create CLAUDE.md directly (that's Phase 3's job)
-- DO NOT generate skills directly (that's Phase 3's job)
-- DO NOT skip user interaction - always confirm detected values
-- DO NOT assume project structure - always detect or ask
+- DO NOT create CLAUDE.md directly — that's Phase 3's job
+- DO NOT create `.5/*.md` documentation files — that's Phase 3's job
+- DO NOT generate skills directly — that's Phase 3's job
+- DO NOT skip user interaction — always confirm detected values
+- DO NOT assume project structure — always detect or ask
+- DO NOT continue after writing config.json and the feature spec — EXIT
 
 ## Example Usage
 

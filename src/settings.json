@@ -18,6 +18,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/config-guard.js",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {

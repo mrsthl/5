@@ -16,14 +16,6 @@ After creating the spec, you are DONE.
 
 # Plan Feature (Phase 1)
 
-## Prerequisites
-
-Read `.claude/.5/config.json`. If the file does not exist, STOP immediately and tell the user:
-
-"Configuration not found. Please run `/5:configure` first to set up your project."
-
-Do NOT proceed without configuration.
-
 ## Common Feature Types
 
 - **New Component/Module** — Core logic, data structures, tests. Questions: Validation rules? Business logic? API design?

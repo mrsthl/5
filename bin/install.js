@@ -235,7 +235,6 @@ function getWorkflowManagedFiles() {
       'workflow/VERIFICATION-REPORT.md',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',
-      'workflow/QUICK-PLAN.md',
       'workflow/FIX-PLAN.md'
     ]
   };
@@ -513,16 +512,42 @@ function initializeVersionJson(targetPath, isGlobal) {
   log.success('Initialized version tracking');
 }
 
+// Merge hook arrays by matching on the command path.
+// Keeps user overrides for existing hooks, adds new hooks from source.
+function mergeHookArrays(targetArr, sourceArr) {
+  const result = [...targetArr];
+  for (const sourceEntry of sourceArr) {
+    const sourceCmd = sourceEntry.hooks?.[0]?.command || '';
+    const exists = result.some(entry => {
+      const cmd = entry.hooks?.[0]?.command || '';
+      return cmd === sourceCmd;
+    });
+    if (!exists) {
+      result.push(sourceEntry);
+    }
+  }
+  return result;
+}
+
+// Hook event keys that contain arrays of hook entries
+const HOOK_ARRAY_KEYS = new Set([
+  'PreToolUse', 'PostToolUse', 'SessionStart', 'SessionEnd',
+  'PreCompact', 'PostCompact'
+]);
+
 // Deep merge for settings.json
-function deepMerge(target, source) {
+function deepMerge(target, source, parentKey) {
   const result = { ...target };
 
   for (const key in source) {
     if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
       // Recursively merge nested objects
-      result[key] = deepMerge(result[key] || {}, source[key]);
+      result[key] = deepMerge(result[key] || {}, source[key], key);
+    } else if (Array.isArray(source[key]) && Array.isArray(result[key]) && HOOK_ARRAY_KEYS.has(key)) {
+      // Hook arrays: merge by command path to add new hooks
+      result[key] = mergeHookArrays(result[key], source[key]);
     } else {
-      // For primitives and arrays: use source if target doesn't have it
+      // For primitives and non-hook arrays: use source if target doesn't have it
       if (!(key in result)) {
         result[key] = source[key];
       }

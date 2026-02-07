@@ -5,9 +5,9 @@
 // - Task agents other than Explore (when not in implementation mode)
 // - Write operations outside .5/ (when not in implementation mode)
 //
-// Planning mode is detected by absence of any state.json in .5/features/.
-// Once state.json exists (created in Phase 3), the feature has passed planning
-// and all tools are allowed (implementation, verification, review phases).
+// Planning mode is detected per-feature by checking if that specific feature's
+// state.json exists. Only the feature in implementation mode gets unrestricted
+// tool access. Other features remain in planning mode.
 
 const fs = require('fs');
 const path = require('path');
@@ -28,9 +28,10 @@ process.stdin.on('end', () => {
     const workspaceDir = data.cwd || data.workspace?.current_dir || process.cwd();
     const toolInput = data.tool_input || {};
 
-    // Check if any feature is in implementation mode
-    if (isImplementationMode(workspaceDir)) {
-      process.exit(0); // All tools allowed during implementation
+    // Determine which feature is being targeted and check its state
+    const targetFeature = getTargetFeature(toolName, toolInput, workspaceDir);
+    if (targetFeature && isFeatureInImplementationMode(workspaceDir, targetFeature)) {
+      process.exit(0); // Tools allowed for features in implementation mode
     }
 
     // Planning mode enforcement
@@ -76,28 +77,51 @@ function isInsideDotFive(filePath, workspaceDir) {
          resolved === claudeDotFiveDir;
 }
 
-function isImplementationMode(workspaceDir) {
-  // If any state.json exists, the feature has passed planning phases.
-  // state.json is created in Phase 3 (implement-feature) and persists
-  // through Phase 4 (verify) and Phase 5 (review) with status "completed".
+function getTargetFeature(toolName, toolInput, workspaceDir) {
+  // Extract the feature name from the tool input context
   const featuresDir = path.join(workspaceDir, '.claude', '.5', 'features');
 
-  if (!fs.existsSync(featuresDir)) {
-    return false;
-  }
-
-  try {
-    const features = fs.readdirSync(featuresDir, { withFileTypes: true });
-    for (const entry of features) {
-      if (!entry.isDirectory()) continue;
-      const stateFile = path.join(featuresDir, entry.name, 'state.json');
-      if (fs.existsSync(stateFile)) {
-        return true;
-      }
+  if (toolName === 'Write' || toolName === 'Edit') {
+    // Check if the file path is inside a feature directory
+    const filePath = toolInput.file_path || '';
+    const resolved = path.resolve(workspaceDir, filePath);
+    if (resolved.startsWith(featuresDir + path.sep)) {
+      // Extract feature name: .claude/.5/features/{feature-name}/...
+      const relative = resolved.slice(featuresDir.length + 1);
+      const featureName = relative.split(path.sep)[0];
+      if (featureName) return featureName;
     }
-  } catch (e) {
-    // Can't read features dir - assume planning mode (safe default)
   }
 
-  return false;
+  if (toolName === 'Task') {
+    // Check the task prompt for feature name references
+    const prompt = toolInput.prompt || '';
+    const desc = toolInput.description || '';
+    const combined = prompt + ' ' + desc;
+
+    // Try to match a feature directory that exists
+    try {
+      if (fs.existsSync(featuresDir)) {
+        const features = fs.readdirSync(featuresDir, { withFileTypes: true });
+        for (const entry of features) {
+          if (!entry.isDirectory()) continue;
+          if (combined.includes(entry.name)) {
+            return entry.name;
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore read errors
+    }
+  }
+
+  return null;
+}
+
+function isFeatureInImplementationMode(workspaceDir, featureName) {
+  // Check if this specific feature has a state.json (created in Phase 3)
+  const stateFile = path.join(
+    workspaceDir, '.claude', '.5', 'features', featureName, 'state.json'
+  );
+  return fs.existsSync(stateFile);
 }

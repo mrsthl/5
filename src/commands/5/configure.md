@@ -10,7 +10,7 @@ user-invocable: true
 
 ## Overview
 
-This command is **Phase 1** of the 5-phase workflow applied to project configuration itself. It analyzes the project, asks the user questions, and outputs a feature spec at `.5/CONFIGURE/feature.md`.
+This command is **Phase 1** of the 5-phase workflow applied to project configuration itself. It analyzes the project, asks the user questions, and outputs a feature spec at `.5/features/CONFIGURE/feature.md`.
 
 After running this command, proceed through the standard phases:
 1. **`/5:configure`** (this command) - Plan the configuration feature
@@ -464,7 +464,7 @@ Fill all values from user responses. Write with pretty-printed JSON. Read back t
 
 ### Step 3: Create Feature Spec
 
-Write `.5/CONFIGURE/feature.md` containing all gathered data:
+Write `.5/features/CONFIGURE/feature.md` containing all gathered data:
 
 ```markdown
 # Feature: Project Configuration

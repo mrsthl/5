@@ -94,14 +94,15 @@ feature_name="${TICKET_ID}-${slug}"
 
 Write plan to `.5/features/${feature_name}/plan.md` using the template structure.
 
-**Template Reference:** Use the structure from `.claude/templates/workflow/QUICK-PLAN.md`
+**Template Reference:** Use the structure from `.claude/templates/workflow/PLAN.md`
 
 The template contains placeholders for:
+- **YAML frontmatter:** ticket, feature, created
 - **Header:** `# Quick Implementation: {TICKET-ID}`
-- **Task:** The task description
-- **Components table:** Columns for #, Type, Name, Skill, Module
-- **Affected Modules:** List of modules that will be modified
-- **Execution:** Mode (parallel, sequential, or direct)
+- **Task description:** One sentence summary
+- **Components table:** Columns for Step, Component, Action, File, Description, Complexity
+- **Implementation Notes:** Key details and patterns
+- **Verification:** Build and test commands
 
 ### Step 6: Present Plan and Iterate
 
@@ -138,15 +139,15 @@ Create state file at `.5/features/${feature_name}/state.json` using Write tool:
 
 ```json
 {
-  "ticketId": "${TICKET_ID}",
-  "featureName": "${feature_name}",
+  "ticket": "${TICKET_ID}",
+  "feature": "${feature_name}",
   "phase": "quick-implementation",
   "status": "in-progress",
-  "currentWave": 1,
-  "totalWaves": 1,
-  "completedComponents": [],
-  "pendingComponents": [/* from plan */],
-  "failedAttempts": [],
+  "currentStep": 1,
+  "totalSteps": 1,
+  "completed": [],
+  "pending": [/* from plan */],
+  "failed": [],
   "verificationResults": {},
   "startedAt": "{ISO timestamp}",
   "lastUpdated": "{ISO timestamp}"
@@ -171,7 +172,7 @@ For each component:
 1. Invoke appropriate skill using Skill tool
 2. **Update state file after each component** (MANDATORY):
    - Read current state file
-   - Move component from `pendingComponents` to `completedComponents`
+   - Move component from `pending` to `completed`
    - Update `lastUpdated` timestamp
    - Write back to state file
    - Verify write succeeded
@@ -221,8 +222,8 @@ Task tool call:
 
 Process results and **update state file** (MANDATORY):
 - Read current state file
-- Move completed components from `pendingComponents` to `completedComponents`
-- Record any failures in `failedAttempts`
+- Move completed components from `pending` to `completed`
+- Record any failures in `failed`
 - Update `lastUpdated` timestamp
 - Write back to state file
 - Verify write succeeded

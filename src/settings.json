@@ -28,7 +28,7 @@
         ]
       },
       {
-        "matcher": "",
+        "matcher": "Task|Write|Edit",
         "hooks": [
           {
             "type": "command",

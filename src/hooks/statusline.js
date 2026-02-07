@@ -67,9 +67,10 @@ process.stdin.on('end', () => {
 });
 
 // Compare semver versions: returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+// Uses parseInt to handle pre-release tags (e.g., "2-beta" → 2)
 function compareVersions(v1, v2) {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
+  const parts1 = v1.split('.').map(p => parseInt(p, 10) || 0);
+  const parts2 = v2.split('.').map(p => parseInt(p, 10) || 0);
   for (let i = 0; i < 3; i++) {
     if (parts1[i] > parts2[i]) return 1;
     if (parts1[i] < parts2[i]) return -1;

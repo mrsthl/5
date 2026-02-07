@@ -272,7 +272,9 @@ Next steps:
 
 If implementation is interrupted, the state file allows resuming:
 - Read state.json
-- Skip steps where all components are in `completed`
+- For each step marked as completed, verify the output files still exist on disk using Glob
+- If any completed files are missing, move those components back to pending and re-run them
+- Skip steps where all components are in `completed` AND their files verified to exist
 - Resume from `currentStep`
 
 ## Example Flow

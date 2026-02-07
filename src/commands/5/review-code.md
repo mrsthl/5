@@ -227,7 +227,7 @@ If "Ask me each": Present each question individually via AskUserQuestion. If the
 
 For "Save to file" mode only.
 
-Determine feature name from `.5/features/*/state.json` (most recent) or ask user.
+Determine feature name from `.5/features/*/state.json` (most recent by `startedAt` field) or ask user.
 
 Write to `.5/features/{feature-name}/review-{YYYYMMDD-HHmmss}-findings.md`.
 
@@ -241,7 +241,7 @@ Skip to REVIEW COMPLETE.
 
 When invoked with `apply`:
 
-1. Determine feature name from `.5/features/*/state.json` or ask user
+1. Determine feature name from `.5/features/*/state.json` (most recent by `startedAt` field) or ask user
 2. Find most recent `review-*-findings.md` in the feature folder
 3. If none found, tell user to run `/5:review-code` first and STOP
 4. Parse each finding and its action marker: `[FIX]`, `[SKIP]`, `[MANUAL]`

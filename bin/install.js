@@ -23,9 +23,10 @@ const log = {
 };
 
 // Version comparison (semver)
+// Uses parseInt to handle pre-release tags (e.g., "2-beta" → 2)
 function compareVersions(v1, v2) {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
+  const parts1 = v1.split('.').map(p => parseInt(p, 10) || 0);
+  const parts2 = v2.split('.').map(p => parseInt(p, 10) || 0);
   for (let i = 0; i < 3; i++) {
     if (parts1[i] > parts2[i]) return 1;
     if (parts1[i] < parts2[i]) return -1;
@@ -255,20 +256,22 @@ function selectiveUpdate(targetPath, sourcePath) {
     log.success('Updated commands/5/');
   }
 
-  // Update specific agents
-  const agentsSrc = path.join(sourcePath, 'agents');
-  const agentsDest = path.join(targetPath, 'agents');
-  if (!fs.existsSync(agentsDest)) {
-    fs.mkdirSync(agentsDest, { recursive: true });
-  }
-  for (const agent of managed.agents) {
-    const src = path.join(agentsSrc, agent);
-    const dest = path.join(agentsDest, agent);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, dest);
+  // Update specific agents (currently none — instructions are embedded inline in commands)
+  if (managed.agents.length > 0) {
+    const agentsSrc = path.join(sourcePath, 'agents');
+    const agentsDest = path.join(targetPath, 'agents');
+    if (!fs.existsSync(agentsDest)) {
+      fs.mkdirSync(agentsDest, { recursive: true });
     }
+    for (const agent of managed.agents) {
+      const src = path.join(agentsSrc, agent);
+      const dest = path.join(agentsDest, agent);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+      }
+    }
+    log.success('Updated agents/ (workflow files only)');
   }
-  log.success('Updated agents/ (workflow files only)');
 
   // Update specific skills
   const skillsSrc = path.join(sourcePath, 'skills');
@@ -322,168 +325,6 @@ function selectiveUpdate(targetPath, sourcePath) {
     }
   }
   log.success('Updated templates/ (workflow files only)');
-}
-
-// Detect project type by examining files in current directory
-function detectProjectType() {
-  const cwd = process.cwd();
-
-  if (fs.existsSync(path.join(cwd, 'package.json'))) {
-    const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
-    if (pkg.dependencies?.['next'] || pkg.devDependencies?.['next']) return 'nextjs';
-    if (pkg.dependencies?.['express'] || pkg.devDependencies?.['express']) return 'express';
-    if (pkg.dependencies?.['@nestjs/core']) return 'nestjs';
-    return 'javascript';
-  }
-
-  if (fs.existsSync(path.join(cwd, 'build.gradle')) || fs.existsSync(path.join(cwd, 'build.gradle.kts'))) {
-    return 'gradle-java';
-  }
-
-  if (fs.existsSync(path.join(cwd, 'pom.xml'))) {
-    return 'maven-java';
-  }
-
-  if (fs.existsSync(path.join(cwd, 'Cargo.toml'))) {
-    return 'rust';
-  }
-
-  if (fs.existsSync(path.join(cwd, 'go.mod'))) {
-    return 'go';
-  }
-
-  if (fs.existsSync(path.join(cwd, 'requirements.txt')) || fs.existsSync(path.join(cwd, 'pyproject.toml'))) {
-    const hasDjango = fs.existsSync(path.join(cwd, 'manage.py'));
-    const hasFlask = fs.existsSync(path.join(cwd, 'app.py')) || fs.existsSync(path.join(cwd, 'wsgi.py'));
-    if (hasDjango) return 'django';
-    if (hasFlask) return 'flask';
-    return 'python';
-  }
-
-  return 'unknown';
-}
-
-// Get default config based on project type
-function getDefaultConfig(projectType) {
-  const baseConfig = {
-    ticket: {
-      pattern: '[A-Z]+-\\d+',
-      extractFromBranch: true
-    },
-    build: {
-      command: 'auto',
-      testCommand: 'auto'
-    },
-    reviewTool: 'claude',
-    git: {
-      autoCommit: false,
-      commitMessage: { pattern: '{ticket-id} {short-description}' }
-    }
-  };
-
-  // Project-specific overrides
-  const overrides = {
-    'gradle-java': {
-      build: {
-        command: './gradlew build -x test -x javadoc --offline',
-        testCommand: './gradlew test --offline'
-      }
-    },
-    'maven-java': {
-      build: {
-        command: 'mvn compile',
-        testCommand: 'mvn test'
-      }
-    },
-    'javascript': {
-      build: {
-        command: 'npm run build',
-        testCommand: 'npm test'
-      }
-    },
-    'nextjs': {
-      build: {
-        command: 'npm run build',
-        testCommand: 'npm test'
-      }
-    },
-    'express': {
-      build: {
-        command: 'npm run build || tsc',
-        testCommand: 'npm test'
-      }
-    },
-    'nestjs': {
-      build: {
-        command: 'npm run build',
-        testCommand: 'npm test'
-      }
-    },
-    'rust': {
-      build: {
-        command: 'cargo build',
-        testCommand: 'cargo test'
-      }
-    },
-    'go': {
-      build: {
-        command: 'go build ./...',
-        testCommand: 'go test ./...'
-      }
-    },
-    'python': {
-      build: {
-        command: 'python -m py_compile **/*.py',
-        testCommand: 'pytest'
-      }
-    },
-    'django': {
-      build: {
-        command: 'python manage.py check',
-        testCommand: 'python manage.py test'
-      }
-    },
-    'flask': {
-      build: {
-        command: 'python -m py_compile **/*.py',
-        testCommand: 'pytest'
-      }
-    }
-  };
-
-  return {
-    ...baseConfig,
-    ...(overrides[projectType] || {}),
-    projectType
-  };
-}
-
-// Initialize config file
-function initializeConfig(targetPath) {
-  const configDir = path.join(targetPath, '.5');
-  const configFile = path.join(configDir, 'config.json');
-
-  if (fs.existsSync(configFile)) {
-    log.info('Config file already exists, skipping initialization');
-    return;
-  }
-
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
-  }
-
-  // Create features subdirectory
-  const featuresDir = path.join(configDir, 'features');
-  if (!fs.existsSync(featuresDir)) {
-    fs.mkdirSync(featuresDir, { recursive: true });
-    log.success('Created .5/features/ directory');
-  }
-
-  const projectType = detectProjectType();
-  const config = getDefaultConfig(projectType);
-
-  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
-  log.success(`Created config file with detected project type: ${projectType}`);
 }
 
 // Initialize version.json after successful install
@@ -753,15 +594,41 @@ function uninstall() {
     return;
   }
 
-  // Remove directories
-  const dirs = ['commands/5', 'agents', 'skills', 'hooks', 'templates'];
-  for (const dir of dirs) {
-    const fullPath = path.join(targetPath, dir);
-    if (fs.existsSync(fullPath)) {
-      removeDir(fullPath);
-      log.success(`Removed ${dir}`);
+  const managed = getWorkflowManagedFiles();
+
+  // Remove commands/5/ (workflow namespace only)
+  const commands5 = path.join(targetPath, 'commands', '5');
+  if (fs.existsSync(commands5)) {
+    removeDir(commands5);
+    log.success('Removed commands/5/');
+  }
+
+  // Remove only workflow-managed skills
+  for (const skill of managed.skills) {
+    const skillPath = path.join(targetPath, 'skills', skill);
+    if (fs.existsSync(skillPath)) {
+      removeDir(skillPath);
     }
   }
+  log.success('Removed workflow skills (preserved user-created skills)');
+
+  // Remove only workflow-managed hooks
+  for (const hook of managed.hooks) {
+    const hookPath = path.join(targetPath, 'hooks', hook);
+    if (fs.existsSync(hookPath)) {
+      fs.unlinkSync(hookPath);
+    }
+  }
+  log.success('Removed workflow hooks (preserved user-created hooks)');
+
+  // Remove only workflow-managed templates
+  for (const template of managed.templates) {
+    const templatePath = path.join(targetPath, 'templates', template);
+    if (fs.existsSync(templatePath)) {
+      fs.unlinkSync(templatePath);
+    }
+  }
+  log.success('Removed workflow templates (preserved user-created templates)');
 
   // Remove config
   const configDir = path.join(targetPath, '.5');

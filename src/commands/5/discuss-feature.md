@@ -68,7 +68,7 @@ Use this skill when:
 ## Prerequisites
 
 Before invoking this skill, ensure:
-1. Feature spec exists at `.5/{feature-name}/feature.md`
+1. Feature spec exists at `.5/features/{feature-name}/feature.md`
 2. You have the feature name or ticket ID ready (e.g., "PROJ-1234-add-feature")
 
 ## Discussion Process

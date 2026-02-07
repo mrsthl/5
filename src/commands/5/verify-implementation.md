@@ -238,7 +238,7 @@ Layer 1 (Infrastructure): All files exist, build OK, tests OK
 Layer 2 (Feature Completeness): {N}/{N} criteria satisfied, {N}/{N} requirements implemented
 Layer 3 (Quality): {N}/{N} new files have tests
 
-Report: .5/{feature-name}/verification.md
+Report: .5/features/{feature-name}/verification.md
 ```
 
 **If `git.autoCommit: false` (default):** offer to commit.
@@ -272,7 +272,7 @@ Layer 3 (Quality): {summary}
 
 {Count} issue(s) found. Generating fix plan...
 
-Report: .5/{feature-name}/verification.md
+Report: .5/features/{feature-name}/verification.md
 ```
 
 Continue to Step 9.
@@ -383,14 +383,20 @@ Tests: {status}
 
 {If any fixes failed, list them}
 
-Updated: .5/{feature-name}/fix-plan.md
+Updated: .5/features/{feature-name}/fix-plan.md
 ```
 
 **If user selects manual fix:** exit with guidance.
 ```
-Fix plan saved: .5/{feature-name}/fix-plan.md
+Fix plan saved: .5/features/{feature-name}/fix-plan.md
 
 When ready, re-run: /5:verify-implementation {feature-name}
+```
+
+**Iteration limit:** If this is the 3rd or more verify+fix cycle (check `state.json` for previous `verifiedAt` timestamps or `fix-plan.md` files), warn the user:
+```
+This is verification attempt #{N}. If issues persist after 3 attempts,
+consider fixing remaining issues manually or revisiting the implementation plan.
 ```
 
 ### Step 11: Next Steps

@@ -66,16 +66,22 @@ git branch --show-current
 
 Extract ticket ID using configurable pattern from config (e.g., `PROJ-\d+` or `\d+`). If not found, ask developer.
 
+**Sanitize the ticket ID:** Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Strip any other characters (especially `/`, `..`, `~`, spaces). If the sanitized result is empty, ask the user for a valid ticket ID.
+
 Also read `.claude/.5/config.json` and extract:
 - `git.autoCommit` (boolean, default `false`)
 - `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
 ### Step 3: Generate Identifiers
 
-```bash
-slug=$(echo "$DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-40)
-feature_name="${TICKET_ID}-${slug}"
-```
+Generate a slug from `$DESCRIPTION` using string manipulation (do NOT use bash for this — avoid shell injection):
+1. Convert to lowercase
+2. Replace any non-alphanumeric character with a dash (`-`)
+3. Collapse consecutive dashes into one
+4. Remove leading/trailing dashes
+5. Truncate to 40 characters
+
+Set `feature_name` to `${TICKET_ID}-${slug}`.
 
 ### Step 4: Analyze and Plan
 
@@ -180,12 +186,17 @@ For each component:
 
 #### Step-Executor Delegation
 
+Determine the model based on the highest complexity in the plan's components:
+- All components `simple` → `haiku`
+- Any component `moderate` → `sonnet`
+- Any component `complex` → `sonnet`
+
 Spawn an agent with inline instructions:
 
 ```
 Task tool call:
   subagent_type: general-purpose
-  model: haiku
+  model: {haiku or sonnet based on complexity above}
   description: "Execute quick implementation for ${feature_name}"
   prompt: |
     Implement components for a feature by finding patterns in existing code.

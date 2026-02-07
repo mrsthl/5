@@ -3,7 +3,7 @@
 // Plan Guard - PreToolUse Hook
 // Prevents LLM breakout from planning phases by blocking:
 // - Task agents other than Explore (when not in implementation mode)
-// - Write operations outside .5/ (when not in implementation mode)
+// - Write/Edit operations outside .5/ (when not in implementation mode)
 //
 // Planning mode is detected per-feature by checking if that specific feature's
 // state.json exists. Only the feature in implementation mode gets unrestricted
@@ -20,8 +20,8 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const toolName = data.tool_name || '';
 
-    // Short-circuit: only check Task and Write tools
-    if (toolName !== 'Task' && toolName !== 'Write') {
+    // Short-circuit: only check Task, Write, and Edit tools
+    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit') {
       process.exit(0);
     }
 
@@ -47,14 +47,14 @@ process.stdin.on('end', () => {
       }
     }
 
-    if (toolName === 'Write') {
+    if (toolName === 'Write' || toolName === 'Edit') {
       const filePath = toolInput.file_path || '';
       if (filePath && !isInsideDotFive(filePath, workspaceDir)) {
         process.stderr.write(
-          `BLOCKED: Writing outside .5/ is not allowed during planning phases. ` +
+          `BLOCKED: ${toolName} outside .5/ is not allowed during planning phases. ` +
           `Attempted: "${filePath}". ` +
           `Planning commands may only write to .5/features/. ` +
-          `To write source files, start implementation with /5:implement-feature.`
+          `To modify source files, start implementation with /5:implement-feature.`
         );
         process.exit(2);
       }

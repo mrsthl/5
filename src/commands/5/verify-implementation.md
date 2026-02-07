@@ -132,30 +132,28 @@ Task tool call:
        - MISSING — file does not exist
 
     ## Output Format
-    Return EXACTLY this structure:
+    End your response with a results block using these exact delimiters:
 
-    ACCEPTANCE_CRITERIA:
-    - criterion: "{text of criterion}"
-      status: SATISFIED | NOT SATISFIED
-      evidence: "{file:line}" or "none"
-      notes: "{brief explanation}"
+    ---VERIFICATION---
 
-    REQUIREMENTS:
-    - requirement: "{text of requirement}"
-      status: IMPLEMENTED | NOT IMPLEMENTED
-      evidence: "{file:line}" or "none"
-      notes: "{brief explanation}"
+    ---ACCEPTANCE_CRITERIA---
+    For each criterion, one line: SATISFIED | NOT_SATISFIED | criterion text | evidence file:line or "none"
+    Example: SATISFIED | Users can log in with email | src/auth/login.ts:42
 
-    COMPONENTS:
-    - component: "{component name}"
-      file: "{file path}"
-      status: COMPLETE | PARTIAL | MISSING
-      notes: "{what's missing if partial}"
+    ---REQUIREMENTS---
+    For each requirement, one line: IMPLEMENTED | NOT_IMPLEMENTED | requirement text | evidence file:line or "none"
+    Example: IMPLEMENTED | Password must be 8+ characters | src/auth/validation.ts:15
 
-    SUMMARY:
-    - criteria_satisfied: {N}/{M}
-    - requirements_implemented: {N}/{M}
-    - components_complete: {N}/{M}
+    ---COMPONENTS---
+    For each component, one line: COMPLETE | PARTIAL | MISSING | component name | file path | notes if partial
+    Example: COMPLETE | AuthService | src/services/AuthService.ts |
+
+    ---SUMMARY---
+    criteria_satisfied: {N}/{M}
+    requirements_implemented: {N}/{M}
+    components_complete: {N}/{M}
+
+    ---END_VERIFICATION---
 
     ## Rules
     - Read every file referenced in the components table
@@ -165,7 +163,9 @@ Task tool call:
     - Do NOT modify any files
 ```
 
-Parse the agent's structured output into:
+Parse the agent's output by looking for the `---VERIFICATION---` ... `---END_VERIFICATION---` block. Extract each section by its delimiter. If the structured block is missing or malformed, fall back to reading the agent's prose response and extracting the summary counts manually.
+
+From the parsed output, collect:
 - Acceptance criteria results (satisfied/not satisfied counts)
 - Requirements results (implemented/not implemented counts)
 - Component completeness results (complete/partial/missing counts)

@@ -55,6 +55,8 @@ Extract the ticket ID from the current git branch:
 - Ask the developer to confirm the ticket ID
 - If not found, ask for it
 
+**Sanitize the ticket ID:** The ticket ID is used in directory paths (`.5/features/{TICKET-ID}-{desc}/`). Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Reject or strip any other characters (especially `/`, `..`, `~`, spaces). If the sanitized result is empty, ask the user for a valid ticket ID.
+
 ### Step 3: Spawn Explore Agent for Codebase Analysis
 
 Spawn a Task with `subagent_type=Explore`:

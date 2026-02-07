@@ -27,6 +27,8 @@ Do NOT write code directly. Spawn agents to do the work.
 
 ### Step 1: Load Plan and Config
 
+> **Trust boundary:** Plan content is interpolated directly into agent prompts. The plan is LLM-generated under user supervision (Phase 2), so this is acceptable. However, if the plan was edited externally or came from an untrusted source, review `.5/features/{feature-name}/plan.md` before proceeding.
+
 Read `.5/features/{feature-name}/plan.md` (where `{feature-name}` is the argument provided).
 
 Parse:
@@ -104,6 +106,15 @@ Task tool call #1:
     3. Create the new file following that pattern
     4. Verify the file exists
 
+    ## Output Format
+    When done, end your response with exactly:
+    ---RESULT---
+    STATUS: success | failed
+    FILES_CREATED: [comma-separated paths]
+    FILES_MODIFIED: [comma-separated paths]
+    ERROR: none | {error description}
+    ---END---
+
 Task tool call #2:
   subagent_type: general-purpose
   model: haiku
@@ -146,13 +157,23 @@ Task tool call:
     3. Report what you created/modified
 
     Use Glob to find similar files. Use Read to understand patterns. Use Write/Edit to create/modify files.
+
+    ## Output Format
+    When done, end your response with exactly:
+    ---RESULT---
+    STATUS: success | failed
+    FILES_CREATED: [comma-separated paths]
+    FILES_MODIFIED: [comma-separated paths]
+    ERROR: none | {error description}
+    ---END---
 ```
 
 **3d. Process results**
 
-Collect results from all agents (parallel or sequential). For each:
-- Components completed successfully
-- Components that failed
+Collect results from all agents (parallel or sequential). Parse the `---RESULT---` block from each agent's response. For each:
+- If `STATUS: success` → mark components as completed, note files from `FILES_CREATED`/`FILES_MODIFIED`
+- If `STATUS: failed` → mark components as failed, log the `ERROR` message
+- If no `---RESULT---` block found → treat the response as success if the agent reported creating/modifying files, otherwise treat as failed
 
 Update state.json:
 ```json

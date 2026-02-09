@@ -1,5 +1,49 @@
 # Release Notes
 
+## v1.4.4
+
+**Release Date:** 2026-02-09
+
+### Configuration Guard Hook and Token Optimization
+
+Major reduction in token usage across all commands and skills, a new `config-guard.js` hook to enforce configuration checks at the hook level, and a new `/5:release-notes` command for streamlined release note generation.
+
+**What's New**
+
+- New `config-guard.js` PreToolUse hook enforces configuration file checks automatically, replacing duplicated config-check logic scattered across individual commands
+- New `/release-notes` local command automates generation of release notes by analyzing git history, categorizing changes, and updating `RELEASE_NOTES.md`
+- `plan-guard.js` expanded with ticket ID sanitization, structured output parsing, and stricter trust boundaries during planning phases
+
+**Improvements**
+
+- Massive token optimization across all commands and skills -- net reduction of ~1,100 lines by making prompts more concise without losing functionality
+- Commands affected: `configure`, `discuss-feature`, `implement-feature`, `quick-implement`, `verify-implementation`
+- Skills affected: `build-project`, `run-tests`, `configure-project` -- all significantly condensed
+- Removed `QUICK-PLAN.md` template; `quick-implement` now uses the standard `PLAN.md` template
+- Refactored `bin/install.js`: simplified version comparison logic to handle pre-release tags, streamlined workflow file management for skills, hooks, and templates, removed unused code
+- `plan-guard.js` upgraded with enhanced state detection for planning vs. implementation phases
+
+**Affected files:**
+- `.claude/commands/release-notes.md` (new)
+- `src/hooks/config-guard.js` (new)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `src/commands/5/review-code.md` (modified)
+- `src/commands/5/verify-implementation.md` (modified)
+- `src/hooks/plan-guard.js` (modified)
+- `src/skills/build-project/SKILL.md` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+- `src/skills/run-tests/SKILL.md` (modified)
+- `src/templates/workflow/QUICK-PLAN.md` (removed)
+- `src/settings.json` (modified)
+- `bin/install.js` (modified)
+
+---
+
 ## v1.4.3
 
 **Release Date:** 2026-02-06

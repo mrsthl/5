@@ -65,48 +65,7 @@ If commands are specified, use them with variable substitution. Otherwise, auto-
 
 ### 2. Detect Test Runner
 
-If no config, examine project files:
-
-```bash
-# Check package.json for test configuration
-if [ -f "package.json" ]; then
-  # Check for test frameworks
-  if grep -q '"jest"' package.json || grep -q '"@jest"' package.json; then
-    TEST_RUNNER="jest"
-  elif grep -q '"vitest"' package.json; then
-    TEST_RUNNER="vitest"
-  elif grep -q '"mocha"' package.json; then
-    TEST_RUNNER="mocha"
-  else
-    TEST_RUNNER="npm"  # Use npm test script
-  fi
-fi
-
-# Check for pytest
-if [ -f "pytest.ini" ] || [ -f "setup.py" ] || ls tests/*.py >/dev/null 2>&1; then
-  TEST_RUNNER="pytest"
-fi
-
-# Check for Cargo
-if [ -f "Cargo.toml" ]; then
-  TEST_RUNNER="cargo"
-fi
-
-# Check for Go
-if [ -f "go.mod" ]; then
-  TEST_RUNNER="go"
-fi
-
-# Check for Gradle
-if [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
-  TEST_RUNNER="gradle"
-fi
-
-# Check for Maven
-if [ -f "pom.xml" ]; then
-  TEST_RUNNER="mvn"
-fi
-```
+If no config, detect by checking project files: `package.json` (jest/vitest/mocha), `pytest.ini`/test files (pytest), `Cargo.toml` (cargo), `go.mod` (go), `build.gradle` (gradle), `pom.xml` (mvn).
 
 ### 3. Determine Test Command
 
@@ -139,73 +98,9 @@ Execute the command and capture output.
 
 ### 5. Parse Test Output
 
-Analyze output to extract test results. Parser varies by runner:
+Parse runner-specific output to extract: total tests, passed, failed, skipped, duration, and failed test names with error messages and file/line info.
 
-#### Jest/Vitest Output
-```
-Tests:       2 failed, 5 passed, 7 total
-```
-
-#### Pytest Output
-```
-====== 5 passed, 2 failed in 1.23s ======
-```
-
-#### Cargo Output
-```
-test result: FAILED. 5 passed; 2 failed; 0 ignored
-```
-
-#### Go Output
-```
-FAIL    package/name    0.123s
-PASS    package/other   0.456s
-```
-
-#### Gradle/Maven Output
-```
-Tests run: 7, Failures: 2, Errors: 0, Skipped: 0
-```
-
-Extract:
-- Total tests
-- Passed
-- Failed
-- Skipped/Ignored
-- Duration
-- Failed test names and error messages with file/line info
-
-### 6. Parse Failure Details
-
-For each failed test, extract:
-
-**Jest/Vitest:**
-```
-  ● TestSuite › test name
-
-    expect(received).toBe(expected)
-
-      at Object.<anonymous> (path/to/file.test.ts:42:5)
-```
-
-**Pytest:**
-```
-FAILED path/to/test_file.py::test_name - AssertionError: assert False
-```
-
-**Cargo:**
-```
----- test_name stdout ----
-thread 'test_name' panicked at 'assertion failed', src/lib.rs:42:5
-```
-
-**Go:**
-```
---- FAIL: TestName (0.00s)
-    file_test.go:42: expected 5, got 3
-```
-
-### 7. Format Output
+### 6. Format Output
 
 Provide structured response:
 
@@ -238,77 +133,6 @@ SUGGESTIONS:
 - Run specific failed tests individually to debug
 ```
 
-## Common Test Scenarios
-
-### Run All Tests Before Commit
-
-```
-Target: all
-Use: Verify all tests pass before pushing changes
-```
-
-### Test Specific Module After Changes
-
-```
-Target: module
-Module: user-service
-Use: Quick verification after modifying specific module
-```
-
-### Debug Single Failing Test
-
-```
-Target: test
-Test: UserService › should create user
-Use: Isolate and debug specific test failure
-```
-
-### Test File After Refactoring
-
-```
-Target: file
-File: src/services/user.test.ts
-Use: Verify tests in refactored file
-```
-
-## Common Test Issues
-
-### Tests Fail with "Module Not Found"
-
-**Indicator**: Import/require errors
-
-**Suggestions**:
-- Run `npm install` or equivalent
-- Check test file paths
-- Verify module resolution config
-
-### Tests Timeout
-
-**Indicator**: `Exceeded timeout` messages
-
-**Suggestions**:
-- Increase test timeout in config
-- Check for infinite loops or blocking operations
-- Review async code completion
-
-### Flaky Tests
-
-**Indicator**: Tests pass sometimes, fail other times
-
-**Suggestions**:
-- Check for time-dependent code (use mocked time)
-- Review concurrent code and race conditions
-- Ensure tests don't depend on execution order
-
-### Environment Issues
-
-**Indicator**: Tests fail in CI but pass locally
-
-**Suggestions**:
-- Check environment variables
-- Verify test database/services availability
-- Review CI-specific configurations
-
 ## Error Handling
 
 - If test runner cannot be detected, return error with detection attempted
@@ -325,38 +149,11 @@ Use: Verify tests in refactored file
 - DO NOT assume a specific test framework - always detect or use config
 - DO NOT truncate test output too aggressively (users need full error messages)
 
-## Examples
-
-### Example 1: Auto-detect and run all tests
+## Example
 
 ```
 User: /run-tests
-
-Skill: [Detects package.json with jest]
-Skill: [Runs: jest]
-Skill: [Reports: 47 tests, 47 passed, 0 failed]
-```
-
-### Example 2: Run module tests
-
-```
-User: /run-tests target=module module=user-service
-
-Skill: [Detects pytest]
-Skill: [Runs: pytest tests/user-service]
-Skill: [Reports: 12 tests, 10 passed, 2 failed]
-Skill: [Lists failed test details]
-```
-
-### Example 3: Run specific test
-
-```
-User: /run-tests target=test test="should validate email format"
-
-Skill: [Detects jest]
-Skill: [Runs: jest -t "should validate email format"]
-Skill: [Reports: 1 test, 0 passed, 1 failed]
-Skill: [Shows assertion error with file:line]
+Skill: [Detects jest] → [Runs: jest] → [Reports: 47 passed, 0 failed]
 ```
 
 ## Related Documentation

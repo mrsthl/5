@@ -62,46 +62,7 @@ If commands are specified, use them. Otherwise, auto-detect.
 
 ### 2. Detect Build System
 
-If no config, examine project files to detect build system:
-
-```bash
-# Check for package.json
-if [ -f "package.json" ]; then
-  # Check for lock files to determine package manager
-  if [ -f "pnpm-lock.yaml" ]; then
-    BUILD_TOOL="pnpm"
-  elif [ -f "yarn.lock" ]; then
-    BUILD_TOOL="yarn"
-  else
-    BUILD_TOOL="npm"
-  fi
-fi
-
-# Check for Gradle
-if [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
-  BUILD_TOOL="gradle"
-fi
-
-# Check for Maven
-if [ -f "pom.xml" ]; then
-  BUILD_TOOL="mvn"
-fi
-
-# Check for Cargo
-if [ -f "Cargo.toml" ]; then
-  BUILD_TOOL="cargo"
-fi
-
-# Check for Go
-if [ -f "go.mod" ]; then
-  BUILD_TOOL="go"
-fi
-
-# Check for Make
-if [ -f "Makefile" ]; then
-  BUILD_TOOL="make"
-fi
-```
+If no config, detect by checking project files: `package.json` + lock files (npm/yarn/pnpm), `build.gradle` (gradle), `pom.xml` (mvn), `Cargo.toml` (cargo), `go.mod` (go), `Makefile` (make).
 
 ### 3. Determine Build Command
 
@@ -133,45 +94,7 @@ Execute the command and capture output.
 
 ### 5. Parse Build Output
 
-Analyze output to identify:
-
-#### Success Indicators
-
-Tool-specific success patterns:
-- npm/yarn/pnpm: No error messages, process exits with 0
-- Gradle: `BUILD SUCCESSFUL`
-- Maven: `BUILD SUCCESS`
-- Cargo: `Finished` or `Compiling`
-- Go: No error output
-- Make: No error messages
-
-#### Error Types
-
-**Compilation Errors**:
-```
-/path/to/file.ext:42: error: ...
-```
-Extract: file path, line number, error message
-
-**Dependency Issues**:
-```
-Could not resolve dependencies
-Module not found
-```
-Suggest: `npm install`, `./gradlew --refresh-dependencies`, etc.
-
-**Out of Memory**:
-```
-JavaScript heap out of memory
-Java heap space
-```
-Suggest: Increase memory allocation
-
-**Tool Not Found**:
-```
-command not found: npm
-```
-Suggest: Install the build tool
+Determine success/failure from tool-specific patterns (exit code, `BUILD SUCCESSFUL`, `BUILD SUCCESS`, `Finished`, etc.). For failures, extract file paths, line numbers, and error messages. Identify error type (compilation, dependency, memory, tool not found) and suggest appropriate fix.
 
 ### 6. Format Output
 
@@ -200,28 +123,6 @@ SUGGESTIONS:
 - {actionable suggestion based on error type}
 ```
 
-## Common Build Scenarios
-
-### First-Time Build
-
-May fail with dependency issues. Suggestions:
-- npm: `npm install`
-- gradle: Remove `--offline` flag temporarily
-- cargo: `cargo fetch`
-
-### Incremental Build Issues
-
-Stale cache or artifacts. Suggestions:
-- Try `clean` target
-- Clear cache manually
-
-### Memory Issues
-
-Build runs out of memory. Suggestions:
-- npm: `export NODE_OPTIONS="--max-old-space-size=4096"`
-- gradle: Add `org.gradle.jvmargs=-Xmx4g` to `gradle.properties`
-- maven: `export MAVEN_OPTS="-Xmx4g"`
-
 ## Error Handling
 
 - If build tool cannot be detected, return error with list of checked locations
@@ -237,38 +138,11 @@ Build runs out of memory. Suggestions:
 - DO NOT assume a specific build system - always detect or use config
 - DO NOT use overly short timeouts (builds can be slow)
 
-## Examples
-
-### Example 1: Auto-detect npm and build
+## Example
 
 ```
 User: /build-project
-
-Skill: [Detects package.json, uses npm]
-Skill: [Runs: npm run build]
-Skill: [Reports success with duration]
-```
-
-### Example 2: Gradle with module
-
-```
-User: /build-project module=user-service
-
-Skill: [Detects build.gradle]
-Skill: [Runs: ./gradlew :user-service:build -x test --offline]
-Skill: [Reports success]
-```
-
-### Example 3: Build failure
-
-```
-User: /build-project
-
-Skill: [Detects Cargo.toml]
-Skill: [Runs: cargo build]
-Skill: [Detects compilation error]
-Skill: [Reports: File src/main.rs:42, Error: mismatched types]
-Skill: [Suggests: Fix type error in src/main.rs:42]
+Skill: [Detects npm] → [Runs: npm run build] → [Reports success with duration]
 ```
 
 ## Related Documentation

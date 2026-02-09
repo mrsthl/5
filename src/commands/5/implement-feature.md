@@ -79,87 +79,31 @@ Based on Complexity column:
 
 **3c. Spawn agents (parallel when possible)**
 
-For steps with multiple independent components, spawn agents in parallel using multiple Task calls in a single message:
+For steps with multiple independent components, spawn one agent per component in parallel. For single/interdependent components, use one agent.
 
-```
-# Example: Step 1 has 3 simple components - spawn all 3 in parallel
-
-Task tool call #1:
-  subagent_type: general-purpose
-  model: haiku
-  description: "Create {component-1} for {feature-name}"
-  prompt: |
-    Create a single component for a feature.
-
-    ## Component
-    - Name: {component-name}
-    - Action: create
-    - File: {file-path}
-    - Description: {what it does}
-
-    ## Pattern Reference
-    {relevant implementation note for this component}
-
-    ## Instructions
-    1. Find a similar existing file using Glob (e.g., *Service.ts for services)
-    2. Read that file to understand the pattern
-    3. Create the new file following that pattern
-    4. Verify the file exists
-
-    ## Output Format
-    When done, end your response with exactly:
-    ---RESULT---
-    STATUS: success | failed
-    FILES_CREATED: [comma-separated paths]
-    FILES_MODIFIED: [comma-separated paths]
-    ERROR: none | {error description}
-    ---END---
-
-Task tool call #2:
-  subagent_type: general-purpose
-  model: haiku
-  description: "Create {component-2} for {feature-name}"
-  prompt: |
-    [same structure, different component]
-
-Task tool call #3:
-  subagent_type: general-purpose
-  model: haiku
-  description: "Create {component-3} for {feature-name}"
-  prompt: |
-    [same structure, different component]
-```
-
-For steps with a single component or complex interdependencies, use a single agent:
+Agent prompt template (adapt per component):
 
 ```
 Task tool call:
   subagent_type: general-purpose
   model: {based on complexity}
-  description: "Execute Step {N} for {feature-name}"
+  description: "{Action} {component-name} for {feature-name}"
   prompt: |
-    You are implementing components for a feature.
+    Implement component(s) for a feature.
 
-    ## Feature Context
-    {feature-name}: {one-line summary from plan}
-
-    ## Components to Create/Modify
-    {components for this step from the plan table}
+    ## Feature: {feature-name}
+    ## Components
+    {component(s) from plan table: name, action, file, description}
 
     ## Implementation Notes
-    {implementation notes section from plan}
+    {relevant notes from plan}
 
-    ## Instructions
-    1. For each component:
-       - If creating a file: find a similar existing file, understand the pattern, create the new file following that pattern
-       - If modifying a file: read the file, make the described change
-    2. After creating/modifying each file, verify it exists
-    3. Report what you created/modified
+    ## Process
+    - Creating: Find similar file via Glob, read pattern, create new file following it
+    - Modifying: Read file, apply described change via Edit
+    - Verify each file exists after changes
 
-    Use Glob to find similar files. Use Read to understand patterns. Use Write/Edit to create/modify files.
-
-    ## Output Format
-    When done, end your response with exactly:
+    ## Output
     ---RESULT---
     STATUS: success | failed
     FILES_CREATED: [comma-separated paths]
@@ -186,35 +130,7 @@ Update state.json:
 
 **3e. Auto-Commit Step (if enabled)**
 
-Only fires if `git.autoCommit: true` AND at least one component in the step succeeded.
-
-1. Stage **only** the specific files from the plan's components table for this step (never `git add .`)
-2. Commit using the configured `git.commitMessage.pattern`:
-   - `{ticket-id}` → ticket ID from plan frontmatter
-   - `{short-description}` → auto-generated summary of the step (imperative mood, max 50 chars for the full first line)
-   - Body: one bullet per completed component
-
-```bash
-# Stage only specific files from this step's components
-git add {file-1} {file-2} ...
-
-# Commit with configured pattern + body
-git commit -m "{ticket-id} {short-description}
-
-- {concise change 1}
-- {concise change 2}"
-```
-
-3. If commit fails → log warning, record in `state.json` under `commitResults` array, continue
-4. If all components in the step failed → skip commit entirely
-
-**Example commit:**
-```
-PROJ-1234 add schedule model and types
-
-- Create Schedule.ts entity model
-- Create schedule.ts type definitions
-```
+Only fires if `git.autoCommit: true` AND at least one component succeeded. Stage only the step's specific files (never `git add .`), commit with configured `git.commitMessage.pattern` (body: one bullet per component). If commit fails, log warning in `state.json` `commitResults` and continue.
 
 **3f. Handle failures**
 
@@ -280,40 +196,8 @@ If implementation is interrupted, the state file allows resuming:
 ## Example Flow
 
 ```
-User: /implement-feature PROJ-1234-add-emergency-schedule
-
-[You read plan.md]
-[You create state.json]
-
-[Step 1: Foundation - 2 simple components → PARALLEL]
-  Spawn 2 agents in single message:
-  - Agent A creates: Schedule.ts (model)
-  - Agent B creates: schedule.ts (types)
-  Both complete → update state
-
-[Step 2: Logic - 2 moderate components → PARALLEL]
-  Spawn 2 agents in single message:
-  - Agent A creates: ScheduleService.ts
-  - Agent B creates: ScheduleRepository.ts
-  Both complete → update state
-
-[Step 3: Integration - mixed complexity → SEQUENTIAL or grouped]
-  Option A: Single sonnet agent handles both
-  Option B: Parallel if truly independent
-  - Agent creates: ScheduleController.ts
-  - Agent modifies: routes/index.ts
-  Complete → update state
-
-[Step 4: Tests - 1 component → SINGLE agent]
-  Agent creates: ScheduleService.test.ts
-  Complete → update state
-
-[Verification]
-  Run: npm run build → successful
-  Run: npm test → passing
-
-[Update state: completed]
-[Report to user]
+Step 1: 2 simple components → 2 parallel haiku agents → update state
+Step 2: 2 moderate components → 2 parallel agents → update state
+Step 3: 1 complex component → 1 sonnet agent → update state
+Step 4: Verify (build + test) → update state → report
 ```
-
-**Performance gain:** Steps 1 and 2 run in half the time by parallelizing components.

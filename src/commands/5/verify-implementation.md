@@ -102,7 +102,7 @@ Task tool call:
   model: sonnet
   description: "Verify feature completeness for {feature-name}"
   prompt: |
-    You are verifying that an implementation satisfies its feature specification.
+    Verify that an implementation satisfies its feature specification.
 
     ## Feature Specification
     {full text of feature.md}
@@ -111,59 +111,31 @@ Task tool call:
     {full text of plan.md}
 
     ## Instructions
-
-    1. **Read each implemented file** listed in the components table below:
-       {components table from plan.md}
-
-    2. **Check acceptance criteria** from the feature spec.
-       For each acceptance criterion, determine:
-       - SATISFIED — code clearly implements this criterion (cite file:line as evidence)
-       - NOT SATISFIED — no code found that implements this criterion
-
-    3. **Check functional requirements** from the feature spec.
-       For each requirement, determine:
-       - IMPLEMENTED — code implements this requirement (cite file:line)
-       - NOT IMPLEMENTED — no code found for this requirement
-
-    4. **Check component completeness** from the plan.
-       For each component in the table, read the file and determine:
-       - COMPLETE — file exists and implements what the description says
-       - PARTIAL — file exists but is missing described functionality
-       - MISSING — file does not exist
+    1. Read each file in the components table
+    2. For each acceptance criterion: SATISFIED (cite file:line) or NOT_SATISFIED
+    3. For each requirement: IMPLEMENTED (cite file:line) or NOT_IMPLEMENTED
+    4. For each component: COMPLETE, PARTIAL (note what's missing), or MISSING
 
     ## Output Format
-    End your response with a results block using these exact delimiters:
+    End with a results block:
 
     ---VERIFICATION---
-
     ---ACCEPTANCE_CRITERIA---
-    For each criterion, one line: SATISFIED | NOT_SATISFIED | criterion text | evidence file:line or "none"
-    Example: SATISFIED | Users can log in with email | src/auth/login.ts:42
-
+    {SATISFIED | NOT_SATISFIED | criterion text | file:line or "none"} (one per line)
     ---REQUIREMENTS---
-    For each requirement, one line: IMPLEMENTED | NOT_IMPLEMENTED | requirement text | evidence file:line or "none"
-    Example: IMPLEMENTED | Password must be 8+ characters | src/auth/validation.ts:15
-
+    {IMPLEMENTED | NOT_IMPLEMENTED | requirement text | file:line or "none"} (one per line)
     ---COMPONENTS---
-    For each component, one line: COMPLETE | PARTIAL | MISSING | component name | file path | notes if partial
-    Example: COMPLETE | AuthService | src/services/AuthService.ts |
-
+    {COMPLETE | PARTIAL | MISSING | component name | file path | notes} (one per line)
     ---SUMMARY---
     criteria_satisfied: {N}/{M}
     requirements_implemented: {N}/{M}
     components_complete: {N}/{M}
-
     ---END_VERIFICATION---
 
-    ## Rules
-    - Read every file referenced in the components table
-    - Be precise with evidence — cite actual file paths and line numbers
-    - PARTIAL means the file exists but is missing specific functionality described in the plan
-    - Do NOT interact with the user
-    - Do NOT modify any files
+    Rules: Read every file. Cite file:line evidence. Do NOT modify files or interact with user.
 ```
 
-Parse the agent's output by looking for the `---VERIFICATION---` ... `---END_VERIFICATION---` block. Extract each section by its delimiter. If the structured block is missing or malformed, fall back to reading the agent's prose response and extracting the summary counts manually.
+Parse the `---VERIFICATION---` ... `---END_VERIFICATION---` block. If malformed, fall back to extracting summary counts from prose.
 
 From the parsed output, collect:
 - Acceptance criteria results (satisfied/not satisfied counts)
@@ -229,53 +201,10 @@ Update `.5/features/{feature-name}/state.json`:
 
 ### Step 8: Handle Results
 
-**If PASSED:**
+Report the status with layer-by-layer summary and link to `verification.md`.
 
-```
-Verification passed!
-
-Layer 1 (Infrastructure): All files exist, build OK, tests OK
-Layer 2 (Feature Completeness): {N}/{N} criteria satisfied, {N}/{N} requirements implemented
-Layer 3 (Quality): {N}/{N} new files have tests
-
-Report: .5/features/{feature-name}/verification.md
-```
-
-**If `git.autoCommit: false` (default):** offer to commit.
-
-```
-Would you like to commit these changes?
-```
-
-Use AskUserQuestion with options:
-1. "Yes - commit now (Recommended)"
-2. "No - I'll commit later"
-
-If yes: stage and commit with message format `{TICKET-ID} {description}`.
-
-**If `git.autoCommit: true`:** skip the commit offer.
-
-```
-Changes were already committed during implementation ({N} atomic commits).
-```
-
-Then go to Step 11 (Next Steps).
-
-**If PARTIAL or FAILED:**
-
-```
-Verification {status}.
-
-Layer 1 (Infrastructure): {summary}
-Layer 2 (Feature Completeness): {summary}
-Layer 3 (Quality): {summary}
-
-{Count} issue(s) found. Generating fix plan...
-
-Report: .5/features/{feature-name}/verification.md
-```
-
-Continue to Step 9.
+- **PASSED:** If `git.autoCommit: false`, offer to commit via AskUserQuestion. If `git.autoCommit: true`, note commits were already made. Go to Step 11.
+- **PARTIAL or FAILED:** Note issue count, continue to Step 9.
 
 ### Step 9: Generate Fix Plan (PARTIAL or FAILED only)
 
@@ -312,92 +241,15 @@ Use AskUserQuestion:
 
 **If user selects "Apply fixes automatically":**
 
-For each fix in the fix plan, spawn an agent following the same pattern as `implement-feature`:
+Spawn agents following `implement-feature` patterns (simple→haiku, moderate→haiku/sonnet, complex→sonnet). Group independent fixes for parallel execution; same-file fixes must be sequential.
 
-- **simple** fixes → `haiku` model
-- **moderate** fixes → `haiku` or `sonnet` depending on context
-- **complex** fixes → `sonnet` model
+Each agent prompt includes: category, file path, issue description, fix description, and relevant context from plan/feature spec. Agent finds similar files via Glob, reads patterns, applies fix with Write/Edit.
 
-Group independent fixes for parallel execution. Fixes modifying the same file must be sequential.
+After fixes: re-run build and tests. If `git.autoCommit: true` and fixes succeeded, commit fix files with `{ticket-id} fix verification issues`. Update `fix-plan.md` with APPLIED/FAILED status per fix.
 
-```
-Task tool call:
-  subagent_type: general-purpose
-  model: {based on complexity}
-  description: "Fix: {short description}"
-  prompt: |
-    You are fixing a verification issue in a codebase.
+**If user selects manual fix:** save `fix-plan.md` and exit with re-run guidance.
 
-    ## Issue
-    Category: {infrastructure | feature-gap | quality}
-    File: {file-path}
-    Issue: {description of what's wrong}
-    Fix: {description of what to do}
-
-    ## Context
-    {relevant section from plan.md or feature.md}
-
-    ## Instructions
-    1. If creating a new file: find a similar existing file using Glob, read it to understand the pattern, create the new file following that pattern
-    2. If modifying a file: read the file, make the described change
-    3. Verify the file exists after changes
-    4. Report what you did
-
-    Use Glob to find similar files. Use Read to understand patterns. Use Write/Edit to create/modify files.
-```
-
-After all fixes are applied, re-run build and tests:
-
-```bash
-{build-command}
-{test-command}
-```
-
-**If `git.autoCommit: true` and fixes succeeded (build + tests pass):**
-
-Auto-commit the fix files:
-```bash
-# Stage only the specific fix files
-git add {fix-file-1} {fix-file-2} ...
-
-# Commit with ticket ID
-git commit -m "{ticket-id} fix verification issues
-
-- {concise fix 1}
-- {concise fix 2}"
-```
-
-If commit fails → log warning, continue.
-
-Update `fix-plan.md` with results:
-- Mark each fix as APPLIED / FAILED
-- Record build and test results after fixes
-
-Report to user:
-```
-Applied {N} fixes.
-
-Build: {status}
-Tests: {status}
-{If git.autoCommit was true: "Commit: {Success | Failed | Skipped}"}
-
-{If any fixes failed, list them}
-
-Updated: .5/features/{feature-name}/fix-plan.md
-```
-
-**If user selects manual fix:** exit with guidance.
-```
-Fix plan saved: .5/features/{feature-name}/fix-plan.md
-
-When ready, re-run: /5:verify-implementation {feature-name}
-```
-
-**Iteration limit:** If this is the 3rd or more verify+fix cycle (check `state.json` for previous `verifiedAt` timestamps or `fix-plan.md` files), warn the user:
-```
-This is verification attempt #{N}. If issues persist after 3 attempts,
-consider fixing remaining issues manually or revisiting the implementation plan.
-```
+**Iteration limit:** On 3rd+ verify+fix cycle, warn user to consider manual fixes or revisiting the plan.
 
 ### Step 11: Next Steps
 

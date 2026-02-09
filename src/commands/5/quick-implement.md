@@ -25,27 +25,10 @@ Your job in this command:
 ✅ Report completion
 
 Your job is NOT:
-❌ Handle complex features (6+ files)
-❌ Work across multiple domains
-❌ Skip clarifying questions if unclear
-❌ Skip state file updates
-❌ Create feature spec files (use full workflow)
-❌ Commit without config - Only commit if git.autoCommit is enabled
-
-**This is a FAST PATH for well-understood, small tasks. For anything complex, use the full workflow.**
-
-## ❌ Boundaries: What This Command Does NOT Do
-
-**CRITICAL:** This command has a LIMITED scope. Do NOT:
-
-- ❌ **Use for complex features** - 6+ files or multiple domains → use full workflow
-- ❌ **Skip clarifying questions** - If implementation is unclear, ask first
-- ❌ **Skip state updates** - State file updates are MANDATORY
-- ❌ **Create feature specs** - This is for quick tasks, not full features
-- ❌ **Commit without config** - Only commit if git.autoCommit is enabled
-- ❌ **Skip plan approval** - Always show plan and get user approval first
-
-**If the task involves more than 5 files or multiple domains, STOP and recommend the full workflow instead.**
+❌ Handle complex features (6+ files or multiple domains → use full workflow)
+❌ Skip clarifying questions, state file updates, or plan approval
+❌ Create feature spec files
+❌ Commit without config (only if git.autoCommit is enabled)
 
 ## Process
 
@@ -141,29 +124,9 @@ Use AskUserQuestion:
 
 **CRITICAL**: You MUST create the state file before starting implementation. This enables resumability if work is interrupted.
 
-Create state file at `.5/features/${feature_name}/state.json` using Write tool:
+Create state file at `.5/features/${feature_name}/state.json` with fields: `ticket`, `feature`, `phase: "quick-implementation"`, `status: "in-progress"`, `currentStep: 1`, `totalSteps: 1`, `completed: []`, `pending: [from plan]`, `failed: []`, `verificationResults: {}`, `startedAt`, `lastUpdated`.
 
-```json
-{
-  "ticket": "${TICKET_ID}",
-  "feature": "${feature_name}",
-  "phase": "quick-implementation",
-  "status": "in-progress",
-  "currentStep": 1,
-  "totalSteps": 1,
-  "completed": [],
-  "pending": [/* from plan */],
-  "failed": [],
-  "verificationResults": {},
-  "startedAt": "{ISO timestamp}",
-  "lastUpdated": "{ISO timestamp}"
-}
-```
-
-**After creating the file:**
-1. Use Read tool to verify the file was written correctly
-2. Report to user: "State tracking initialized"
-3. If file creation fails, stop and report error
+Verify the file was written correctly with Read tool. If creation fails, stop and report error.
 
 ### Step 8: Execute Implementation
 
@@ -265,76 +228,15 @@ Skill tool call:
 
 ### Step 9b: Auto-Commit (if enabled)
 
-Only fires if `git.autoCommit: true` AND build passed in Step 9.
-
-Creates a **single commit** for all components (not per-component — quick-implement is for small tasks):
-
-1. Stage **only** the specific files from the plan's components (never `git add .`)
-2. Commit using the configured `git.commitMessage.pattern`:
-   - `{ticket-id}` → ticket ID
-   - `{short-description}` → auto-generated summary (imperative mood, max 50 chars for full first line)
-   - Body: one bullet per component
-
-```bash
-# Stage only specific files
-git add {file-1} {file-2} ...
-
-# Commit with configured pattern + body
-git commit -m "{ticket-id} {short-description}
-
-- {concise change 1}
-- {concise change 2}"
-```
-
-3. If commit fails → log warning, record in `state.json`, continue
-4. If build failed in Step 9 → skip commit entirely
+Only fires if `git.autoCommit: true` AND build passed. Creates a single commit: stage only plan files (never `git add .`), commit with configured `git.commitMessage.pattern` (body: one bullet per component). If commit fails, log warning and continue.
 
 ### Step 10: Update State and Report (MANDATORY)
 
 **CRITICAL**: You MUST update the state file to mark completion.
 
-1. **Read current state file**
-2. **Update to completed status**:
-```json
-{
-  "status": "completed",
-  "phase": "completed",
-  "verificationResults": {
-    "buildStatus": "success",
-    "testStatus": "success | skipped",
-    "timestamp": "{ISO timestamp}"
-  },
-  "completedAt": "{ISO timestamp}",
-  "lastUpdated": "{ISO timestamp}"
-}
-```
-3. **Write back using Write tool**
-4. **Verify the update** by reading file again
+Update state file to `status: "completed"`, `phase: "completed"`, with `verificationResults` (buildStatus, testStatus, timestamp), `completedAt`, `lastUpdated`. Verify the write.
 
-Report to user:
-
-```
-✅ Quick implementation complete!
-
-${TICKET_ID}: ${DESCRIPTION}
-
-Components created/modified:
-- {file1}
-- {file2}
-
-Build: Success
-Tests: {Success | Skipped}
-{If git.autoCommit was true: "Commit: {Success | Failed | Skipped (build failed)}"}
-
-State: .5/features/${feature_name}/state.json
-
-Next steps:
-{If auto-commit fired successfully:}
-1. For a new task, run `/clear` before starting
-{If auto-commit not enabled or commit skipped:}
-1. Review and commit changes
-2. For a new task, run `/clear` before starting
-```
+Report: ticket, description, files created/modified, build/test status, commit status (if auto-commit), and next steps (commit if needed, `/clear` before new task).
 
 **🛑 YOUR JOB IS COMPLETE. DO NOT START NEW TASKS.**
 

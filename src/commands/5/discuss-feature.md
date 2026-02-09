@@ -41,19 +41,6 @@ Your job is NOT:
 
 **After updating the feature spec and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-## ❌ Boundaries: What This Command Does NOT Do
-
-**CRITICAL:** This command has a LIMITED scope. Do NOT:
-
-- ❌ **Create new feature specs** - That's /5:plan-feature
-- ❌ **Create implementation plans** - That's Phase 2 (/5:plan-implementation)
-- ❌ **Start implementation** - That's Phase 3 (/5:implement-feature)
-- ❌ **Write any code** - This is planning only
-- ❌ **Rewrite entire spec** - Only update sections that changed
-- ❌ **Delete previous Q&A** - Append new discussions, keep history
-
-**If you find yourself creating plans or writing code, STOP IMMEDIATELY. You are exceeding this command's scope.**
-
 ## Use Cases
 
 Use this skill when:
@@ -229,22 +216,6 @@ After updating the spec, tell the developer:
    - "Proceed to implementation planning (run `/clear` followed by `/5:plan-implementation {feature-name}`)"
    - "Review the updated spec first"
 
-## Instructions Summary
-
-Follow these steps **IN ORDER** and **STOP after step 9**:
-
-1. **Extract feature name** - From user input or by matching ticket ID
-2. **Read feature spec** - Load current state from `.5/features/{feature-name}/feature.md`
-3. **Ask initial question** - What do they want to discuss?
-4. **Explore if needed** - Understand codebase context
-5. **Interactive Q&A** - Multiple rounds of clarifying questions
-6. **Iterate** - Allow continued discussion until user is satisfied
-7. **Update feature spec** - Modify only the relevant sections that changed
-8. **Track changes** - Document discussion history
-9. **Inform developer** - Summarize changes and ask: "Discuss more or run `/clear` followed by `/5:plan-implementation {feature-name}`?"
-
-**🛑 STOP HERE. YOUR JOB IS COMPLETE. DO NOT CREATE IMPLEMENTATION PLANS.**
-
 ## Key Principles
 
 1. **User-driven** - Follow user's focus areas, don't prescribe
@@ -256,166 +227,30 @@ Follow these steps **IN ORDER** and **STOP after step 9**:
 7. **Clear next steps** - Guide user on what to do next
 
 
-## Discussion Patterns
-
-### Pattern 1: Scope Reduction
-User: "This is too complex, can we simplify?"
-Skill:
-1. Ask: "What's the minimum viable version?"
-2. Ask: "Which requirements are must-have vs nice-to-have?"
-3. Present options for phased approach
-4. Update spec with reduced scope
-
-### Pattern 2: Requirement Addition
-User: "We need to also handle X scenario"
-Skill:
-1. Ask: "How should X scenario work?"
-2. Ask: "How does X interact with existing requirement Y?"
-3. Ask: "Should X be in this feature or separate?"
-4. Update requirements section
-
-### Pattern 3: Technical Feasibility
-User: "Can we reuse existing component Z?"
-Skill:
-1. Explore: Find component Z implementation
-2. Ask: "Does Z fully meet the need or need extension?"
-3. Present trade-offs: reuse vs custom
-4. Update affected domains and approach
-
-### Pattern 4: Acceptance Criteria
-User: "How do we verify this works?"
-Skill:
-1. Ask: "What's the happy path test?"
-2. Ask: "What edge cases should we test?"
-3. Ask: "What does failure look like?"
-4. Update acceptance criteria section
-
-### Pattern 5: Alternative Evaluation
-User: "Should we use approach A or B?"
-Skill:
-1. Ask: "What's the goal: simplicity, performance, flexibility?"
-2. Present pros/cons of each approach
-3. Ask: "What constraints matter most?"
-4. Update alternatives considered section
-
 ## Example Workflow
-
-### Example 1: Scope Clarification
 
 ```
 User: /discuss-feature PROJ-1234-add-feature
 
 Skill: [Reads feature spec]
 Skill: "What would you like to discuss or change about this feature?"
-
 User: "Clarify existing requirements"
 
-Skill: "The current spec mentions 'emergency schedule window'. Should this support:
-- Single time window per product?
-- Multiple overlapping windows?
-- Recurring schedules?
-What level of complexity do you need?"
-
+Skill: "The current spec mentions 'emergency schedule window'. Should this support single or multiple windows? Recurring schedules?"
 User: "Just single window per product for now"
 
 Skill: "Should we support updating/deleting the window after it's set?"
-
 User: "Yes, full CRUD"
 
-Skill: "Would you like to discuss anything else about this feature?"
-
+Skill: "Would you like to discuss anything else?"
 User: "No, update the spec"
 
 Skill: [Updates Requirements and Acceptance Criteria sections]
-Skill: "Feature specification updated. Changes:
-- Clarified: Single emergency window per product (not multiple)
-- Added: Full CRUD operations for emergency windows
-Would you like to proceed to implementation planning? Run `/clear` followed by `/5:plan-implementation PROJ-1234-add-feature`"
+Skill: "Feature spec updated. Changes:
+- Clarified: Single emergency window per product
+- Added: Full CRUD operations
+Next: /clear then /5:plan-implementation PROJ-1234-add-feature"
 ```
-
-### Example 2: Adding Requirements
-
-```
-User: /discuss-feature PROJ-1234
-
-Skill: [Finds PROJ-1234-add-feature.md]
-Skill: "What would you like to discuss or change about this feature?"
-
-User: "Add new requirements"
-
-Skill: "What new requirement would you like to add?"
-
-User: "We need to notify customers when emergency schedule is activated"
-
-Skill: "How should notifications be delivered?
-- Email only
-- SMS only
-- Both email and SMS
-- Configurable per customer"
-
-User: "Email only for now"
-
-Skill: "Should notification be:
-- Immediate when emergency schedule is created?
-- When emergency window starts?
-- Both?"
-
-User: "When emergency window starts"
-
-Skill: "Would you like to discuss anything else?"
-
-User: "No, update the spec"
-
-Skill: [Updates Requirements, adds email notification requirement]
-Skill: [Updates Affected Domains, adds email service integration]
-Skill: [Updates Acceptance Criteria, adds notification verification]
-Skill: "Feature specification updated. Changes:
-- Added: Email notification when emergency window starts
-- Added: Integration with email service
-Review the changes and run `/clear` followed by `/5:plan-implementation PROJ-1234-add-feature` when ready"
-```
-
-### Example 3: Simplification
-
-```
-User: /discuss-feature PROJ-1234-add-feature
-
-Skill: "What would you like to discuss or change about this feature?"
-
-User: "Remove or simplify requirements"
-
-Skill: "Current requirements include:
-1. Emergency schedule CRUD
-2. Email notifications
-3. Audit logging
-4. Analytics tracking
-Which are critical for MVP?"
-
-User: "Just #1 and #3. We can add notifications and analytics later"
-
-Skill: "So we'll keep emergency schedule CRUD and audit logging, defer notifications and analytics to future work?"
-
-User: "Correct"
-
-Skill: [Updates Requirements, moves #2 and #4 to "Future Enhancements" section]
-Skill: [Updates Affected Domains, removes email and analytics integrations]
-Skill: "Feature specification updated. Changes:
-- Removed: Email notifications (moved to future enhancements)
-- Removed: Analytics tracking (moved to future enhancements)
-- Kept: Core CRUD and audit logging
-The simplified scope should reduce implementation complexity significantly."
-```
-
-## Tips for Effective Discussion
-
-1. **Read the spec first** - Understand current state before asking questions
-2. **Focus on one topic** - Don't try to discuss everything at once
-3. **Ask open questions** - Let user explain their thinking
-4. **Present options** - Give user choices with pros/cons
-5. **Challenge gently** - "Have you considered..." not "You should..."
-6. **Summarize often** - Confirm understanding before moving on
-7. **Track rationale** - Document WHY decisions were made
-8. **Be patient** - Allow multiple rounds until clarity emerges
 
 ## Related Documentation
 

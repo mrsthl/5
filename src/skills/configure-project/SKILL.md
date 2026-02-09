@@ -139,57 +139,12 @@ Write filled templates to `.5/` folder:
 
 Generate CLAUDE.md as a navigation hub:
 
-```markdown
-# {Project Name}
-
-> Generated: {YYYY-MM-DD}
-> Documentation is organized into focused files for better maintainability
-
-## Quick Reference
-
-- [Technology Stack](./.5/STACK.md) - Languages, frameworks, dependencies
-- [Codebase Structure](./.5/STRUCTURE.md) - Directory layout and organization
-- [Architecture](./.5/ARCHITECTURE.md) - Patterns, layers, and data flow
-- [Coding Conventions](./.5/CONVENTIONS.md) - Naming, style, and patterns
-- [Testing Patterns](./.5/TESTING.md) - Test framework and patterns
-- [External Integrations](./.5/INTEGRATIONS.md) - APIs, databases, services
-- [Codebase Concerns](./.5/CONCERNS.md) - Tech debt, bugs, and risks
-
-## Project Overview
-
-{1-2 paragraph summary from README or package.json description}
-
-## Build & Run Commands
-
-- Build: `{build-command}`
-- Test: `{test-command}`
-- {Other detected scripts}
-
-## Coding Guidelines
-
-When working with this codebase, follow these principles:
-
-1. Types should be clear and types should be available when possible
-2. Use doc (jsdoc, javadoc, pydoc, etc) concisely. No doc is better than meaningless doc
-3. Keep files short and structured
-4. Extract methods, classes
-5. Respect SRP and DRY
-6. Make code maintainable and modular
-
-## Getting Started
-
-**For new developers:**
-1. Review [Stack](./.5/STACK.md) for technology overview
-2. Read [Structure](./.5/STRUCTURE.md) to understand organization
-3. Study [Conventions](./.5/CONVENTIONS.md) for coding standards
-4. Check [Architecture](./.5/ARCHITECTURE.md) for design patterns
-
-**For specific tasks:**
-- Adding features → See [Architecture](./.5/ARCHITECTURE.md)
-- Writing tests → See [Testing](./.5/TESTING.md)
-- Integration work → See [Integrations](./.5/INTEGRATIONS.md)
-- Reviewing concerns → See [Concerns](./.5/CONCERNS.md)
-```
+CLAUDE.md structure:
+- **Quick Reference:** Links to all 7 `.5/*.md` files (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, TESTING, INTEGRATIONS, CONCERNS)
+- **Project Overview:** 1-2 paragraphs from README/package.json
+- **Build & Run Commands:** Build, test, and other detected commands
+- **Coding Guidelines:** The 6 mandatory principles (types, concise docs, short files, extract methods, SRP/DRY, maintainable/modular)
+- **Getting Started:** Links to relevant `.5/` files for new devs and specific tasks
 
 ### A5. Preserve Existing Content
 
@@ -268,81 +223,7 @@ Based on {example-file}, new {patterns} should follow:
 
 ### Pattern to Skill Name Mapping
 
-| Detected Pattern | Skill Name |
-|------------------|------------|
-| **Core Architecture** | |
-| controller | create-controller |
-| service | create-service |
-| repository | create-repository |
-| model/entity | create-model |
-| handler | create-handler |
-| **Data Transfer** | |
-| dto | create-dto |
-| request | create-request |
-| response | create-response |
-| mapper | create-mapper |
-| validator | create-validator |
-| schema | create-schema |
-| **Frontend** | |
-| component | create-component |
-| hook | create-hook |
-| context | create-context |
-| store | create-store |
-| page | create-page |
-| layout | create-layout |
-| **API/Routes** | |
-| api-route | create-api-route |
-| middleware | create-middleware |
-| guard | create-guard |
-| interceptor | create-interceptor |
-| filter | create-filter |
-| **Testing** | |
-| test | create-test |
-| spec | create-spec |
-| fixture | create-fixture |
-| factory | create-factory |
-| mock | create-mock |
-| **Utilities** | |
-| util | create-util |
-| helper | create-helper |
-| constant | create-constant |
-| type | create-type |
-| config | create-config |
-| **Framework-Specific** | |
-| module | create-module |
-| pipe | create-pipe |
-| decorator | create-decorator |
-| blueprint | create-blueprint |
-| view | create-view |
-| serializer | create-serializer |
-| **Background/Async** | |
-| job | create-job |
-| worker | create-worker |
-| event | create-event |
-| listener | create-listener |
-| command | create-command |
-| **Database** | |
-| migration | create-migration |
-| seed | create-seed |
-| **Error Handling** | |
-| exception | create-exception |
-| error | create-error |
-
-### Why `user-invocable: true`
-
-Generated skills are user-invocable so users can invoke them directly:
-- `/create-controller UserController`
-- `/create-component Button`
-- `/create-service AuthService`
-
-This is more useful than internal-only skills.
-
-### Why `model: haiku`
-
-Pattern-following is simple once conventions are documented:
-- Faster and cheaper than sonnet
-- Deep analysis already happened during generation
-- The skill just needs to follow the documented template
+**Rule:** Skill name is `create-{pattern}` (e.g., `controller` → `create-controller`, `component` → `create-component`, `dto` → `create-dto`). For compound patterns, use the short form: `model/entity` → `create-model`, `api-route` → `create-api-route`.
 
 ---
 
@@ -413,20 +294,7 @@ Executes the project's {command} command.
 
 ### Command to Skill Name Mapping
 
-| Detected Command | Skill Name |
-|------------------|------------|
-| build | run-build |
-| test, spec | run-tests |
-| lint, eslint | run-lint |
-| format, prettier | run-format |
-| typecheck, tsc | run-typecheck |
-| dev, start | run-dev |
-| db:migrate, migrate | run-migrate |
-| db:seed, seed | run-seed |
-| docker:build | run-docker-build |
-| docker:up, compose up | run-docker-up |
-| clean | run-clean |
-| generate, codegen | run-generate |
+**Rule:** Skill name is `run-{category}` (e.g., `build` → `run-build`, `test`/`spec` → `run-tests`, `lint` → `run-lint`). Group variants under the primary category name.
 
 ---
 

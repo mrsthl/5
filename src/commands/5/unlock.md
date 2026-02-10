@@ -12,13 +12,12 @@ Remove the `.planning-active` marker file that restricts Write/Edit operations d
 
 ## Process
 
-1. Check if `.claude/.5/.planning-active` exists
-2. If it exists, remove it:
+Run this bash command to check and remove the marker in one step:
 
 ```bash
-rm -f .claude/.5/.planning-active
+if [ -f .claude/.5/.planning-active ]; then rm .claude/.5/.planning-active && echo "REMOVED"; else echo "ABSENT"; fi
 ```
 
-3. Confirm to the user:
-   - If the file existed: "Planning guard removed. You can now edit files freely."
-   - If the file did not exist: "No planning guard was active. You're already free to edit files."
+Based on the output, confirm to the user:
+- If output contains "REMOVED": "Planning guard removed. You can now edit files freely."
+- If output contains "ABSENT": "No planning guard was active. You're already free to edit files."

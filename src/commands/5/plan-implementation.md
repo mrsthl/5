@@ -78,7 +78,7 @@ Write (or refresh) the planning guard marker to `.claude/.5/.planning-active` us
 }
 ```
 
-This activates (or refreshes) the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`) or can be cleared manually with `/5:unlock`.
+This activates (or refreshes) the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`), expires after 4 hours, or can be cleared manually with `/5:unlock`.
 
 ### Step 1: Load Feature Spec
 

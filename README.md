@@ -126,6 +126,7 @@ All commands are available under the `/5:` namespace:
 | `/5:verify-implementation` | 4 | Verify completeness and correctness |
 | `/5:review-code` | 5 | AI-powered code review (CodeRabbit) |
 | `/5:quick-implement` | Fast | Streamlined workflow for small tasks |
+| `/5:unlock` | Utility | Remove planning guard lock |
 
 ## Configuration
 
@@ -181,7 +182,7 @@ Claude asks 5-10 clarifying questions to understand your requirements:
 - How will we verify it works?
 - Are there simpler alternatives?
 
-The output is a comprehensive feature spec at `.claude/.features/{ticket-id}.md`.
+The output is a comprehensive feature spec at `.5/features/{ticket-id}/feature.md`.
 
 ### Phase 2: Implementation Planning
 
@@ -207,7 +208,7 @@ Claude executes the plan using specialized agents:
 - **step-verifier**: Compiles and checks for errors after each step
 - **integration-agent**: Wires components and registers routes
 
-State is tracked in `.claude/.implementations/state/{ticket-id}.json` for resumability.
+State is tracked in `.5/features/{ticket-id}/state.json` for resumability.
 
 ### Phase 4: Verify Implementation
 
@@ -245,13 +246,17 @@ After installation, your `.claude/` directory will contain:
 │   ├── review-code.md
 │   ├── discuss-feature.md
 │   ├── quick-implement.md
-│   └── configure.md
+│   ├── configure.md
+│   └── unlock.md
 ├── skills/                   # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/
 │   └── generate-readme/
 ├── hooks/
-│   └── statusline.js         # Status line integration
+│   ├── statusline.js         # Status line integration
+│   ├── check-updates.js      # Update notifications
+│   ├── plan-guard.js         # Planning phase edit guard
+│   └── config-guard.js       # Configuration guard
 └── settings.json             # Claude Code settings
 ```
 
@@ -303,7 +308,7 @@ The auto-detection failed. Run `/5:configure` and manually select your project t
 
 If implementation gets stuck:
 
-1. Check `.claude/.implementations/state/{ticket-id}.json`
+1. Check `.5/features/{ticket-id}/state.json`
 2. Note the `currentStep` value
 3. Run `/5:implement-feature` again - it will resume from that step
 

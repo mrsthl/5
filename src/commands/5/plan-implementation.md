@@ -66,6 +66,20 @@ Add emergency schedule tracking to products with date validation.
 
 ## Process
 
+### Step 0: Activate Planning Guard
+
+Write (or refresh) the planning guard marker to `.claude/.5/.planning-active` using the Write tool:
+
+```json
+{
+  "phase": "plan-implementation",
+  "feature": "{feature-name}",
+  "startedAt": "{ISO-timestamp}"
+}
+```
+
+This activates (or refreshes) the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`) or can be cleared manually with `/5:unlock`.
+
 ### Step 1: Load Feature Spec
 
 Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).

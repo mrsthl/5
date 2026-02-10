@@ -59,6 +59,12 @@ Create `.5/features/{feature-name}/state.json`:
 }
 ```
 
+Then remove the planning guard marker (planning is over, implementation is starting):
+
+```bash
+rm -f .claude/.5/.planning-active
+```
+
 ### Step 3: Execute Steps
 
 Group components by step number from the plan. For each step:

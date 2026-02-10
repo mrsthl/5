@@ -128,6 +128,12 @@ Create state file at `.5/features/${feature_name}/state.json` with fields: `tick
 
 Verify the file was written correctly with Read tool. If creation fails, stop and report error.
 
+Then remove the planning guard marker (implementation is starting):
+
+```bash
+rm -f .claude/.5/.planning-active
+```
+
 ### Step 8: Execute Implementation
 
 **Decision criteria for execution approach:**

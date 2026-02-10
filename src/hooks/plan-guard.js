@@ -26,6 +26,12 @@ process.stdin.on('end', () => {
     }
 
     const workspaceDir = data.cwd || data.workspace?.current_dir || process.cwd();
+
+    // If no planning phase is active, allow all tools
+    if (!isPlanningActive(workspaceDir)) {
+      process.exit(0);
+    }
+
     const toolInput = data.tool_input || {};
 
     // Determine which feature is being targeted and check its state
@@ -41,7 +47,8 @@ process.stdin.on('end', () => {
         process.stderr.write(
           `BLOCKED: Only Explore agents are allowed during planning phases. ` +
           `Attempted: subagent_type="${agentType}". ` +
-          `To use other agent types, start implementation with /5:implement-feature.`
+          `To use other agent types, start implementation with /5:implement-feature. ` +
+          `If you're not in a planning phase, run /5:unlock to clear the planning lock.`
         );
         process.exit(2);
       }
@@ -54,7 +61,8 @@ process.stdin.on('end', () => {
           `BLOCKED: ${toolName} outside .5/ is not allowed during planning phases. ` +
           `Attempted: "${filePath}". ` +
           `Planning commands may only write to .5/features/. ` +
-          `To modify source files, start implementation with /5:implement-feature.`
+          `To modify source files, start implementation with /5:implement-feature. ` +
+          `If you're not in a planning phase, run /5:unlock to clear the planning lock.`
         );
         process.exit(2);
       }
@@ -116,6 +124,24 @@ function getTargetFeature(toolName, toolInput, workspaceDir) {
   }
 
   return null;
+}
+
+function isPlanningActive(workspaceDir) {
+  const markerPath = path.join(workspaceDir, '.claude', '.5', '.planning-active');
+  if (!fs.existsSync(markerPath)) return false;
+  try {
+    const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+    if (marker.startedAt) {
+      const elapsed = Date.now() - new Date(marker.startedAt).getTime();
+      if (elapsed > 4 * 60 * 60 * 1000) {
+        try { fs.unlinkSync(markerPath); } catch (e) {}
+        return false;
+      }
+    }
+    return true;
+  } catch (e) {
+    return true; // Unreadable marker → fail-safe, assume active
+  }
 }
 
 function isFeatureInImplementationMode(workspaceDir, featureName) {

@@ -37,6 +37,19 @@ After creating the spec, you are DONE.
 
 ## Process
 
+### Step 0: Activate Planning Guard
+
+Write the planning guard marker to `.claude/.5/.planning-active` using the Write tool:
+
+```json
+{
+  "phase": "plan-feature",
+  "startedAt": "{ISO-timestamp}"
+}
+```
+
+This activates the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`) or can be cleared manually with `/5:unlock`.
+
 ### Step 1: Gather Feature Description
 
 Ask the developer for the feature description using AskUserQuestion:

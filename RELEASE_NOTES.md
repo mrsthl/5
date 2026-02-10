@@ -202,7 +202,7 @@ Integration with Context7 MCP server for up-to-date, version-specific documentat
 Fixed contradiction where installer auto-created config but `/5:configure` was designed to create it through workflow.
 
 **What changed:**
-- Installer no longer auto-creates `.claude/.5/config.json`
+- Installer no longer auto-creates `.5/config.json`
 - `/5:configure` is now required first step (as originally designed)
 - Workflow commands fail gracefully if config missing, direct user to run `/5:configure`
 - Clear error messages guide users through setup
@@ -257,9 +257,9 @@ Users with in-progress features:
 1. Upgrade: `npx 5-phase-workflow --upgrade`
 2. Migrate existing features:
    ```bash
-   mkdir -p .claude/.5/features
-   mv .claude/.5/{TICKET-ID}-* .claude/.5/features/ 2>/dev/null || true
-   mv .claude/.5/CONFIGURE .claude/.5/features/ 2>/dev/null || true
+   mkdir -p .5/features
+   mv .5/{TICKET-ID}-* .5/features/ 2>/dev/null || true
+   mv .5/CONFIGURE .5/features/ 2>/dev/null || true
    ```
 3. Continue work normally
 

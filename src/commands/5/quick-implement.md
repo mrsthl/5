@@ -51,7 +51,7 @@ Extract ticket ID using configurable pattern from config (e.g., `PROJ-\d+` or `\
 
 **Sanitize the ticket ID:** Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Strip any other characters (especially `/`, `..`, `~`, spaces). If the sanitized result is empty, ask the user for a valid ticket ID.
 
-Also read `.claude/.5/config.json` and extract:
+Also read `.5/config.json` and extract:
 - `git.autoCommit` (boolean, default `false`)
 - `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
@@ -131,7 +131,7 @@ Verify the file was written correctly with Read tool. If creation fails, stop an
 Then remove the planning guard marker (implementation is starting):
 
 ```bash
-rm -f .claude/.5/.planning-active
+rm -f .5/.planning-active
 ```
 
 ### Step 8: Execute Implementation

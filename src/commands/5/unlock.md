@@ -15,7 +15,7 @@ Remove the `.planning-active` marker file that restricts Write/Edit operations d
 Run this bash command to check and remove the marker in one step:
 
 ```bash
-if [ -f .claude/.5/.planning-active ]; then rm .claude/.5/.planning-active && echo "REMOVED"; else echo "ABSENT"; fi
+if [ -f .5/.planning-active ]; then rm .5/.planning-active && echo "REMOVED"; else echo "ABSENT"; fi
 ```
 
 Based on the output, confirm to the user:

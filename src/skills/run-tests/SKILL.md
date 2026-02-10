@@ -17,7 +17,7 @@ This skill executes test tasks with auto-detection of the test runner and suffic
 
 The skill automatically detects the test runner using:
 
-1. **Config file** (`.claude/.5/config.json`) - if `build.testCommand` is specified
+1. **Config file** (`.5/config.json`) - if `build.testCommand` is specified
 2. **Auto-detection** - by examining project files and package.json scripts:
    - `package.json` with jest/vitest/mocha → npm test
    - `pytest.ini` or test files → pytest
@@ -49,7 +49,7 @@ When invoked, the skill expects:
 
 ### 1. Load Configuration
 
-Read `.claude/.5/config.json` if it exists:
+Read `.5/config.json` if it exists:
 
 ```json
 {

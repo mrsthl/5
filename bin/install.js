@@ -35,8 +35,8 @@ function compareVersions(v1, v2) {
 }
 
 // Get installed version from .5/version.json
-function getInstalledVersion(targetPath) {
-  const versionFile = path.join(targetPath, '.5', 'version.json');
+function getInstalledVersion(isGlobal) {
+  const versionFile = path.join(getDataPath(isGlobal), 'version.json');
   if (!fs.existsSync(versionFile)) return null;
 
   try {
@@ -55,13 +55,13 @@ function getPackageVersion() {
 }
 
 // Get full version info
-function getVersionInfo(targetPath) {
+function getVersionInfo(targetPath, isGlobal) {
   const exists = checkExistingInstallation(targetPath);
   if (!exists) {
     return { exists: false };
   }
 
-  const installed = getInstalledVersion(targetPath);
+  const installed = getInstalledVersion(isGlobal);
   const available = getPackageVersion();
 
   if (!installed) {
@@ -139,13 +139,67 @@ Examples:
 `);
 }
 
-// Get installation target path
+// Get installation target path (.claude/ directory)
 function getTargetPath(isGlobal) {
   if (isGlobal) {
     const homeDir = process.env.HOME || process.env.USERPROFILE;
     return path.join(homeDir, '.claude');
   }
   return path.join(process.cwd(), '.claude');
+}
+
+// Get data path (.5/ directory for config, version, features)
+// Local installs: <project>/.5 (project root)
+// Global installs: ~/.claude/.5 (alongside global install)
+function getDataPath(isGlobal) {
+  if (isGlobal) {
+    return path.join(getTargetPath(true), '.5');
+  }
+  return path.join(process.cwd(), '.5');
+}
+
+// Migrate data from old .claude/.5/ to new .5/ location (local installs only)
+// This runs during upgrades so existing users don't lose config/features/version data.
+function migrateDataDir(isGlobal) {
+  // Global installs: old and new paths are both ~/.claude/.5 — no migration needed
+  if (isGlobal) return;
+
+  const oldDir = path.join(process.cwd(), '.claude', '.5');
+  const newDir = getDataPath(false); // <project>/.5
+
+  if (!fs.existsSync(oldDir)) return;
+
+  // If new dir doesn't exist, move everything over
+  if (!fs.existsSync(newDir)) {
+    fs.mkdirSync(newDir, { recursive: true });
+  }
+
+  // Copy all files/dirs from old to new (skip files that already exist in new)
+  copyDirMerge(oldDir, newDir);
+
+  // Remove old directory
+  removeDir(oldDir);
+  log.success('Migrated .claude/.5/ → .5/');
+}
+
+// Copy directory recursively, skipping files that already exist at destination
+function copyDirMerge(src, dest) {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDirMerge(srcPath, destPath);
+    } else if (!fs.existsSync(destPath)) {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
 }
 
 // Get source path (package installation directory)
@@ -328,12 +382,12 @@ function selectiveUpdate(targetPath, sourcePath) {
 }
 
 // Initialize version.json after successful install
-function initializeVersionJson(targetPath, isGlobal) {
-  const configDir = path.join(targetPath, '.5');
-  const versionFile = path.join(configDir, 'version.json');
+function initializeVersionJson(isGlobal) {
+  const dataDir = getDataPath(isGlobal);
+  const versionFile = path.join(dataDir, 'version.json');
 
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
 
   const version = getPackageVersion();
@@ -427,7 +481,7 @@ function checkExistingInstallation(targetPath) {
 }
 
 // Helper to show commands
-function showCommandsHelp(targetPath) {
+function showCommandsHelp(isGlobal) {
   log.info('Available commands:');
   log.info('  /5:plan-feature          - Start feature planning (Phase 1)');
   log.info('  /5:plan-implementation   - Create implementation plan (Phase 2)');
@@ -437,7 +491,7 @@ function showCommandsHelp(targetPath) {
   log.info('  /5:configure            - Interactive project setup');
   log.info('  /5:unlock               - Remove planning guard lock');
   log.info('');
-  log.info(`Config file: ${path.join(targetPath, '.5', 'config.json')}`);
+  log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);
 }
 
 // Fresh installation
@@ -464,7 +518,7 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   mergeSettings(targetPath, sourcePath);
 
   // Initialize version tracking
-  initializeVersionJson(targetPath, isGlobal);
+  initializeVersionJson(isGlobal);
 
   log.header('Installation Complete!');
   log.info('');
@@ -478,10 +532,10 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('  • Create project-specific skills');
   log.info('');
 
-  showCommandsHelp(targetPath);
+  showCommandsHelp(isGlobal);
 }
 
-// Perform update (preserves .5/ directory and user-created files)
+// Perform update (preserves user-created files, updates .5/ data directory)
 function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   log.header(`Updating from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
   log.info('Preserving user-created commands, agents, skills, and hooks');
@@ -493,8 +547,8 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   mergeSettings(targetPath, sourcePath);
 
   // Update version.json
-  const configDir = path.join(targetPath, '.5');
-  const versionFile = path.join(configDir, 'version.json');
+  const dataDir = getDataPath(isGlobal);
+  const versionFile = path.join(dataDir, 'version.json');
 
   let versionData;
   if (fs.existsSync(versionFile)) {
@@ -512,22 +566,22 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   versionData.installedVersion = versionInfo.available;
   versionData.lastUpdated = new Date().toISOString();
 
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
 
   // Create features directory if it doesn't exist
-  const featuresDir = path.join(configDir, 'features');
+  const featuresDir = path.join(dataDir, 'features');
   if (!fs.existsSync(featuresDir)) {
     fs.mkdirSync(featuresDir, { recursive: true });
-    log.info('📁 Feature folders now nest under .5/features/');
-    log.info('📋 See RELEASE_NOTES.md for migration if you have in-progress features');
+    log.info('Feature folders nest under .5/features/');
+    log.info('See RELEASE_NOTES.md for migration if you have in-progress features');
   }
 
   log.header('Update Complete!');
   log.success(`Now running version ${versionInfo.available}`);
-  showCommandsHelp(targetPath);
+  showCommandsHelp(isGlobal);
 }
 
 // Perform installation
@@ -539,8 +593,11 @@ function install(isGlobal, forceUpgrade = false) {
   log.info(`Target: ${targetPath}`);
   log.info(`Source: ${sourcePath}`);
 
+  // Migrate data from old .claude/.5/ to new .5/ location
+  migrateDataDir(isGlobal);
+
   // Check for existing installation and version
-  const versionInfo = getVersionInfo(targetPath);
+  const versionInfo = getVersionInfo(targetPath, isGlobal);
 
   if (versionInfo.exists) {
     if (versionInfo.legacy) {
@@ -631,11 +688,18 @@ function uninstall() {
   }
   log.success('Removed workflow templates (preserved user-created templates)');
 
-  // Remove config
-  const configDir = path.join(targetPath, '.5');
-  if (fs.existsSync(configDir)) {
-    removeDir(configDir);
-    log.success('Removed .5/ config directory');
+  // Remove data directory (.5/)
+  const dataDir = getDataPath(false);
+  if (fs.existsSync(dataDir)) {
+    removeDir(dataDir);
+    log.success('Removed .5/ data directory');
+  }
+
+  // Also clean up old .claude/.5/ if it still exists
+  const oldDataDir = path.join(targetPath, '.5');
+  if (fs.existsSync(oldDataDir)) {
+    removeDir(oldDataDir);
+    log.success('Removed legacy .claude/.5/ directory');
   }
 
   log.header('Uninstallation Complete!');
@@ -652,7 +716,8 @@ function main() {
 
   if (options.check) {
     const targetPath = getTargetPath(options.global);
-    const versionInfo = getVersionInfo(targetPath);
+    migrateDataDir(options.global);
+    const versionInfo = getVersionInfo(targetPath, options.global);
 
     if (!versionInfo.exists) {
       log.info('Not installed');

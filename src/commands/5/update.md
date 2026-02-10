@@ -14,4 +14,4 @@ Run the upgrade command to update to the latest version:
 npx 5-phase-workflow --upgrade
 ```
 
-After the upgrade completes, confirm the new version was installed by checking `.claude/.5/version.json`.
+After the upgrade completes, confirm the new version was installed by checking `.5/version.json`.

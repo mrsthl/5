@@ -9,7 +9,7 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
     const cwd = data.cwd || process.cwd();
-    const configFile = path.join(cwd, '.claude', '.5', 'config.json');
+    const configFile = path.join(cwd, '.5', 'config.json');
 
     if (fs.existsSync(configFile)) {
       process.exit(0);

@@ -26,7 +26,7 @@ After running this command, proceed through the standard phases:
 Your job in this command:
 ✅ Analyze project (detect type, build commands, etc.)
 ✅ Gather user preferences via questions
-✅ Write `.claude/.5/config.json` directly
+✅ Write `.5/config.json` directly
 ✅ Create feature spec at `.5/features/CONFIGURE/feature.md` for remaining work
 ✅ Tell user to run /5:plan-implementation CONFIGURE
 
@@ -49,7 +49,7 @@ Perform all detection silently, collecting results for Step 2.
 
 **1a. Check for existing config:**
 ```bash
-if [ -f ".claude/.5/config.json" ]; then
+if [ -f ".5/config.json" ]; then
   # Config exists - will ask user in Step 2 what to do
   config_exists=true
 else
@@ -155,7 +155,7 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
 
 If "Start fresh" selected:
 - Confirm: "This will delete existing config. Are you sure?"
-- If confirmed: delete .claude/.5/config.json
+- If confirmed: delete .5/config.json
 - Proceed to detection and questions
 
 If "Update existing configuration":
@@ -281,14 +281,14 @@ If no patterns/commands detected:
 
 ### Step 2.5: Write config.json
 
-Using the values gathered from Steps 1 and 2, write `.claude/.5/config.json` directly.
+Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 
 **If "Update existing" flow:** Read current config, merge updated values.
 **If "Start fresh" or new install:** Write new config.
 
 **Ensure directory exists:**
 ```bash
-mkdir -p .claude/.5
+mkdir -p .5
 ```
 
 **Schema:**
@@ -413,7 +413,7 @@ Include only patterns/commands where user selected "Generate".
 
 Tell the user:
 
-1. "Configuration saved to `.claude/.5/config.json`"
+1. "Configuration saved to `.5/config.json`"
 2. "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
 3. "Next steps:"
    - "Run `/clear` to reset context"

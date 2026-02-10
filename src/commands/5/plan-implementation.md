@@ -68,7 +68,7 @@ Add emergency schedule tracking to products with date validation.
 
 ### Step 0: Activate Planning Guard
 
-Write (or refresh) the planning guard marker to `.claude/.5/.planning-active` using the Write tool:
+Write (or refresh) the planning guard marker to `.5/.planning-active` using the Write tool:
 
 ```json
 {

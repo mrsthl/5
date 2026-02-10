@@ -23,7 +23,7 @@ process.stdin.on('end', () => {
 });
 
 async function checkForUpdates(workspaceDir) {
-  const versionFile = path.join(workspaceDir, '.claude', '.5', 'version.json');
+  const versionFile = path.join(workspaceDir, '.5', 'version.json');
 
   // Check if version.json exists
   if (!fs.existsSync(versionFile)) {

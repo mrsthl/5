@@ -49,7 +49,7 @@ Note: feature.md not found — skipping feature completeness checks.
 This is normal for quick-implement workflows. Infrastructure and quality checks will still run.
 ```
 
-Also read `.claude/.5/config.json` and extract:
+Also read `.5/config.json` and extract:
 - `git.autoCommit` (boolean, default `false`)
 - `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
@@ -70,7 +70,7 @@ For each component in the plan:
 
 #### 2b. Run Build
 
-Execute the build command from the plan (or auto-detect from `.claude/.5/config.json`):
+Execute the build command from the plan (or auto-detect from `.5/config.json`):
 
 ```bash
 {build-command}

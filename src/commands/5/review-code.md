@@ -20,7 +20,7 @@ After saving the review report, you are DONE.
 
 ## Review Tools
 
-Two review tools are supported (configured in `.claude/.5/config.json` field `reviewTool`):
+Two review tools are supported (configured in `.5/config.json` field `reviewTool`):
 
 - **Claude** (default) — Built-in, zero setup. A fresh-context agent reviews code blind.
 - **CodeRabbit** — External CLI. Requires `coderabbit` installed and authenticated.
@@ -31,7 +31,7 @@ Both produce the same structured output format.
 
 ### Step 1: Determine Review Tool
 
-Read `.claude/.5/config.json` and check the `reviewTool` field.
+Read `.5/config.json` and check the `reviewTool` field.
 
 - If not set or missing, default to `"claude"`
 - If `"none"`, inform user that automated review is disabled and STOP

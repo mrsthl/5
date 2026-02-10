@@ -46,7 +46,7 @@ process.stdin.on('end', () => {
     // Check for available update
     let updateIndicator = '';
     try {
-      const versionFile = path.join(dir, '.claude', '.5', 'version.json');
+      const versionFile = path.join(dir, '.5', 'version.json');
       const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
       const latest = versionData.latestAvailableVersion;
       const installed = versionData.installedVersion;

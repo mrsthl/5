@@ -39,7 +39,7 @@ After creating the spec, you are DONE.
 
 ### Step 0: Activate Planning Guard
 
-Write the planning guard marker to `.claude/.5/.planning-active` using the Write tool:
+Write the planning guard marker to `.5/.planning-active` using the Write tool:
 
 ```json
 {

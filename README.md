@@ -130,7 +130,7 @@ All commands are available under the `/5:` namespace:
 
 ## Configuration
 
-The workflow is configured via `.claude/.5/config.json`. Here's an example:
+The workflow is configured via `.5/config.json`. Here's an example:
 
 ```json
 {
@@ -235,9 +235,12 @@ Automated review using CodeRabbit (if installed):
 After installation, your `.claude/` directory will contain:
 
 ```
+.5/
+├── config.json               # Project configuration
+├── version.json              # Version tracking
+└── features/                 # Feature tracking
+
 .claude/
-├── .5/
-│   └── config.json           # Project configuration
 ├── commands/5/               # Workflow commands
 │   ├── plan-feature.md
 │   ├── plan-implementation.md
@@ -298,7 +301,7 @@ After installation, your `.claude/` directory will contain:
 
 1. Run `/5:configure` to verify configuration
 2. Test commands manually in terminal
-3. Update `.claude/.5/config.json` with correct commands
+3. Update `.5/config.json` with correct commands
 
 ### "Cannot find project type"
 
@@ -343,7 +346,7 @@ npx 5-phase-workflow
 ```
 
 **Note:** During updates:
-- Config files in `.claude/.5/` are preserved
+- Config files in `.5/` are preserved
 - User-created commands, agents, skills, hooks, and templates are preserved
 - Only workflow-managed files are updated
 

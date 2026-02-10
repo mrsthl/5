@@ -72,7 +72,7 @@ The installer copies workflow files to `.claude/` directory. **It does NOT creat
 4. **Phase 4** (`/5:verify-implementation`): Verifies configuration
 
 After completing these steps, you have:
-- `.claude/.5/config.json` with your project settings
+- `.5/config.json` with your project settings
 - `CLAUDE.md` with comprehensive project documentation
 - `.5/STRUCTURE.md`, `.5/STACK.md`, etc. with modular documentation
 - Project-specific skills in `.claude/skills/`
@@ -295,7 +295,7 @@ Map feature requirements to technical components, skills, and dependency steps.
    - **Step 2 (Logic)**: Business logic, services, handlers (sequential if needed)
    - **Step 3 (Integration)**: API routes, wiring, tests (sequential for integration)
 
-   Note: Step count and organization is configurable in `.claude/.5/config.json`
+   Note: Step count and organization is configurable in `.5/config.json`
 
 6. **Implementation Plan Creation**: Claude writes an **atomic plan structure** to:
    ```
@@ -997,7 +997,7 @@ If working on multiple features:
 
 ## Configuring for Different Tech Stacks
 
-The 5-phase workflow is designed to work with any technology stack. Configuration is stored in `.claude/.5/config.json` and can be customized using the `/5:configure` command.
+The 5-phase workflow is designed to work with any technology stack. Configuration is stored in `.5/config.json` and can be customized using the `/5:configure` command.
 
 ### Quick Setup
 
@@ -1096,7 +1096,7 @@ You can override auto-detected values in the config file.
 
 ### Further Customization
 
-See the `/5:configure` command for interactive configuration, or manually edit `.claude/.5/config.json` to customize:
+See the `/5:configure` command for interactive configuration, or manually edit `.5/config.json` to customize:
 - Ticket ID patterns
 - Branch naming conventions
 - Build and test commands

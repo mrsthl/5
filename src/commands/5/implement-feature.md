@@ -39,7 +39,7 @@ Parse:
 
 If the plan doesn't exist, tell the user to run `/5:plan-implementation` first.
 
-Also read `.claude/.5/config.json` and extract:
+Also read `.5/config.json` and extract:
 - `git.autoCommit` (boolean, default `false`)
 - `git.commitMessage.pattern` (string, default `{ticket-id} {short-description}`)
 
@@ -62,7 +62,7 @@ Create `.5/features/{feature-name}/state.json`:
 Then remove the planning guard marker (planning is over, implementation is starting):
 
 ```bash
-rm -f .claude/.5/.planning-active
+rm -f .5/.planning-active
 ```
 
 ### Step 3: Execute Steps

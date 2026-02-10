@@ -78,23 +78,20 @@ process.stdin.on('end', () => {
 function isInsideDotFive(filePath, workspaceDir) {
   const resolved = path.resolve(workspaceDir, filePath);
   const dotFiveDir = path.join(workspaceDir, '.5');
-  const claudeDotFiveDir = path.join(workspaceDir, '.claude', '.5');
   return resolved.startsWith(dotFiveDir + path.sep) ||
-         resolved.startsWith(claudeDotFiveDir + path.sep) ||
-         resolved === dotFiveDir ||
-         resolved === claudeDotFiveDir;
+         resolved === dotFiveDir;
 }
 
 function getTargetFeature(toolName, toolInput, workspaceDir) {
   // Extract the feature name from the tool input context
-  const featuresDir = path.join(workspaceDir, '.claude', '.5', 'features');
+  const featuresDir = path.join(workspaceDir, '.5', 'features');
 
   if (toolName === 'Write' || toolName === 'Edit') {
     // Check if the file path is inside a feature directory
     const filePath = toolInput.file_path || '';
     const resolved = path.resolve(workspaceDir, filePath);
     if (resolved.startsWith(featuresDir + path.sep)) {
-      // Extract feature name: .claude/.5/features/{feature-name}/...
+      // Extract feature name: .5/features/{feature-name}/...
       const relative = resolved.slice(featuresDir.length + 1);
       const featureName = relative.split(path.sep)[0];
       if (featureName) return featureName;
@@ -127,7 +124,7 @@ function getTargetFeature(toolName, toolInput, workspaceDir) {
 }
 
 function isPlanningActive(workspaceDir) {
-  const markerPath = path.join(workspaceDir, '.claude', '.5', '.planning-active');
+  const markerPath = path.join(workspaceDir, '.5', '.planning-active');
   if (!fs.existsSync(markerPath)) return false;
   try {
     const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
@@ -147,7 +144,7 @@ function isPlanningActive(workspaceDir) {
 function isFeatureInImplementationMode(workspaceDir, featureName) {
   // Check if this specific feature has a state.json (created in Phase 3)
   const stateFile = path.join(
-    workspaceDir, '.claude', '.5', 'features', featureName, 'state.json'
+    workspaceDir, '.5', 'features', featureName, 'state.json'
   );
   return fs.existsSync(stateFile);
 }

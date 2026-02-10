@@ -36,10 +36,10 @@ echo "Test 2: Corrupted version.json"
 echo "------------------------------"
 TEST_DIR="/tmp/test-check-updates-2"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
-echo "invalid json{" > .claude/.5/version.json
+echo "invalid json{" > .5/version.json
 echo "Running hook with corrupted version.json..."
 run_hook "$TEST_DIR" && echo "✓ Hook exits gracefully with corrupted file"
 echo ""
@@ -49,12 +49,12 @@ echo "Test 3: Recent check (within frequency)"
 echo "---------------------------------------"
 TEST_DIR="/tmp/test-check-updates-3"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
 # Create version.json with recent check
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "1.0.0",
   "updateCheckLastRun": "$NOW",
@@ -78,12 +78,12 @@ echo "Test 4: Old check (should run)"
 echo "-------------------------------"
 TEST_DIR="/tmp/test-check-updates-4"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
 # Create version.json with old check (2 days ago)
 OLD_DATE=$(date -u -v-2d +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -d "2 days ago" +"%Y-%m-%dT%H:%M:%SZ")
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "1.0.0",
   "updateCheckLastRun": "$OLD_DATE",
@@ -93,7 +93,7 @@ EOF
 
 echo "Running hook with old check timestamp..."
 run_hook "$TEST_DIR" >/dev/null 2>&1 || true
-UPDATED_TIME=$(cat .claude/.5/version.json | grep updateCheckLastRun | cut -d'"' -f4)
+UPDATED_TIME=$(cat .5/version.json | grep updateCheckLastRun | cut -d'"' -f4)
 if [ "$UPDATED_TIME" != "$OLD_DATE" ]; then
   echo "✓ Hook updates timestamp after check"
   echo "  Previous: $OLD_DATE"
@@ -109,10 +109,10 @@ echo "Test 5: Old version (update available)"
 echo "--------------------------------------"
 TEST_DIR="/tmp/test-check-updates-5"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "0.1.0",
   "updateCheckLastRun": "$OLD_DATE",
@@ -122,7 +122,7 @@ EOF
 
 echo "Running hook with very old version (0.1.0)..."
 run_hook "$TEST_DIR" >/dev/null 2>&1 || true
-LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.claude/.5/version.json','utf8')); console.log(d.latestAvailableVersion || '')")
+LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.5/version.json','utf8')); console.log(d.latestAvailableVersion || '')")
 if [ -n "$LATEST" ]; then
   echo "✓ Hook persists latestAvailableVersion in version.json: $LATEST"
 else
@@ -135,14 +135,14 @@ echo "Test 6: Current version (no update)"
 echo "-----------------------------------"
 TEST_DIR="/tmp/test-check-updates-6"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
 # Get current package version
 CURRENT_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/package.json','utf8')).version)")
 
 # Seed with a stale latestAvailableVersion to verify it gets cleared
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "$CURRENT_VERSION",
   "updateCheckLastRun": "$OLD_DATE",
@@ -153,7 +153,7 @@ EOF
 
 echo "Running hook with current version ($CURRENT_VERSION) and stale latestAvailableVersion..."
 run_hook "$TEST_DIR" >/dev/null 2>&1 || true
-LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.claude/.5/version.json','utf8')); console.log(d.latestAvailableVersion || 'null')")
+LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.5/version.json','utf8')); console.log(d.latestAvailableVersion || 'null')")
 if [ "$LATEST" = "null" ]; then
   echo "✓ Hook clears latestAvailableVersion for current version"
 else
@@ -166,10 +166,10 @@ echo "Test 7: Hook performance"
 echo "-----------------------"
 TEST_DIR="/tmp/test-check-updates-7"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "1.0.0",
   "updateCheckLastRun": "$OLD_DATE",
@@ -210,11 +210,11 @@ echo "------------------------------------"
 STATUSLINE_SCRIPT="$PROJECT_ROOT/src/hooks/statusline.js"
 TEST_DIR="/tmp/test-check-updates-10"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/.claude/.5"
+mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
 # 10a: version.json with latestAvailableVersion set — should show indicator
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "1.0.0",
   "latestAvailableVersion": "2.0.0"
@@ -239,7 +239,7 @@ else
 fi
 
 # 10b: latestAvailableVersion is null — should NOT show indicator
-cat > .claude/.5/version.json <<EOF
+cat > .5/version.json <<EOF
 {
   "installedVersion": "1.0.0",
   "latestAvailableVersion": null
@@ -257,7 +257,7 @@ else
 fi
 
 # 10c: No version.json — should NOT show indicator
-rm -rf "$TEST_DIR/.claude/.5/version.json"
+rm -rf "$TEST_DIR/.5/version.json"
 echo "Running statusline with no version.json..."
 SL_OUTPUT=$(echo '{"model":{"display_name":"Claude"},"workspace":{"current_dir":"'"$TEST_DIR"'"},"context_window":{"remaining_percentage":80}}' | node "$STATUSLINE_SCRIPT" 2>/dev/null || true)
 if echo "$SL_OUTPUT" | grep -q "/5:update"; then

@@ -17,7 +17,7 @@ This skill executes build tasks with auto-detection of the build system and suff
 
 The skill automatically detects the build system using:
 
-1. **Config file** (`.claude/.5/config.json`) - if `build.command` is specified
+1. **Config file** (`.5/config.json`) - if `build.command` is specified
 2. **Auto-detection** - by examining project files:
    - `package.json` → npm/yarn/pnpm
    - `build.gradle` or `build.gradle.kts` → Gradle
@@ -46,7 +46,7 @@ When invoked, the skill expects:
 
 ### 1. Load Configuration
 
-Read `.claude/.5/config.json` if it exists:
+Read `.5/config.json` if it exists:
 
 ```json
 {

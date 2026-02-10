@@ -1,5 +1,40 @@
 # Release Notes
 
+## v1.5.0
+
+**Release Date:** 2026-02-10
+
+### Data Directory Migration, Unlock Command, and Enhanced Guards
+
+Moves the `.5/` data directory out of `.claude/` for local installs, adds a new `/5:unlock` command for clearing planning locks, enhances the plan guard with per-feature tracking and Edit tool enforcement, and improves the `/5:update` command with version checking and commit support.
+
+**What's New**
+
+- New `/5:unlock` command removes the `.planning-active` marker file, allowing edits outside the workflow when the planning guard is stuck or unnecessary
+- Data directory migration for local installs: `.claude/.5/` now lives at project root as `.5/`, giving clearer separation between workflow files (`.claude/`) and project data (`.5/`). Existing data is migrated automatically during upgrade
+- `/5:update` command rewritten with full upgrade workflow: checks current version before and after upgrade, shows changed files, and optionally commits using the project's configured commit message pattern
+
+**Improvements**
+
+- `plan-guard.js` now enforces per-feature planning locks instead of global planning mode -- only the specific feature in implementation gets unrestricted tool access, while other features stay guarded
+- `plan-guard.js` now blocks `Edit` tool (in addition to `Write` and `Task`) during planning phases, closing a loophole where edits could bypass the guard
+- Guard error messages now reference `/5:unlock` as an escape hatch when users are not actually in a planning phase
+- Version comparison logic across all hooks (`check-updates.js`, `statusline.js`) and `bin/install.js` now uses `parseInt` to handle pre-release tags gracefully (e.g., `"2-beta"` parses as `2`)
+- `bin/install.js` refactored: new `getDataPath()` function centralizes `.5/` location logic, `migrateDataDir()` handles automatic migration from old paths, and agent update code skips when no agents are managed
+- README updated to reflect new `.5/` directory location, document `/5:unlock` command, and show all hooks in the project structure
+
+**Affected files:**
+- `src/commands/5/unlock.md` (new)
+- `src/commands/5/update.md` (modified)
+- `src/hooks/plan-guard.js` (modified)
+- `src/hooks/check-updates.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `bin/install.js` (modified)
+- `README.md` (modified)
+- `docs/workflow-guide.md` (modified)
+
+---
+
 ## v1.4.4
 
 **Release Date:** 2026-02-09

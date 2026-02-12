@@ -1,3 +1,11 @@
+<!-- TEMPLATE RULES:
+- Requirements use natural language, not code
+- Affected Components lists module/domain names, not file paths
+- Entity definitions describe data concepts, not schemas or interfaces
+- Acceptance criteria describe observable behavior, not test assertions
+- NO code, pseudo-code, or implementation details anywhere in this document
+-->
+
 # Feature: {TICKET-ID} - {Title}
 
 ## Ticket ID
@@ -35,6 +43,7 @@
 ## Entity/Component Definitions
 
 ### {EntityName} (if applicable)
+<!-- Describe the data CONCEPT, not the implementation. No TypeScript, no SQL. -->
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | id | {Entity}Id | Yes | Unique identifier |

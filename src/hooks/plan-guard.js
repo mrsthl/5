@@ -44,11 +44,16 @@ process.stdin.on('end', () => {
     if (toolName === 'Task') {
       const agentType = toolInput.subagent_type || '';
       if (agentType && agentType !== 'Explore') {
+        const blockCount = incrementBlockCount(workspaceDir);
+        const escalation = blockCount >= 3
+          ? ` WARNING: Block #${blockCount}. You are repeatedly attempting actions outside your planning role. STOP. Complete your planning artifact and output the completion message.`
+          : '';
         process.stderr.write(
           `BLOCKED: Only Explore agents are allowed during planning phases. ` +
           `Attempted: subagent_type="${agentType}". ` +
-          `To use other agent types, start implementation with /5:implement-feature. ` +
-          `If you're not in a planning phase, run /5:unlock to clear the planning lock.`
+          `REDIRECT: Return to your planning process. ` +
+          `If you need codebase information, use subagent_type=Explore. ` +
+          `If you are done planning, output the completion message and STOP.${escalation}`
         );
         process.exit(2);
       }
@@ -57,12 +62,19 @@ process.stdin.on('end', () => {
     if (toolName === 'Write' || toolName === 'Edit') {
       const filePath = toolInput.file_path || '';
       if (filePath && !isInsideDotFive(filePath, workspaceDir)) {
+        const blockCount = incrementBlockCount(workspaceDir);
+        const isSourceFile = !filePath.includes('.5/') && !filePath.includes('.claude/');
+        const escalation = blockCount >= 3
+          ? ` WARNING: Block #${blockCount}. Repeated violations. Complete your planning artifact and STOP.`
+          : '';
+        const redirectMsg = isSourceFile
+          ? `REDIRECT: You are in a planning phase. You may ONLY write to .5/features/. ` +
+            `Source file creation happens in Phase 3 (/5:implement-feature).`
+          : `REDIRECT: The path "${filePath}" is outside the allowed .5/ directory. ` +
+            `Check your file path — you should be writing to .5/features/{name}/.`;
         process.stderr.write(
           `BLOCKED: ${toolName} outside .5/ is not allowed during planning phases. ` +
-          `Attempted: "${filePath}". ` +
-          `Planning commands may only write to .5/features/. ` +
-          `To modify source files, start implementation with /5:implement-feature. ` +
-          `If you're not in a planning phase, run /5:unlock to clear the planning lock.`
+          `Attempted: "${filePath}". ${redirectMsg}${escalation}`
         );
         process.exit(2);
       }
@@ -138,6 +150,18 @@ function isPlanningActive(workspaceDir) {
     return true;
   } catch (e) {
     return true; // Unreadable marker → fail-safe, assume active
+  }
+}
+
+function incrementBlockCount(workspaceDir) {
+  const markerPath = path.join(workspaceDir, '.5', '.planning-active');
+  try {
+    const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+    marker.blockCount = (marker.blockCount || 0) + 1;
+    fs.writeFileSync(markerPath, JSON.stringify(marker, null, 2));
+    return marker.blockCount;
+  } catch (e) {
+    return 1;
   }
 }
 

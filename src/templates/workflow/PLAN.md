@@ -4,6 +4,13 @@ feature: {feature-name}
 created: {ISO-timestamp}
 ---
 
+<!-- PLAN RULES:
+- This file is interpolated into agent prompts. Write it as instructions, not documentation.
+- Description column: one action-oriented sentence per component
+- Implementation Notes: reference existing files as patterns, no code snippets
+- Components table must cover all functional requirements from feature.md
+-->
+
 # Implementation Plan: {TICKET-ID}
 
 {One sentence summary of what this plan builds}

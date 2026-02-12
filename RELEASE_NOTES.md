@@ -1,34 +1,46 @@
 # Release Notes
 
-## v1.5.0
+## v1.5.1
 
-**Release Date:** 2026-02-10
+**Release Date:** 2026-02-12
 
-### Data Directory Migration, Unlock Command, and Enhanced Guards
+### Agent Architecture, Data Directory Migration, and Enhanced Guards
 
-Moves the `.5/` data directory out of `.claude/` for local installs, adds a new `/5:unlock` command for clearing planning locks, enhances the plan guard with per-feature tracking and Edit tool enforcement, and improves the `/5:update` command with version checking and commit support.
+Introduces a 2-layer command/agent architecture that extracts agent behavior into dedicated files, moves the `.5/` data directory out of `.claude/` for local installs, adds a new `/5:unlock` command, and strengthens the plan guard with block escalation and pre-write self-checks.
 
 **What's New**
 
+- New agent layer: `feature-planner.md`, `implementation-planner.md`, and `component-executor.md` extracted from commands into `src/agents/`. Commands now reference agents via frontmatter and delegate behavioral details (role, constraints, write-rules, output-format, question-strategy) to the agent file. This separates orchestration from agent behavior for clearer responsibility and reusability
 - New `/5:unlock` command removes the `.planning-active` marker file, allowing edits outside the workflow when the planning guard is stuck or unnecessary
 - Data directory migration for local installs: `.claude/.5/` now lives at project root as `.5/`, giving clearer separation between workflow files (`.claude/`) and project data (`.5/`). Existing data is migrated automatically during upgrade
 - `/5:update` command rewritten with full upgrade workflow: checks current version before and after upgrade, shows changed files, and optionally commits using the project's configured commit message pattern
 
 **Improvements**
 
+- `plan-feature.md`, `plan-implementation.md`, and `implement-feature.md` significantly slimmed down by moving agent-specific content to dedicated agent files -- commands focus on orchestration flow while agents own behavioral constraints
+- `plan-guard.js` now tracks block counts and escalates warnings after repeated violations (3+ blocks trigger a forceful "STOP and complete your planning artifact" message), replacing the generic `/5:unlock` hint with context-aware redirect messages
+- `plan-guard.js` distinguishes source file writes from mispathed `.5/` writes, giving more specific error messages for each case
 - `plan-guard.js` now enforces per-feature planning locks instead of global planning mode -- only the specific feature in implementation gets unrestricted tool access, while other features stay guarded
 - `plan-guard.js` now blocks `Edit` tool (in addition to `Write` and `Task`) during planning phases, closing a loophole where edits could bypass the guard
-- Guard error messages now reference `/5:unlock` as an escape hatch when users are not actually in a planning phase
-- Version comparison logic across all hooks (`check-updates.js`, `statusline.js`) and `bin/install.js` now uses `parseInt` to handle pre-release tags gracefully (e.g., `"2-beta"` parses as `2`)
-- `bin/install.js` refactored: new `getDataPath()` function centralizes `.5/` location logic, `migrateDataDir()` handles automatic migration from old paths, and agent update code skips when no agents are managed
+- Workflow templates updated: `FEATURE-SPEC.md` and `PLAN.md` now include inline rule comments that reinforce planning constraints (no code, no pseudo-code, action-oriented descriptions)
+- Version comparison logic across all hooks (`check-updates.js`, `statusline.js`) and `bin/install.js` now uses `parseInt` to handle pre-release tags gracefully
+- `bin/install.js` refactored: new `getDataPath()` function centralizes `.5/` location logic, `migrateDataDir()` handles automatic migration from old paths, agents added to `getWorkflowManagedFiles()` and uninstall support
 - README updated to reflect new `.5/` directory location, document `/5:unlock` command, and show all hooks in the project structure
 
 **Affected files:**
+- `src/agents/feature-planner.md` (new)
+- `src/agents/implementation-planner.md` (new)
+- `src/agents/component-executor.md` (new)
 - `src/commands/5/unlock.md` (new)
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
 - `src/commands/5/update.md` (modified)
 - `src/hooks/plan-guard.js` (modified)
 - `src/hooks/check-updates.js` (modified)
 - `src/hooks/statusline.js` (modified)
+- `src/templates/workflow/FEATURE-SPEC.md` (modified)
+- `src/templates/workflow/PLAN.md` (modified)
 - `bin/install.js` (modified)
 - `README.md` (modified)
 - `docs/workflow-guide.md` (modified)

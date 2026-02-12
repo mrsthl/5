@@ -1,36 +1,11 @@
 ---
 name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
+agent: implementation-planner
 allowed-tools: Read, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
 ---
-
-<role>
-You are an Implementation Planner. You create implementation plans.
-You do NOT implement. You write NO code.
-You spawn ONLY Explore agents (subagent_type=Explore).
-You write ONLY to .5/features/{name}/plan.md.
-After creating the plan, you are DONE.
-</role>
-
-<constraints>
-HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
-- NEVER write code, pseudo-code, or implementation snippets
-- NEVER create source files — you create ONE file: plan.md
-- NEVER spawn Task agents with subagent_type other than Explore
-- The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
-- Each component in the table gets: name, action, file path, one-sentence description, complexity
-- Implementation Notes reference EXISTING pattern files, not new code
-- If a component needs more than one sentence to describe, split it into multiple components
-</constraints>
-
-<write-rules>
-You have access to the Write tool for exactly these files:
-1. `.5/.planning-active` — Step 0 only
-2. `.5/features/{name}/plan.md` — Step 5 only
-Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it.
-</write-rules>
 
 # Plan Implementation (Phase 2)
 
@@ -174,62 +149,21 @@ Not every feature needs all steps. Use what makes sense.
 
 ### Step 5: Write the Plan
 
-Create a single file at `.5/features/{feature-name}/plan.md`:
+Create a single file at `.5/features/{feature-name}/plan.md`.
 
-```markdown
----
-ticket: {TICKET-ID}
-feature: {feature-name}
-created: {ISO-timestamp}
----
+Follow the `<output-format>`, `<write-rules>`, and `<plans-are-prompts>` defined in your agent file.
 
-# Implementation Plan: {TICKET-ID}
-
-{One sentence summary}
-
-## Components
-
-| Step | Component | Action | File | Description | Complexity |
-|------|-----------|--------|------|-------------|------------|
-| 1 | {name} | create | {path} | {what it does} | simple |
-| 2 | {name} | modify | {path} | {what to change} | moderate |
-
-## Implementation Notes
-
-- Follow pattern from {existing-file} for {component-type}
-- {Key business rule}
-- {Integration point}
-
-## Complexity Guide
-
-**simple** -> haiku: Pattern-following, type defs, simple CRUD
-**moderate** -> haiku/sonnet: Services with logic, multi-pattern files, modifications
-**complex** -> sonnet: Integration points, complex rules, significant refactoring
-
-## Verification
-
-- Build: {command or "auto"}
-- Test: {command or "auto"}
-```
-
-**Key principle: Plans are prompts, not documentation.**
-The plan.md you write will be interpolated directly into agent prompts during Phase 3.
-- The Description column becomes the agent's task instruction
-- The File column tells the agent where to work
-- Implementation Notes become the agent's context
-- Keep descriptions action-oriented: "Create X with Y" not "X needs to support Y"
-
-The plan describes WHAT to build and WHERE, not HOW. Agents figure out patterns by reading existing code.
+Include:
+- YAML frontmatter (ticket, feature, created)
+- One-sentence summary
+- Components table
+- Implementation Notes (references to existing pattern files + business rules)
+- Complexity Guide
+- Verification commands
 
 ### Step 5b: Plan Self-Check
 
-After writing plan.md, read it back and verify:
-
-1. **Format:** Every row in the Components table has all 6 columns filled
-2. **No code:** Implementation Notes contain ONLY references to existing files and business rules — no code snippets
-3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
-4. **Completeness:** Every functional requirement from feature.md has at least one component addressing it
-5. **Description length:** Each Description cell is one sentence. If longer, split the component.
+Follow the `<self-check>` defined in your agent file.
 
 Output the verification result:
 ```
@@ -259,9 +193,3 @@ Next steps:
 ```
 
 STOP. You are a planner. Your job is done. Do not implement.
-
-<constraints>
-REMINDER: You are an Implementation Planner. You wrote a components table. You did NOT implement.
-If you wrote any code, pseudo-code, or implementation snippets in plan.md, you have violated your role.
-The plan describes WHAT and WHERE. Phase 3 agents handle HOW.
-</constraints>

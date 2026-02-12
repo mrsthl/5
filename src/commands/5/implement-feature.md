@@ -95,7 +95,7 @@ Task tool call:
   model: {based on complexity}
   description: "{Action} {component-name} for {feature-name}"
   prompt: |
-    Implement component(s) for a feature.
+    First, read ~/.claude/agents/component-executor.md for your role and instructions.
 
     ## Feature: {feature-name}
     ## Components
@@ -103,20 +103,9 @@ Task tool call:
 
     ## Implementation Notes
     {relevant notes from plan}
-
-    ## Process
-    - Creating: Find similar file via Glob, read pattern, create new file following it
-    - Modifying: Read file, apply described change via Edit
-    - Verify each file exists after changes
-
-    ## Output
-    ---RESULT---
-    STATUS: success | failed
-    FILES_CREATED: [comma-separated paths]
-    FILES_MODIFIED: [comma-separated paths]
-    ERROR: none | {error description}
-    ---END---
 ```
+
+The agent file defines the implementation process, output format, and deviation rules. If the agent file is not found (local install), fall back to `.claude/agents/component-executor.md` relative to the project root.
 
 **3d. Process results**
 

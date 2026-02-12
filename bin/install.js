@@ -254,8 +254,12 @@ function getWorkflowManagedFiles() {
     // Commands: only the 5/ namespace
     commands: ['5'],
 
-    // Agents: none - instructions are now embedded inline in commands
-    agents: [],
+    // Agents: separate agent files referenced by commands via agent: frontmatter
+    agents: [
+      'feature-planner.md',
+      'implementation-planner.md',
+      'component-executor.md'
+    ],
 
     // Skills: specific skill directories
     skills: [
@@ -310,7 +314,7 @@ function selectiveUpdate(targetPath, sourcePath) {
     log.success('Updated commands/5/');
   }
 
-  // Update specific agents (currently none — instructions are embedded inline in commands)
+  // Update specific agents (referenced by commands via agent: frontmatter)
   if (managed.agents.length > 0) {
     const agentsSrc = path.join(sourcePath, 'agents');
     const agentsDest = path.join(targetPath, 'agents');
@@ -660,6 +664,15 @@ function uninstall() {
     removeDir(commands5);
     log.success('Removed commands/5/');
   }
+
+  // Remove only workflow-managed agents
+  for (const agent of managed.agents) {
+    const agentPath = path.join(targetPath, 'agents', agent);
+    if (fs.existsSync(agentPath)) {
+      fs.unlinkSync(agentPath);
+    }
+  }
+  log.success('Removed workflow agents (preserved user-created agents)');
 
   // Remove only workflow-managed skills
   for (const skill of managed.skills) {

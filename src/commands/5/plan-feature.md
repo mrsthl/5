@@ -1,36 +1,11 @@
 ---
 name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
+agent: feature-planner
 allowed-tools: Read, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
 ---
-
-<role>
-You are a Feature Planner. You create feature specifications.
-You do NOT implement. You write NO code.
-You spawn ONLY Explore agents (subagent_type=Explore).
-You write ONLY to .5/features/{name}/feature.md.
-After creating the spec, you are DONE.
-</role>
-
-<constraints>
-HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
-- NEVER write code, pseudo-code, or implementation snippets in any output
-- NEVER describe HOW something will be implemented (file contents, signatures, class structures)
-- NEVER spawn Task agents with subagent_type other than Explore
-- NEVER write to any file except .5/features/{name}/feature.md and .5/.planning-active
-- The feature spec describes WHAT and WHY, never HOW
-- If you feel the urge to implement, STOP and ask a clarifying question instead
-- Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes.
-</constraints>
-
-<write-rules>
-You have access to the Write tool for exactly these files:
-1. `.5/.planning-active` — Step 0 only
-2. `.5/features/{name}/feature.md` — Step 5 only
-Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it.
-</write-rules>
 
 # Plan Feature (Phase 1)
 
@@ -121,17 +96,7 @@ Wait for the sub-agent to return before proceeding.
 
 ### Step 4: Intensive Q&A (5-10 Questions, One at a Time)
 
-After receiving the exploration report, ask 5-10 clarifying questions using AskUserQuestion.
-
-**Rules:**
-- ONE question at a time — wait for answer before next
-- Use sub-agent findings to ask informed questions
-- At least 5 questions before creating the spec
-- Provide 2-4 options where meaningful
-
-**Question categories:** Requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points (from findings), alternative approaches (from findings), complexity trade-offs.
-
-**Challenge assumptions:** "Is this the simplest solution?", "Could we reuse existing X?" (reference findings), "What happens when Y fails?"
+Follow the `<question-strategy>` defined in your agent file.
 
 **Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
 
@@ -158,7 +123,9 @@ Determine a feature name: short, kebab-case (e.g., "add-emergency-schedule").
 
 Write to `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool.
 
-Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`. Populate all sections:
+Follow the `<output-format>` and `<write-rules>` defined in your agent file.
+
+Populate all sections:
 - Ticket ID & Summary
 - Problem Statement
 - Requirements (functional and non-functional)
@@ -167,13 +134,6 @@ Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`. Po
 - Acceptance Criteria
 - Alternatives Considered
 - Questions & Answers (from Q&A session)
-
-**Content rules for feature.md:**
-- Requirements use natural language ("The system shall..."), NOT code
-- Affected Components lists module/domain names, NOT file paths
-- NO code snippets, NO pseudo-code, NO type definitions
-- Entity definitions describe data CONCEPTS, not DB schemas or TypeScript interfaces
-- Acceptance criteria describe observable behavior, NOT test code
 
 ## PLANNING COMPLETE
 
@@ -189,9 +149,3 @@ Next steps:
 ```
 
 STOP. You are a planner. Your job is done. Do not implement.
-
-<constraints>
-REMINDER: You are a Feature Planner. You wrote a specification. You did NOT implement.
-If you wrote any code, file paths to create, class names, or function signatures in feature.md, you have violated your role.
-The feature spec contains WHAT and WHY. Phase 2 handles WHERE. Phase 3 handles HOW.
-</constraints>

@@ -39,35 +39,27 @@ async function checkForUpdates(workspaceDir) {
     process.exit(0);
   }
 
-  // Check if we should run (daily frequency)
-  const now = Date.now();
-  const lastCheck = versionData.updateCheckLastRun
-    ? new Date(versionData.updateCheckLastRun).getTime()
-    : 0;
-  const frequency = (versionData.updateCheckFrequency || 86400) * 1000; // Convert to ms
-
-  if (now - lastCheck < frequency) {
-    // Checked recently, skip
-    process.exit(0);
-  }
-
-  // Update last check time
-  versionData.updateCheckLastRun = new Date().toISOString();
-
   // Compare versions
   const installed = versionData.installedVersion;
   const latestVersion = await getLatestVersion();
 
+  let newLatest = null;
   if (latestVersion && compareVersions(installed, latestVersion) < 0) {
-    // Update available — persist for statusline to display
-    versionData.latestAvailableVersion = latestVersion;
-  } else {
-    // No update (or network failure) — clear any stale value
-    versionData.latestAvailableVersion = null;
+    newLatest = latestVersion;
   }
 
-  // Single consolidated write
-  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  // Only write if latestAvailableVersion actually changed
+  const oldLatest = versionData.latestAvailableVersion || null;
+  if (newLatest !== oldLatest) {
+    versionData.latestAvailableVersion = newLatest;
+
+    // Clean up legacy throttling fields
+    delete versionData.updateCheckLastRun;
+    delete versionData.updateCheckFrequency;
+
+    fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  }
+
   process.exit(0);
 }
 

@@ -402,9 +402,7 @@ function initializeVersionJson(isGlobal) {
     installedVersion: version,
     installedAt: now,
     lastUpdated: now,
-    installationType: isGlobal ? 'global' : 'local',
-    updateCheckLastRun: null,
-    updateCheckFrequency: 86400 // 24 hours in seconds
+    installationType: isGlobal ? 'global' : 'local'
   };
 
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
@@ -561,8 +559,7 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
     // Legacy install, create version.json
     versionData = {
       installedAt: new Date().toISOString(),
-      installationType: isGlobal ? 'global' : 'local',
-      updateCheckFrequency: 86400
+      installationType: isGlobal ? 'global' : 'local'
     };
   }
 

@@ -1,5 +1,24 @@
 # Release Notes
 
+## v1.5.3
+
+**Release Date:** 2026-02-15
+
+### Task Tracking for Plan-Feature Workflow
+
+Adds structured progress tracking to the plan-feature workflow, giving visible step-by-step status throughout the planning phase.
+
+**What's New**
+- `plan-feature.md` now creates an 8-task progress checklist using TaskCreate/TaskUpdate/TaskList/TaskGet, giving visible step-by-step tracking throughout the planning phase
+- Each planning step is tied to a task that must be marked `in_progress` before starting and `completed` when done, enforcing sequential completion
+- `feature-planner.md` agent updated with task tracking constraints -- must verify tasks 1-6 are complete before writing the feature spec
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/agents/feature-planner.md` (modified)
+
+---
+
 ## v1.5.2
 
 **Release Date:** 2026-02-15

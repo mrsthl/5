@@ -1,5 +1,26 @@
 # Release Notes
 
+## v1.5.2
+
+**Release Date:** 2026-02-15
+
+### Cleaner Update Check Hook
+
+Removes unnecessary disk writes and throttling state from `version.json`, making the update check hook simpler and less intrusive.
+
+**Improvements**
+- `check-updates.js` no longer persists `updateCheckLastRun` or `updateCheckFrequency` in `version.json` -- the hook now only writes to disk when `latestAvailableVersion` actually changes, eliminating a write on every session start
+- `check-updates.js` cleans up legacy throttling fields (`updateCheckLastRun`, `updateCheckFrequency`) from existing `version.json` files on next write
+- `bin/install.js` no longer seeds `updateCheckLastRun` or `updateCheckFrequency` in new or legacy `version.json` files
+- Simplified test suite to reflect removal of throttling behavior (reduced from 10 tests to 8)
+
+**Affected files:**
+- `src/hooks/check-updates.js` (modified)
+- `bin/install.js` (modified)
+- `test/test-check-updates-hook.sh` (modified)
+
+---
+
 ## v1.5.1
 
 **Release Date:** 2026-02-12

@@ -2,7 +2,7 @@
 name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
 agent: feature-planner
-allowed-tools: Read, Write, Task, AskUserQuestion
+allowed-tools: Read, Write, Task, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 context: fork
 user-invocable: true
 ---
@@ -43,7 +43,28 @@ Write the planning guard marker to `.5/.planning-active` using the Write tool:
 
 This activates the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`), expires after 4 hours, or can be cleared manually with `/5:unlock`.
 
+### Step 0b: Create Progress Checklist
+
+Create a progress checklist using TaskCreate. Create all 8 tasks in order:
+
+| # | Subject | activeForm | Description |
+|---|---------|------------|-------------|
+| 1 | Activate planning guard | Activating planning guard | Write `.5/.planning-active` marker |
+| 2 | Gather feature description | Gathering feature description | Ask developer for feature description via AskUserQuestion |
+| 3 | Extract ticket ID from branch | Extracting ticket ID | Extract from git branch, sanitize, confirm with developer |
+| 4 | Explore codebase for patterns | Exploring codebase | Spawn Explore sub-agent for project analysis |
+| 5 | Ask 5+ clarifying questions (one at a time) | Asking clarifying questions | Min. 5 questions, one at a time, via AskUserQuestion |
+| 6 | Pre-write checkpoint | Running pre-write checkpoint | Verify 5+ Q&A, no code, spec contains only WHAT/WHY |
+| 7 | Write feature specification | Writing feature specification | Create `.5/features/{ID}-{desc}/feature.md` |
+| 8 | Output completion message and STOP | Completing planning phase | Output message, then STOP |
+
+After creating all 8 tasks: Mark task 1 as `completed` (Step 0 is already done). Mark task 2 as `in_progress`.
+
+> **MANDATORY:** Before starting ANY step, mark the corresponding task as `in_progress`. After completing, mark as `completed`. Never skip a task.
+
 ### Step 1: Gather Feature Description
+
+> Task tracking: Mark "Gather feature description" → `in_progress` before, `completed` after.
 
 Ask the developer for the feature description using AskUserQuestion:
 
@@ -53,6 +74,8 @@ Ask the developer for the feature description using AskUserQuestion:
 - Do NOT ask follow-up questions yet
 
 ### Step 2: Extract Ticket ID
+
+> Task tracking: Mark "Extract ticket ID" → `in_progress`/`completed`.
 
 Extract the ticket ID from the current git branch:
 - Use `git branch --show-current` via a Bash-free approach: spawn a quick Explore agent if needed
@@ -64,6 +87,8 @@ Extract the ticket ID from the current git branch:
 **Sanitize the ticket ID:** The ticket ID is used in directory paths (`.5/features/{TICKET-ID}-{desc}/`). Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Reject or strip any other characters (especially `/`, `..`, `~`, spaces). If the sanitized result is empty, ask the user for a valid ticket ID.
 
 ### Step 3: Spawn Explore Agent for Codebase Analysis
+
+> Task tracking: Mark "Explore codebase for patterns" → `in_progress`/`completed` when sub-agent returns.
 
 Spawn a Task with `subagent_type=Explore`:
 
@@ -96,6 +121,8 @@ Wait for the sub-agent to return before proceeding.
 
 ### Step 4: Intensive Q&A (5-10 Questions, One at a Time)
 
+> Task tracking: Mark "Ask 5+ clarifying questions" → `in_progress`. Do NOT mark `completed` until 5+ answers received.
+
 Follow the `<question-strategy>` defined in your agent file.
 
 **Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
@@ -109,6 +136,8 @@ Targeted exploration for feature planning.
 
 ### Step 4b: Pre-Write Checkpoint
 
+> Task tracking: Mark "Pre-write checkpoint" → `in_progress`. If fails (< 5 Q&A), mark questions task back to `in_progress` and return to Step 4.
+
 Before writing the feature spec, verify:
 1. You asked at least 5 questions and received answers
 2. You have NOT written any code or implementation details
@@ -118,6 +147,8 @@ Before writing the feature spec, verify:
 If you have fewer than 5 Q&A pairs, go back to Step 4 and ask more questions.
 
 ### Step 5: Create Feature Specification
+
+> Task tracking: Mark "Write feature specification" → `in_progress`/`completed`.
 
 Determine a feature name: short, kebab-case (e.g., "add-emergency-schedule").
 
@@ -136,6 +167,8 @@ Populate all sections:
 - Questions & Answers (from Q&A session)
 
 ## PLANNING COMPLETE
+
+> Task tracking: Mark "Output completion message and STOP" → `in_progress`. Before stopping, call TaskList to verify ALL 8 tasks are `completed`.
 
 After writing feature.md, output exactly:
 

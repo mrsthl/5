@@ -8,7 +8,16 @@ user-invocable: true
 
 # Generate Release Notes
 
-## Step 1: Determine Version Bump
+## Step 1: Ensure Local Branch Is Up to Date
+
+Before gathering changes, verify the local branch has the latest commits from origin:
+
+1. Run `git fetch origin`
+2. Compare local HEAD with the remote tracking branch: `git rev-parse HEAD` vs `git rev-parse @{u}`
+3. If they differ, run `git pull` to incorporate remote changes
+4. If the pull fails (e.g. due to conflicts), stop and inform the user — do NOT continue generating release notes on stale history
+
+## Step 2: Determine Version Bump
 
 Ask the user which type of version bump this release is:
 
@@ -16,14 +25,14 @@ Ask the user which type of version bump this release is:
 - **Minor** (new features, backward-compatible)
 - **Patch** (bug fixes, small improvements)
 
-## Step 2: Calculate New Version
+## Step 3: Calculate New Version
 
 Read `package.json` in the project root to get the current version (read-only — do NOT modify package.json). Apply the version bump:
 - **Major**: increment first number, reset others to 0
 - **Minor**: increment second number, reset patch to 0
 - **Patch**: increment third number
 
-## Step 3: Gather Changes
+## Step 4: Gather Changes
 
 Run the following git commands to collect changes since the last release:
 
@@ -31,7 +40,7 @@ Run the following git commands to collect changes since the last release:
 2. Get all commits since that tag: `git log {tag}..HEAD --format="%H %s"` (if no tag exists, use `git log --format="%H %s"`)
 3. Get the detailed diff stats: `git diff {tag}..HEAD --stat`
 
-## Step 4: Analyze and Categorize
+## Step 5: Analyze and Categorize
 
 Review each commit message and the associated changes. Categorize them:
 
@@ -42,12 +51,12 @@ Review each commit message and the associated changes. Categorize them:
 
 For each category, write concise bullet points describing the user-facing impact. Focus on WHAT changed and WHY, not implementation details.
 
-## Step 5: Determine Affected Files
+## Step 6: Determine Affected Files
 
 From the git diff, list the key files that were added, modified, or removed. Use the format:
 - `path/to/file` (new|modified|removed)
 
-## Step 6: Write Release Notes
+## Step 7: Write Release Notes
 
 Read the existing `RELEASE_NOTES.md` file. Prepend the new release entry directly after the `# Release Notes` heading, before all existing entries.
 
@@ -83,12 +92,12 @@ Write the updated content back to `RELEASE_NOTES.md`.
 
 **IMPORTANT: `RELEASE_NOTES.md` is the ONLY file you may write to. Do NOT modify `package.json` or any other file.**
 
-## Step 7: Confirm
+## Step 8: Confirm
 
 Show the user the new release notes entry and confirm it looks correct. Let them know:
 - RELEASE_NOTES.md has been updated
 - They should review and commit the changes
 
-## Step 8: Commit
+## Step 9: Commit
 
 Commit the changes to RELEASE_NOTES.md with a message like "Update Release Notes {new-version}".

@@ -1,5 +1,31 @@
 # Release Notes
 
+## v1.5.4
+
+**Release Date:** 2026-02-18
+
+### Resilient Implementation Workflows with Retry Logic and Task Tracking
+
+Significantly hardens the `implement-feature` and `quick-implement` workflows with retry logic, richer state tracking, fail-safe writes, and resumable execution — making implementation more robust and recoverable when things go wrong.
+
+**Improvements**
+- `implement-feature` and `quick-implement` now support retry logic for failed components (up to 2 retries), with user-facing options to retry, resolve manually, or skip when retries are exhausted
+- State tracking schema expanded with `pendingComponents`, `failedAttempts`, and `verificationResults` fields, enabling accurate progress reconciliation when resuming an interrupted workflow
+- Fail-safe write verification added to all `state.json` updates at critical steps — the workflow confirms each write succeeded before continuing
+- TaskCreate/TaskUpdate/TaskList tools added to `allowed-tools` for both commands, with progress tasks created and updated at each execution, verification, and state-update step
+- Auto-commit logic refined to stage specific files per step (never `git add .`) and log commit failures gracefully without blocking the workflow
+- Interruption handling made more robust: file existence is verified before reading state, and users are prompted to recover or restart when state is ambiguous
+- `configure.md` and `discuss-feature.md` received minor cleanup
+
+**Affected files:**
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/templates/workflow/STATE.json` (modified)
+
+---
+
 ## v1.5.3
 
 **Release Date:** 2026-02-15

@@ -3,7 +3,12 @@
   "feature": "{feature-name}",
   "status": "in-progress",
   "currentStep": 1,
-  "completed": [],
-  "failed": [],
-  "startedAt": "{ISO-timestamp}"
+  "totalSteps": 0,
+  "pendingComponents": [],
+  "completedComponents": [],
+  "failedAttempts": [],
+  "verificationResults": {},
+  "commitResults": [],
+  "startedAt": "{ISO-timestamp}",
+  "lastUpdated": "{ISO-timestamp}"
 }

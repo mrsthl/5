@@ -421,8 +421,4 @@ Tell the user:
 4. "After that: Continue with `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code` (clearing context between each phase)"
 
 ## Related Documentation
-
-- [5-Phase Workflow Guide](../../docs/workflow-guide.md)
 - [configure-project skill](../../skills/configure-project/SKILL.md)
-- [/5:plan-feature command](./plan-feature.md)
-- [/5:plan-implementation command](./plan-implementation.md)

@@ -251,9 +251,3 @@ Skill: "Feature spec updated. Changes:
 - Added: Full CRUD operations
 Next: /clear then /5:plan-implementation PROJ-1234-add-feature"
 ```
-
-## Related Documentation
-
-- [5-Phase Workflow Guide](../docs/workflow-guide.md)
-- [plan-feature command](./plan-feature.md)
-- [plan-implementation command](./plan-implementation.md)

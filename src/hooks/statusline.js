@@ -43,22 +43,31 @@ process.stdin.on('end', () => {
     // Shorten directory path for display
     const shortDir = dir.replace(os.homedir(), '~');
 
-    // Check for available update
+    // Check for available update and reconfigure reminder
     let updateIndicator = '';
+    let reconfigIndicator = '';
     try {
       const versionFile = path.join(dir, '.5', 'version.json');
       const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+
+      // Update check
       const latest = versionData.latestAvailableVersion;
       const installed = versionData.installedVersion;
       if (latest && installed && compareVersions(installed, latest) < 0) {
         updateIndicator = ` | \x1b[33m↑${latest} → /5:update\x1b[0m`;
       }
+
+      // Reconfigure check (reads flag file in .5/, gitignored)
+      const flagFile = path.join(dir, '.5', '.reconfig-reminder');
+      if (fs.existsSync(flagFile)) {
+        reconfigIndicator = ` | \x1b[35m↻ /5:configure\x1b[0m`;
+      }
     } catch (e) {
       // No version file or parse error — no indicator
     }
 
-    // Build and output statusline: model | directory | context | update
-    const statusline = `\x1b[36m${model}\x1b[0m | \x1b[90m${shortDir}\x1b[0m${ctx}${updateIndicator}`;
+    // Build and output statusline: model | directory | context | update | reconfig
+    const statusline = `\x1b[36m${model}\x1b[0m | \x1b[90m${shortDir}\x1b[0m${ctx}${updateIndicator}${reconfigIndicator}`;
     process.stdout.write(statusline);
 
   } catch (e) {

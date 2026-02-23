@@ -345,6 +345,14 @@ mkdir -p .5
 
 Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
 
+**Update `.5/version.json` with configure timestamp:**
+
+After writing config.json, update `.5/version.json` so the reconfigure reminder can track staleness:
+1. Read `.5/version.json` (if it exists)
+2. Set `configuredAt` to the current ISO timestamp (`new Date().toISOString()`)
+3. Set `configuredAtCommit` to the current short commit hash (run `git rev-parse --short HEAD`)
+4. Write back `.5/version.json` preserving all other fields
+
 **Apply `.gitignore` if selected:**
 
 If the user chose to gitignore the `.5/features/` folder:
@@ -352,6 +360,12 @@ If the user chose to gitignore the `.5/features/` folder:
 2. If it exists, check if `.5/features/` is already listed — if not, append `.5/features/` on a new line
 3. If `.gitignore` does not exist, create it with `.5/features/` as the first entry
 4. Inform the user: "Added `.5/features/` to `.gitignore`"
+
+**Always gitignore `.5/.reconfig-reminder`:**
+
+Ensure `.5/.reconfig-reminder` is gitignored (it's a transient runtime flag that should never be committed):
+1. Check if `.gitignore` exists in the project root — create it if not
+2. Check if `.5/.reconfig-reminder` is already listed — if not, append `.5/.reconfig-reminder` on a new line
 
 ### Step 3: Create Feature Spec
 

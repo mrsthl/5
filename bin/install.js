@@ -273,6 +273,7 @@ function getWorkflowManagedFiles() {
     hooks: [
       'statusline.js',
       'check-updates.js',
+      'check-reconfig.js',
       'plan-guard.js',
       'config-guard.js'
     ],

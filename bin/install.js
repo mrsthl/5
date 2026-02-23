@@ -492,6 +492,7 @@ function showCommandsHelp(isGlobal) {
   log.info('  /5:verify-implementation - Verify implementation (Phase 4)');
   log.info('  /5:review-code          - Code review (Phase 5)');
   log.info('  /5:configure            - Interactive project setup');
+  log.info('  /5:reconfigure          - Refresh docs/skills (no Q&A)');
   log.info('  /5:unlock               - Remove planning guard lock');
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);

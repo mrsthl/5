@@ -22,6 +22,29 @@ Note: config.json is written directly by `/5:configure` during the Q&A phase.
 
 ---
 
+## Modes
+
+This skill supports two modes. The analysis (A1), template filling (A2-A3), CLAUDE.md update (A4-A5), and skill generation (B) logic is the same in both modes — only the **input source** changes.
+
+### Full Mode (default)
+
+Used by `/5:configure` → `/5:implement-feature CONFIGURE` flow.
+
+- **Input:** Pattern/command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
+- **Behavior:** Creates everything from scratch based on feature spec requirements
+
+### Refresh Mode
+
+Used by `/5:reconfigure` for lightweight refresh.
+
+- **Input:** The Task prompt lists which skills to refresh, create, and remove (determined by `/5:reconfigure` after scanning `.claude/skills/` and comparing with detected codebase patterns)
+- **Behavior:** Re-analyzes codebase, overwrites docs and refreshes/creates/removes skills as specified
+- **Trigger:** Task prompt includes "REFRESH MODE"
+
+In both modes, the analysis and generation logic is identical — only where the skill list comes from differs.
+
+---
+
 ## A. Analyze Codebase and Create/Update CLAUDE.md
 
 **Process:**

@@ -60,7 +60,7 @@ process.stdin.on('end', () => {
       // Reconfigure check (reads flag file in .5/, gitignored)
       const flagFile = path.join(dir, '.5', '.reconfig-reminder');
       if (fs.existsSync(flagFile)) {
-        reconfigIndicator = ` | \x1b[35m↻ /5:configure\x1b[0m`;
+        reconfigIndicator = ` | \x1b[35m↻ /5:reconfigure\x1b[0m`;
       }
     } catch (e) {
       // No version file or parse error — no indicator

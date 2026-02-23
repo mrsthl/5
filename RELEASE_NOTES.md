@@ -1,5 +1,36 @@
 # Release Notes
 
+## v1.6.0
+
+**Release Date:** 2026-02-23
+
+### Reconfigure Command and Staleness Reminders
+
+Adds a new `/5:reconfigure` command for lightweight project refresh without repeating the full Q&A, plus automatic reminders when your configuration may be stale.
+
+**What's New**
+- New `/5:reconfigure` command re-detects codebase patterns, regenerates documentation, and refreshes skills using existing `config.json` preferences — no Q&A required. Use it when your codebase evolves but your preferences haven't changed
+- New `check-reconfig.js` startup hook detects when significant codebase changes have occurred since the last configure/reconfigure, and sets a `.reconfig-reminder` flag to prompt users
+- Status line now shows a purple `↻ /5:reconfigure` indicator when the reconfigure reminder flag is active, alongside the existing update indicator
+- `.5/features/` folder can now be added to `.gitignore` during `/5:configure`, keeping workflow artifacts local to the developer
+
+**Improvements**
+- `/5:configure` now tracks `configuredAt` timestamp and `configuredAtCommit` hash in `version.json`, enabling staleness detection
+- `/5:configure` adds `.5/.reconfig-reminder` to `.gitignore` automatically (transient runtime flag that should never be committed)
+- `bin/install.js` updated to include `check-reconfig.js` in managed files and show `/5:reconfigure` in the commands help listing
+- `settings.json` registers `check-reconfig.js` as a startup hook with 10-second timeout
+
+**Affected files:**
+- `src/commands/5/reconfigure.md` (new)
+- `src/hooks/check-reconfig.js` (new)
+- `src/commands/5/configure.md` (modified)
+- `src/hooks/statusline.js` (modified)
+- `src/settings.json` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+- `bin/install.js` (modified)
+
+---
+
 ## v1.5.4
 
 **Release Date:** 2026-02-18

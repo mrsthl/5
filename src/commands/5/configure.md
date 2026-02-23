@@ -279,6 +279,12 @@ If no patterns/commands detected:
 - Inform user: "No common patterns detected. Would you like to specify patterns manually?"
 - Allow manual entry of pattern names/locations or command names
 
+**2l. Git-ignore `.5/features/` folder:**
+- "The `.5/features/` folder will contain feature specs, implementation plans, and state files. Would you like to add it to `.gitignore`?"
+  - Options:
+    1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
+    2. "No, track in git" — useful if you want to share specs and plans with your team
+
 ### Step 2.5: Write config.json
 
 Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
@@ -330,11 +336,22 @@ mkdir -p .5
     "commitMessage": {
       "pattern": "{ticket-id} {short-description}"
     }
+  },
+  "dotFiveFolder": {
+    "gitignore": true
   }
 }
 ```
 
 Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
+
+**Apply `.gitignore` if selected:**
+
+If the user chose to gitignore the `.5/features/` folder:
+1. Check if `.gitignore` exists in the project root
+2. If it exists, check if `.5/features/` is already listed — if not, append `.5/features/` on a new line
+3. If `.gitignore` does not exist, create it with `.5/features/` as the first entry
+4. Inform the user: "Added `.5/features/` to `.gitignore`"
 
 ### Step 3: Create Feature Spec
 

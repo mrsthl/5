@@ -1,6 +1,6 @@
 ---
 name: 5:address-review-findings
-description: Applies annotated review findings from a review-findings file and optionally addresses GitHub PR review comments.
+description: Applies annotated review findings and/or addresses GitHub PR review comments. Use --github to process PR comments only.
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Task, Skill, mcp__jetbrains__*
 model: sonnet
 context: fork
@@ -19,9 +19,22 @@ You follow the exact step sequence below. Do not skip or reorder steps.
 
 This command reads a `review-findings-*.md` file produced by `/5:review-code`, applies all `[FIX]` items, and optionally fetches and addresses GitHub PR review comments.
 
+## Options
+
+- **`--github`** — Skip local findings entirely. Only fetch and process GitHub PR review comments for the current branch.
+
 ## Process
 
-### Step 1: Determine Feature Context
+### Step 1: Determine Mode and Feature Context
+
+Check if the command was invoked with `--github`.
+
+- **`--github` mode:** Skip Steps 2 and 3. Proceed directly to Step 4 (GitHub PR Integration), which is now mandatory — do not ask the user whether to include PR comments.
+- **Normal mode:** Follow all steps in order.
+
+---
+
+Regardless of mode, read `.5/features/*/state.json` using Glob to find all state files. Select the one with the most recent `startedAt` (or `lastUpdated` if present).
 
 Read `.5/features/*/state.json` using Glob to find all state files. Select the one with the most recent `startedAt` (or `lastUpdated` if present).
 
@@ -34,7 +47,7 @@ Also read `.5/config.json` if present. Extract `git.branch` if set.
 
 If no state.json files found, ask user via AskUserQuestion: "Which feature are you working on?" — prompt them to enter the feature name manually.
 
-### Step 2: Locate Review Findings File
+### Step 2: Locate Review Findings File *(skipped in --github mode)*
 
 Use Glob to find `review-findings-*.md` in the feature directory:
 ```
@@ -65,7 +78,7 @@ Collect three lists:
 - `to_skip` — all `[SKIP]` items
 - `to_manual` — all `[MANUAL]` items
 
-### Step 3: Present Findings Summary
+### Step 3: Present Findings Summary *(skipped in --github mode)*
 
 Display a summary to the user:
 
@@ -93,13 +106,22 @@ Check if a PR exists for the current branch:
 gh pr list --head "$(git branch --show-current)" --json number,url,title --limit 1
 ```
 
-If the `gh` command is not available or returns an error, skip this step silently.
+If the `gh` command is not available or returns an error:
+- In `--github` mode: report the error and STOP — PR comments are the only goal.
+- In normal mode: skip this step silently.
 
-**If a PR is found:** Ask via AskUserQuestion:
+**If no PR is found:**
+- In `--github` mode: report "No open PR found for the current branch." and STOP.
+- In normal mode: skip this step.
+
+**If a PR is found in normal mode:** Ask via AskUserQuestion:
 - "A PR was found: {title} ({url}). Include PR review comments?"
 - Options: "Yes, include PR comments" / "No, local findings only"
+- If "No": skip the rest of this step.
 
-**If "Yes, include PR comments":**
+**If a PR is found in `--github` mode:** proceed immediately without asking.
+
+**Fetch PR comments:**
 
 Fetch review comments (inline code comments):
 ```bash
@@ -127,7 +149,7 @@ Task tool call:
     Analyze these GitHub PR review comments and categorize each one.
 
     ## Local Findings (already being addressed)
-    {list of file:line:description from to_fix + to_skip + to_manual}
+    {list of file:line:description from to_fix + to_skip + to_manual — or "none" in --github mode}
 
     ## PR Review Comments
     {raw JSON of review comments}
@@ -330,18 +352,11 @@ Output exactly:
 ```
 Review findings addressed.
 
-Local findings:
-- Fixed:   {N}
-- Skipped: {N}
-- Manual:  {N}
+Local findings:       {N fixed / N skipped / N manual  — or "skipped (--github mode)"}
+PR comments:          {N fixed / N skipped / N replied  — or "none"}
 
-PR comments:
-- Fixed:   {N}
-- Skipped: {N}
-- Replied: {N}
-
-Build: {passed/failed}
-Tests: {passed/failed}
+Build: {passed/failed/skipped}
+Tests: {passed/failed/skipped}
 
 Summary saved at .5/features/{feature}/review-summary-{timestamp}.md
 ```

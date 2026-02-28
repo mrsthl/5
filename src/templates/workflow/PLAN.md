@@ -9,6 +9,8 @@ created: {ISO-timestamp}
 - Description column: one action-oriented sentence per component
 - Implementation Notes: reference existing files as patterns, no code snippets
 - Components table must cover all functional requirements from feature.md
+- Every "create" component with logic (services, controllers, repositories, utilities) must have a corresponding test component
+- Declarative-only components (types, interfaces, route wiring) are exempt from test requirements
 -->
 
 # Implementation Plan: {TICKET-ID}
@@ -24,6 +26,7 @@ created: {ISO-timestamp}
 | 2 | {name} | create | {path} | {what it does} | moderate |
 | 2 | {name} | modify | {path} | {what to change} | moderate |
 | 3 | {name} | create | {path} | {what it does} | complex |
+| 4 | {name} tests | create | {test-path} | Test {what it tests} | moderate |
 
 ## Implementation Notes
 

@@ -236,6 +236,16 @@ Update `verificationResults` in state.json:
 ```
 Also update `lastUpdated`.
 
+**4b. Check test file creation**
+
+For each component in the plan that appears to be a test file (filename contains `.test.`, `.spec.`, `test_`, or lives in a `__tests__`/`tests` directory):
+- Verify the file was actually created using Glob
+- If a planned test file was NOT created, record it as a verification warning
+
+For each non-test component with action "create" that contains logic:
+- Check if its corresponding test component exists in the plan
+- If a test was planned but is in `failedAttempts`, flag it prominently
+
 **MANDATORY VERIFICATION:** Read state.json back and confirm `verificationResults.builtAt` is set.
 
 If build or tests fail:
@@ -267,6 +277,8 @@ Implementation complete!
 - {M} components skipped (failures that exhausted retries)
 - Build: {status}
 - Tests: {status}
+- Test files created: {N}/{M} planned test files exist
+{If any planned test files missing: "⚠ Missing test files: {list}"}
 {If git.autoCommit was true: "- Commits: {N} atomic commits created"}
 
 {If any failures: list them with errors}

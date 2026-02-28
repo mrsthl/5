@@ -154,6 +154,12 @@ For each component with action `create` in the plan:
 
 This is a lightweight check — it only verifies test files exist for new code, not test quality.
 
+**Test requirement enforcement:**
+- Components with logic (services, controllers, repositories, hooks, utilities, helpers) without tests → MISSING_REQUIRED_TEST (error-level)
+- Declarative components (types, interfaces, models without logic) without tests → MISSING_OPTIONAL_TEST (info-level, not counted as issues)
+
+If no test framework detected (no test runner in config, no existing test files found via Glob for `**/*.test.*`, `**/*.spec.*`, `**/test_*.*`), downgrade all MISSING_REQUIRED_TEST to warnings with note: "No test framework detected."
+
 ### Step 5: Determine Status
 
 Evaluate all three layers:
@@ -168,10 +174,11 @@ Evaluate all three layers:
 
 **PARTIAL** — infrastructure OK but gaps exist:
 - All files exist AND build succeeds AND tests pass
-- BUT: some acceptance criteria not satisfied, OR some requirements not implemented, OR some components partial, OR some new files lack tests
+- BUT: some acceptance criteria not satisfied, OR some requirements not implemented, OR some components partial, OR logic-bearing components lack tests but project has no test framework
 
 **FAILED** — infrastructure problems:
 - Any files missing, OR build fails, OR tests fail
+- Any logic-bearing components lack test files (MISSING_REQUIRED_TEST) AND project has a test framework
 
 ### Step 6: Generate Verification Report
 
@@ -223,7 +230,8 @@ Build fix entries from verification results:
 - Partial components → fix: describe what's missing from the component
 
 **From Layer 3 (Quality):**
-- Missing test files → fix: create test file for the component
+- Missing required test files (logic-bearing components) → fix: create test file for the component (priority: high)
+- Missing optional test files (declarative components) → note in report, no fix entry
 
 Each fix entry follows the same table format as `plan.md`:
 

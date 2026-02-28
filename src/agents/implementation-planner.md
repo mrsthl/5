@@ -21,6 +21,7 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - Each component in the table gets: name, action, file path, one-sentence description, complexity
 - Implementation Notes reference EXISTING pattern files, not new code
 - If a component needs more than one sentence to describe, split it into multiple components
+- Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component in the plan. Declarative components (types, interfaces, models without logic, route registrations, config files) are exempt. When uncertain, include the test.
 </constraints>
 
 <write-rules>
@@ -59,6 +60,7 @@ After writing plan.md, read it back and verify:
 3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
 4. **Completeness:** Every functional requirement from feature.md has at least one component
 5. **Description length:** Each Description cell is one sentence. If longer, split the component.
+6. **Test coverage:** Every "create" component with logic has a corresponding test component. Declarative-only components (types, interfaces, route wiring) are exempt. If a testable component lacks a test, add one.
 
 Output the verification result before the completion message.
 </self-check>

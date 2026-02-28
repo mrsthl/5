@@ -43,6 +43,7 @@ Add emergency schedule tracking to products with date validation.
 | 3 | Schedule controller | create | src/controllers/ScheduleController.ts | REST endpoints: GET/POST/DELETE /api/schedules | moderate |
 | 3 | Register routes | modify | src/routes/index.ts | Add schedule routes to router | simple |
 | 4 | Schedule service tests | create | src/services/__tests__/ScheduleService.test.ts | Test validation and CRUD | moderate |
+| 4 | Schedule controller tests | create | src/controllers/__tests__/ScheduleController.test.ts | Test REST endpoints and error handling | moderate |
 
 ## Implementation Notes
 
@@ -96,12 +97,14 @@ Quick codebase scan for implementation planning.
 2. Identify where similar components live (models, services, controllers, tests)
 3. Note naming conventions from existing files
 4. Find example files that can serve as patterns for new components
+5. Identify the project's test framework, test file conventions, and test directory structure (e.g., __tests__/, tests/, *.test.ts, *.spec.ts, test_*.py)
 
 **Report Format:**
 - Project structure (key directories)
 - Naming conventions observed
 - Pattern files for each component type
 - Where new files should be placed
+- Test setup: framework, file naming pattern, test directory location (or "no test setup detected")
 
 **IMPORTANT:** Quick scan, not deep analysis. Focus on structure and patterns.
 **READ-ONLY:** Only use Read, Glob, and Grep tools.
@@ -141,9 +144,13 @@ Group into steps:
 - **Step 1**: Foundation (models, types, interfaces)
 - **Step 2**: Logic (services, business rules)
 - **Step 3**: Integration (controllers, routes, wiring)
-- **Step 4**: Tests (if not alongside components)
+- **Final step**: Tests for all logic-bearing components
 
-Not every feature needs all steps. Use what makes sense.
+**Test requirement:** Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component. Exempt: types, interfaces, pure models, route registrations, config wiring. When uncertain, include the test.
+
+If the explore agent reported "no test setup detected," still include test components but add an Implementation Note: "Project has no test framework detected — test components may need framework setup first or may be skipped during implementation."
+
+Not every feature needs all non-test steps. Use what makes sense. But testable components always need tests.
 
 **Parallel execution:** Components in the same step run in parallel. Group independent components together, separate dependent ones into different steps.
 
@@ -173,6 +180,7 @@ Plan self-check:
 - Scope: pass/fail
 - Completeness: pass/fail
 - Description length: pass/fail
+- Test coverage: pass/fail
 ```
 
 If any check fails, fix plan.md before proceeding to the completion output.

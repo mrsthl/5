@@ -73,14 +73,22 @@
 
 ### Test Coverage for New Files
 
+**Required Tests (logic-bearing components):**
+
 | New File | Test File | Status |
 |----------|-----------|--------|
-| {src/path/File.ts} | {src/path/File.test.ts} | HAS TEST |
-| {src/path/Other.ts} | — | NO TEST |
+| {src/path/Service.ts} | {src/path/Service.test.ts} | HAS TEST |
+| {src/path/Controller.ts} | — | MISSING REQUIRED TEST |
 
-**Result:** {N}/{M} new files have tests
+**Optional Tests (declarative components):**
 
-**Layer 3 Result:** PASSED | PARTIAL
+| New File | Test File | Status |
+|----------|-----------|--------|
+| {src/path/types.ts} | — | NO TEST (exempt) |
+
+**Result:** {N}/{M} required test files exist
+
+**Layer 3 Result:** PASSED | FAILED | PARTIAL
 
 ---
 

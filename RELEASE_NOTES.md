@@ -1,5 +1,41 @@
 # Release Notes
 
+## v1.7.0
+
+**Release Date:** 2026-02-28
+
+### Dedicated Fix Application Command and Enforced Test Coverage
+
+Introduces `/5:address-review-findings` as a dedicated command for applying code review fixes (splitting it out of `/5:review-code`), and enforces test coverage requirements throughout the planning, implementation, and verification phases.
+
+**What's New**
+- New `/5:address-review-findings` command handles all fix application after a review — reads annotated `review-findings-*.md` files, applies `[FIX]` items, and supports a `--github` flag to fetch and address GitHub PR review comments directly
+- `/5:review-code` is now review-only: it categorizes findings and saves them to a findings file, but no longer applies fixes inline — use `/5:address-review-findings` for that step
+
+**Improvements**
+- Planning (`/5:plan-implementation`) now requires a test component for every logic-bearing "create" component (services, controllers, repositories, utilities, helpers); declarative components (types, interfaces, route wiring) are exempt
+- The explore agent in Phase 2 now reports the project's test framework, file naming convention, and test directory structure to inform plan generation
+- Implementation (`/5:implement-feature`) post-build verification now checks whether planned test files were actually created and surfaces missing test files as warnings in the summary
+- Verification report template (`VERIFICATION-REPORT.md`) updated with separate required vs. optional test coverage tables and a stricter PASSED/FAILED/PARTIAL layer result
+- Plan template (`PLAN.md`) now includes an example test row and documents the test coverage rule inline
+- `review-findings` template updated to reference `/5:address-review-findings` instead of the old `/review-code apply` command
+- `disable-model-invocation: true` added to `plan-implementation`, `implement-feature`, and `review-code` to prevent accidental direct model use
+
+**Affected files:**
+- `src/commands/5/address-review-findings.md` (new)
+- `src/commands/5/review-code.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/verify-implementation.md` (modified)
+- `src/templates/workflow/PLAN.md` (modified)
+- `src/templates/workflow/REVIEW-FINDINGS.md` (modified)
+- `src/templates/workflow/VERIFICATION-REPORT.md` (modified)
+- `src/agents/implementation-planner.md` (modified)
+- `bin/install.js` (modified)
+- `README.md` (modified)
+
+---
+
 ## v1.6.0
 
 **Release Date:** 2026-02-23

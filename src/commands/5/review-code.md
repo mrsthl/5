@@ -44,35 +44,23 @@ If not installed or not authenticated, ask user via AskUserQuestion:
 - "Switch to Claude for this review? (Recommended)" / "I'll install CodeRabbit first"
 - If they choose CodeRabbit setup, provide install instructions and STOP
 
-### Step 2: Check for Apply Mode
-
-If user invoked with `apply` argument (`/5:review-code apply`):
-- Skip to Step 10 (Apply Annotated Findings)
-- Do NOT run a new review
-
-Otherwise, continue with new review.
-
-### Step 3: Determine What to Review
+### Step 2: Determine What to Review
 
 Ask the user via AskUserQuestion:
 
-**Question 1: What to review?**
+**Question: What to review?**
 1. Staged changes (`git diff --cached`) — default
 2. Unstaged changes (`git diff`)
 3. All changes (`git diff HEAD`)
 4. Current branch vs main/master (`git diff main...HEAD`)
 
-**Question 2: How to present results?**
-1. Interactive (show findings, apply fixes immediately) — default
-2. Save to file (for later annotation with `[FIX]`/`[SKIP]`/`[MANUAL]`)
-
-### Step 4: Spawn Review Agent
+### Step 3: Spawn Review Agent
 
 Spawn a single agent to execute the review. Do NOT run the review yourself.
 
 **Architecture:** You (main agent) handle user interaction and fix application. The spawned agent runs the review and categorizes findings.
 
-#### 4A: CodeRabbit Review Agent
+#### 3A: CodeRabbit Review Agent
 
 ```
 Task tool call:
@@ -115,7 +103,7 @@ Task tool call:
     - Include ALL findings
 ```
 
-#### 4B: Claude Review Agent
+#### 3B: Claude Review Agent
 
 ```
 Task tool call:
@@ -169,15 +157,11 @@ Task tool call:
     - Be thorough but practical — focus on real issues, not style nitpicks
 ```
 
-### Step 5: Process Agent Results
+### Step 4: Process Agent Results
 
 Receive structured results from the agent. If agent returned failure, report error and STOP.
 
-**If user selected "Save to file":** Skip to Step 9.
-
-**If user selected "Interactive":** Continue to Step 6.
-
-### Step 6: Present Overview and Ask User
+### Step 5: Present Overview and Ask User
 
 Present ALL findings to the user first. Do NOT apply anything yet.
 
@@ -200,8 +184,10 @@ Manual Review Needed:
 - {file}:{line} - {description}
 ```
 
-Ask via AskUserQuestion: "Which fixable issues should be applied?"
-- Options: All / Selected / None
+Ask via AskUserQuestion: "Would you like to fix the findings now or later?"
+- Options:
+  - "Fix now" → then ask a second AskUserQuestion: "Which fixable issues should be applied?" with options: All / Selected / None
+  - "Fix later with /address-review-findings" → skip to Step 8
 
 ### Step 7: Apply User-Approved Fixes
 
@@ -223,49 +209,31 @@ If there are questions from the reviewer, ask via AskUserQuestion:
 
 If "Ask me each": Present each question individually via AskUserQuestion. If the answer requires a code change, apply it.
 
-### Step 9: Save Findings to File (File-Based Mode)
-
-For "Save to file" mode only.
+### Step 9: Save Findings to File
 
 Determine feature name from `.5/features/*/state.json` (most recent by `startedAt` field) or ask user.
 
-Write to `.5/features/{feature-name}/review-{YYYYMMDD-HHmmss}-findings.md`.
+Write to `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md`.
 
 Use the template structure from `.claude/templates/workflow/REVIEW-FINDINGS.md`. Include all findings with `[FIX]`/`[SKIP]`/`[MANUAL]` action markers.
 
-Tell user: "Findings saved. Edit the file to mark actions, then run `/5:review-code apply`"
+Tell user: "Findings saved. Edit the file to mark actions, then run `/5:address-review-findings`"
 
-Skip to REVIEW COMPLETE.
+### Step 10: Verify Changes
 
-### Step 10: Apply Annotated Findings (Apply Mode)
-
-When invoked with `apply`:
-
-1. Determine feature name from `.5/features/*/state.json` (most recent by `startedAt` field) or ask user
-2. Find most recent `review-*-findings.md` in the feature folder
-3. If none found, tell user to run `/5:review-code` first and STOP
-4. Parse each finding and its action marker: `[FIX]`, `[SKIP]`, `[MANUAL]`
-5. Apply `[FIX]` findings using Edit tool
-6. Apply `[MANUAL]` findings using custom instructions from the file
-7. Skip `[SKIP]` findings
-8. Continue to Step 11
-
-### Step 11: Verify Changes
-
-After applying any fixes (interactive or file-based):
+After applying any fixes:
 
 1. **Build:** Use the `/build-project` skill: `Skill tool: skill="build-project", args="target=compile"`
 2. **Test:** Use the `/run-tests` skill: `Skill tool: skill="run-tests", args="target=all"`
 3. If build fails: report which fixes caused issues
 4. If tests fail: report which tests failed
 
-### Step 12: Save Review Report
+### Step 11: Save Review Report
 
-**Interactive mode:** Save summary to `.5/features/{feature-name}/review-{YYYYMMDD-HHmmss}.md`
+If you fixed some issues:
+Save summary to `.5/features/{feature-name}/review-summery-{YYYYMMDD-HHmmss}.md`
 
 Use the template structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`.
-
-**Apply mode:** Append application results to the findings file with: fixes applied count, custom fixes count, skipped count, build/test status.
 
 ## REVIEW COMPLETE
 

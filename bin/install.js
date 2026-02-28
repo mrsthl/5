@@ -486,14 +486,15 @@ function checkExistingInstallation(targetPath) {
 // Helper to show commands
 function showCommandsHelp(isGlobal) {
   log.info('Available commands:');
-  log.info('  /5:plan-feature          - Start feature planning (Phase 1)');
-  log.info('  /5:plan-implementation   - Create implementation plan (Phase 2)');
-  log.info('  /5:implement-feature     - Execute implementation (Phase 3)');
-  log.info('  /5:verify-implementation - Verify implementation (Phase 4)');
-  log.info('  /5:review-code          - Code review (Phase 5)');
-  log.info('  /5:configure            - Interactive project setup');
-  log.info('  /5:reconfigure          - Refresh docs/skills (no Q&A)');
-  log.info('  /5:unlock               - Remove planning guard lock');
+  log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
+  log.info('  /5:plan-implementation       - Create implementation plan (Phase 2)');
+  log.info('  /5:implement-feature         - Execute implementation (Phase 3)');
+  log.info('  /5:verify-implementation     - Verify implementation (Phase 4)');
+  log.info('  /5:review-code               - Code review (Phase 5)');
+  log.info('  /5:address-review-findings   - Apply review findings & PR comments');
+  log.info('  /5:configure                 - Interactive project setup');
+  log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
+  log.info('  /5:unlock                    - Remove planning guard lock');
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);
 }

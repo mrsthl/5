@@ -5,6 +5,7 @@ agent: implementation-planner
 allowed-tools: Read, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Implementation (Phase 2)

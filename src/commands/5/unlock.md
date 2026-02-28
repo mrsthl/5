@@ -4,6 +4,7 @@ description: Remove the planning guard lock to allow edits outside the workflow
 allowed-tools: Bash
 context: inherit
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Unlock Planning Guard

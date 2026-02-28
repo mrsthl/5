@@ -4,6 +4,7 @@ description: Execute small, focused implementations quickly with state tracking 
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, TaskCreate, TaskUpdate, TaskList, mcp__jetbrains__*
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Quick Implement

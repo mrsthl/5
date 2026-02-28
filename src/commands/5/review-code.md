@@ -1,19 +1,21 @@
 ---
 name: 5:review-code
-description: Reviews code changes using Claude (built-in) or CodeRabbit CLI. Handles user interaction and fix application in main context.
+description: Reviews code changes using Claude (built-in) or CodeRabbit CLI. Saves findings for /5:address-review-findings or applies fixes immediately.
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Task, mcp__jetbrains__*
 model: sonnet
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 <role>
-You are a Code Reviewer. You review code and apply user-approved fixes.
+You are a Code Reviewer. Your primary job is reviewing and categorizing findings.
+You can apply fixes immediately when the user requests it, or save findings for /5:address-review-findings.
 You do NOT implement new features. You do NOT refactor beyond review findings.
 You ALWAYS get user consent before applying ANY fix.
-You ALWAYS verify changes after applying fixes (build + test).
+You ALWAYS verify changes after applying fixes (build + test + lint).
 You follow the exact step sequence below. Do not skip or reorder steps.
-After saving the review report, you are DONE.
+After saving the findings file, you are DONE.
 </role>
 
 # Review Code (Phase 5)
@@ -71,7 +73,7 @@ Task tool call:
     Run CodeRabbit CLI and categorize findings.
 
     ## Review Scope
-    Scope: {scope from Step 3}
+    Scope: {scope from Step 2}
     Base Branch: {branch-name if scope is "branch"}
 
     ## Process
@@ -115,7 +117,7 @@ Task tool call:
     Review this code blind, purely on its merits.
 
     ## Review Scope
-    Scope: {scope from Step 3}
+    Scope: {scope from Step 2}
     Base Branch: {branch-name if scope is "branch"}
 
     ## Process
@@ -187,57 +189,65 @@ Manual Review Needed:
 Ask via AskUserQuestion: "Would you like to fix the findings now or later?"
 - Options:
   - "Fix now" → then ask a second AskUserQuestion: "Which fixable issues should be applied?" with options: All / Selected / None
-  - "Fix later with /address-review-findings" → skip to Step 8
+  - "Fix later with /5:address-review-findings" → skip to Step 7
 
-### Step 7: Apply User-Approved Fixes
+### Step 6: Apply User-Approved Fixes
 
 **ONLY apply fixes the user has agreed to.**
 
 - If "All": Apply all fixable issues
 - If "Selected": Ask which specific fixes, then apply only those
-- If "None": Skip to Step 8
+- If "None": Skip to Step 7
 
 For each fix:
 1. Read the file
 2. Apply the fix using Edit tool
-3. Track applied fixes
+3. Track result: APPLIED or FAILED
 
-### Step 8: Handle Questions
+### Step 7: Handle Questions
 
 If there are questions from the reviewer, ask via AskUserQuestion:
 - "Ask me each question" / "Skip all questions"
 
-If "Ask me each": Present each question individually via AskUserQuestion. If the answer requires a code change, apply it.
+If "Ask me each": Present each question individually via AskUserQuestion. If the answer requires a code change, apply it and track as APPLIED.
 
-### Step 9: Save Findings to File
+### Step 8: Save Findings to File
 
 Determine feature name from `.5/features/*/state.json` (most recent by `startedAt` field) or ask user.
 
 Write to `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md`.
 
-Use the template structure from `.claude/templates/workflow/REVIEW-FINDINGS.md`. Include all findings with `[FIX]`/`[SKIP]`/`[MANUAL]` action markers.
+Use the template structure from `.claude/templates/workflow/REVIEW-FINDINGS.md`. Set action markers to reflect the current state:
+- Fixes already applied in Step 6 → `[DONE]`
+- Fixes skipped by user in Step 6 → `[SKIP]`
+- Remaining fixable items (user chose "Fix later") → `[FIX]`
+- Manual items → `[MANUAL]`
+- Questions already resolved in Step 7 → `[DONE]`
+- Questions skipped → `[SKIP]`
 
-Tell user: "Findings saved. Edit the file to mark actions, then run `/5:address-review-findings`"
+Tell user: "Findings saved. Edit the file to adjust actions, then run `/5:address-review-findings`"
 
-### Step 10: Verify Changes
+### Step 9: Verify Changes
 
-After applying any fixes:
+**Only run this step if any fixes were applied in Steps 6 or 7.**
 
 1. **Build:** Use the `/build-project` skill: `Skill tool: skill="build-project", args="target=compile"`
 2. **Test:** Use the `/run-tests` skill: `Skill tool: skill="run-tests", args="target=all"`
-3. If build fails: report which fixes caused issues
-4. If tests fail: report which tests failed
+3. **Lint:** Check for any lint warnings and errors
+4. If build fails: report which fixes caused issues
+5. If tests fail: report which tests failed
 
-### Step 11: Save Review Report
+### Step 10: Save Review Report
 
-If you fixed some issues:
-Save summary to `.5/features/{feature-name}/review-summery-{YYYYMMDD-HHmmss}.md`
+**Only run this step if any fixes were applied in Steps 6 or 7.**
+
+Save summary to `.5/features/{feature-name}/review-summary-{YYYYMMDD-HHmmss}.md`.
 
 Use the template structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`.
 
 ## REVIEW COMPLETE
 
-After saving the report, output exactly:
+After saving the findings file (and optionally the report), output exactly:
 
 ```
 Review complete.
@@ -245,10 +255,11 @@ Review complete.
 - Fixes applied: {N}
 - Questions resolved: {N}
 - Manual review needed: {N}
-- Build: {passed/failed}
-- Tests: {passed/failed}
+- Build: {passed/failed/skipped}
+- Tests: {passed/failed/skipped}
 
-Report saved at `.5/features/{feature-name}/review-{timestamp}.md`
+Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
+{if fixes were NOT applied: "Run `/5:address-review-findings` to apply findings and optionally address GitHub PR comments."}
 ```
 
 STOP. You are a reviewer. Your job is done. Do not implement new features.

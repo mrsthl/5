@@ -4,6 +4,7 @@ description: Lightweight refresh of project documentation and skills without ful
 allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Reconfigure (Lightweight Refresh)

@@ -4,6 +4,7 @@ description: Verifies a feature implementation is complete and working with mult
 allowed-tools: Read, Glob, Grep, Bash, Write, Task, AskUserQuestion
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Verify Implementation (Phase 4)

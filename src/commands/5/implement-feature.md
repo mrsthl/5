@@ -4,6 +4,7 @@ description: Executes an implementation plan by delegating to agents. Phase 3 of
 allowed-tools: Task, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Implement Feature (Phase 3)

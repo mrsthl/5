@@ -14,9 +14,9 @@
    - `[SKIP]` - Don't apply this fix (change FIX to SKIP)
    - `[MANUAL]` - Custom instructions (change FIX to MANUAL and add instructions)
 3. Save this file
-4. Run: `/review-code apply`
+4. Run: `/5:address-review-findings`
 
-The apply command will read your annotations and apply marked fixes.
+The command will read your annotations and apply marked fixes.
 
 ---
 
@@ -55,4 +55,4 @@ The apply command will read your annotations and apply marked fixes.
 
 **Next Steps:**
 1. Edit this file to mark which findings to fix
-2. Run: `/review-code apply`
+2. Run: `/5:address-review-findings`

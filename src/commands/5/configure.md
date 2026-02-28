@@ -4,6 +4,7 @@ description: Configures the project. Analyzes project, gathers preferences, writ
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 context: inherit
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Configure (Phase 1 - Plan Feature for Project Configuration)

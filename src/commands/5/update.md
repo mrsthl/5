@@ -4,6 +4,7 @@ description: Update the 5-Phase Workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
 context: inherit
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Update 5-Phase Workflow

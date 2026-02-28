@@ -4,6 +4,7 @@ description: Discusses and refines an existing feature specification through ite
 allowed-tools: Read, Write, Glob, Grep, Task, AskUserQuestion
 context: inherit
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Discuss Feature Specification (Phase 1 - Optional Iteration)

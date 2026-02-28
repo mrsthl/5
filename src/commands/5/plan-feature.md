@@ -5,6 +5,7 @@ agent: feature-planner
 allowed-tools: Read, Write, Task, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 context: fork
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Feature (Phase 1)

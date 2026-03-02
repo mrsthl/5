@@ -1,5 +1,29 @@
 # Release Notes
 
+## v1.7.1
+
+**Release Date:** 2026-03-02
+
+### Version Tracking Cleanup and Update Cache Isolation
+
+Cleans up the internal `version.json` schema and moves the update availability cache to a separate gitignored file, eliminating noisy git diffs caused by the check-updates hook writing to a tracked file.
+
+**Improvements**
+- `latestAvailableVersion` is now stored in `.5/.update-cache.json` (gitignored) instead of `version.json`, so the check-updates hook no longer causes uncommitted changes in users' repos
+- Removed the redundant `installedVersion` field from `version.json`; `packageVersion` is now the single source of truth for the installed version
+- `ensureDotFiveGitignore()` function added to `bin/install.js` to create and maintain `.5/.gitignore` on fresh install and upgrade, automatically adding `.update-cache.json` to it
+- `performUpdate()` now reconstructs `version.json` from known fields only, automatically pruning legacy or stale properties from older installs
+- `check-updates.js` and `statusline.js` hooks updated to read/write `latestAvailableVersion` from the new cache file
+
+**Affected files:**
+- `bin/install.js` (modified)
+- `src/hooks/check-updates.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `test/test-check-updates-hook.sh` (modified)
+- `test/test-update-system.sh` (modified)
+
+---
+
 ## v1.7.0
 
 **Release Date:** 2026-02-28

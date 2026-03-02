@@ -1,5 +1,27 @@
 # Release Notes
 
+## v1.7.2
+
+**Release Date:** 2026-03-02
+
+### Block EnterPlanMode During Workflow Planning Phases
+
+Prevents Claude Code's built-in `EnterPlanMode` tool from being invoked during the 5-phase workflow's planning commands, eliminating interference between the built-in plan mode and the workflow's own structured planning process.
+
+**Bug Fixes**
+- `plan-guard.js` hook now intercepts and blocks `EnterPlanMode` calls when a planning phase is active, returning a clear redirect message instructing the agent to continue with its workflow artifact instead
+- Escalating warning messages are surfaced after repeated blocked attempts (3+ blocks), matching the existing escalation behavior for other blocked tools
+- `feature-planner` and `implementation-planner` agent instructions now include an explicit constraint (`NEVER call EnterPlanMode`) as a first-line defense before the hook fires
+- `settings.json` hook matcher updated from `Task|Write|Edit` to `Task|Write|Edit|EnterPlanMode` so the `plan-guard.js` hook is triggered for the new tool
+
+**Affected files:**
+- `src/hooks/plan-guard.js` (modified)
+- `src/agents/feature-planner.md` (modified)
+- `src/agents/implementation-planner.md` (modified)
+- `src/settings.json` (modified)
+
+---
+
 ## v1.7.1
 
 **Release Date:** 2026-03-02

@@ -44,7 +44,7 @@ echo "Running hook with corrupted version.json..."
 run_hook "$TEST_DIR" && echo "✓ Hook exits gracefully with corrupted file"
 echo ""
 
-# Test 3: Very old version (should persist latestAvailableVersion in version.json)
+# Test 3: Very old version (should persist latestAvailableVersion in .update-cache.json)
 echo "Test 3: Old version (update available)"
 echo "--------------------------------------"
 TEST_DIR="/tmp/test-check-updates-3"
@@ -54,21 +54,26 @@ cd "$TEST_DIR"
 
 cat > .5/version.json <<EOF
 {
-  "installedVersion": "0.1.0"
+  "packageVersion": "0.1.0"
 }
 EOF
 
 echo "Running hook with very old version (0.1.0)..."
 run_hook "$TEST_DIR" >/dev/null 2>&1 || true
-LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.5/version.json','utf8')); console.log(d.latestAvailableVersion || '')")
+CACHE_FILE="$TEST_DIR/.5/.update-cache.json"
+if [ -f "$CACHE_FILE" ]; then
+  LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$CACHE_FILE','utf8')); console.log(d.latestAvailableVersion || '')")
+else
+  LATEST=""
+fi
 if [ -n "$LATEST" ]; then
-  echo "✓ Hook persists latestAvailableVersion in version.json: $LATEST"
+  echo "✓ Hook persists latestAvailableVersion in .update-cache.json: $LATEST"
 else
   echo "⚠ No latestAvailableVersion set (network may be unavailable or version is current)"
 fi
 echo ""
 
-# Test 4: Current version (should clear latestAvailableVersion)
+# Test 4: Current version (should clear latestAvailableVersion in .update-cache.json)
 echo "Test 4: Current version (no update)"
 echo "-----------------------------------"
 TEST_DIR="/tmp/test-check-updates-4"
@@ -79,19 +84,29 @@ cd "$TEST_DIR"
 # Get current package version
 CURRENT_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/package.json','utf8')).version)")
 
-# Seed with a stale latestAvailableVersion to verify it gets cleared
 cat > .5/version.json <<EOF
 {
-  "installedVersion": "$CURRENT_VERSION",
+  "packageVersion": "$CURRENT_VERSION"
+}
+EOF
+
+# Seed .update-cache.json with a stale latestAvailableVersion to verify it gets cleared
+cat > .5/.update-cache.json <<EOF
+{
   "latestAvailableVersion": "99.0.0"
 }
 EOF
 
 echo "Running hook with current version ($CURRENT_VERSION) and stale latestAvailableVersion..."
 run_hook "$TEST_DIR" >/dev/null 2>&1 || true
-LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$TEST_DIR/.5/version.json','utf8')); console.log(d.latestAvailableVersion || 'null')")
+CACHE_FILE="$TEST_DIR/.5/.update-cache.json"
+if [ -f "$CACHE_FILE" ]; then
+  LATEST=$(node -e "const d=JSON.parse(require('fs').readFileSync('$CACHE_FILE','utf8')); console.log(d.latestAvailableVersion || 'null')")
+else
+  LATEST="null"
+fi
 if [ "$LATEST" = "null" ]; then
-  echo "✓ Hook clears latestAvailableVersion for current version"
+  echo "✓ Hook clears latestAvailableVersion in .update-cache.json for current version"
 else
   echo "⚠ latestAvailableVersion not cleared (newer version may be published): $LATEST"
 fi
@@ -107,7 +122,7 @@ cd "$TEST_DIR"
 
 cat > .5/version.json <<EOF
 {
-  "installedVersion": "1.0.0"
+  "packageVersion": "1.0.0"
 }
 EOF
 
@@ -147,10 +162,14 @@ rm -rf "$TEST_DIR"
 mkdir -p "$TEST_DIR/.5"
 cd "$TEST_DIR"
 
-# 8a: version.json with latestAvailableVersion set — should show indicator
+# 8a: update-cache.json with latestAvailableVersion set — should show indicator
 cat > .5/version.json <<EOF
 {
-  "installedVersion": "1.0.0",
+  "packageVersion": "1.0.0"
+}
+EOF
+cat > .5/.update-cache.json <<EOF
+{
   "latestAvailableVersion": "2.0.0"
 }
 EOF
@@ -172,10 +191,9 @@ else
   exit 1
 fi
 
-# 8b: latestAvailableVersion is null — should NOT show indicator
-cat > .5/version.json <<EOF
+# 8b: latestAvailableVersion is null in cache — should NOT show indicator
+cat > .5/.update-cache.json <<EOF
 {
-  "installedVersion": "1.0.0",
   "latestAvailableVersion": null
 }
 EOF
@@ -191,7 +209,7 @@ else
 fi
 
 # 8c: No version.json — should NOT show indicator
-rm -rf "$TEST_DIR/.5/version.json"
+rm -rf "$TEST_DIR/.5/version.json" "$TEST_DIR/.5/.update-cache.json"
 echo "Running statusline with no version.json..."
 SL_OUTPUT=$(echo '{"model":{"display_name":"Claude"},"workspace":{"current_dir":"'"$TEST_DIR"'"},"context_window":{"remaining_percentage":80}}' | node "$STATUSLINE_SCRIPT" 2>/dev/null || true)
 if echo "$SL_OUTPUT" | grep -q "/5:update"; then

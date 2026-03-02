@@ -23,7 +23,7 @@ cd test-5phase-1
 node "$INSTALL_SCRIPT" --local
 if [ -f ".5/version.json" ]; then
   echo "✓ version.json created"
-  INSTALLED=$(cat .5/version.json | grep installedVersion | cut -d'"' -f4)
+  INSTALLED=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
   echo "  Installed version: $INSTALLED"
 else
   echo "✗ version.json not created"
@@ -40,7 +40,7 @@ echo ""
 # Test 3: Simulate Old Version
 echo "Test 3: Update Detection"
 echo "------------------------"
-echo '{"installedVersion":"0.9.0","packageVersion":"0.9.0"}' > .5/version.json
+echo '{"packageVersion":"0.9.0"}' > .5/version.json
 node "$INSTALL_SCRIPT" --check
 echo ""
 
@@ -48,7 +48,7 @@ echo ""
 echo "Test 4: Auto-Upgrade"
 echo "--------------------"
 node "$INSTALL_SCRIPT" --upgrade
-UPDATED=$(cat .5/version.json | grep installedVersion | cut -d'"' -f4)
+UPDATED=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
 echo "✓ Updated to version: $UPDATED"
 echo ""
 
@@ -56,7 +56,7 @@ echo ""
 echo "Test 5: Version File Preservation"
 echo "---------------------------------"
 if [ -f ".5/version.json" ]; then
-  PRESERVED_VERSION=$(cat .5/version.json | grep installedVersion | cut -d'"' -f4)
+  PRESERVED_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
   echo "✓ version.json preserved with version $PRESERVED_VERSION"
 else
   echo "✗ version.json not found after upgrade"
@@ -120,7 +120,7 @@ mkdir -p test-5phase-4/.claude/commands/5
 touch test-5phase-4/.claude/commands/5/plan-feature.md
 # Create old-style .claude/.5/ with data
 mkdir -p test-5phase-4/.claude/.5/features/TEST-999
-echo '{"installedVersion":"1.0.0","packageVersion":"1.0.0"}' > test-5phase-4/.claude/.5/version.json
+echo '{"packageVersion":"1.0.0"}' > test-5phase-4/.claude/.5/version.json
 echo '{"projectType":"nextjs"}' > test-5phase-4/.claude/.5/config.json
 echo '{"status":"completed"}' > test-5phase-4/.claude/.5/features/TEST-999/state.json
 cd test-5phase-4

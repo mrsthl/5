@@ -41,7 +41,7 @@ function getInstalledVersion(isGlobal) {
 
   try {
     const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-    return data.installedVersion;
+    return data.packageVersion;
   } catch (e) {
     return null; // Corrupted file, treat as missing
   }
@@ -386,6 +386,20 @@ function selectiveUpdate(targetPath, sourcePath) {
   log.success('Updated templates/ (workflow files only)');
 }
 
+// Ensure .5/.gitignore exists and contains .update-cache.json
+function ensureDotFiveGitignore(dataDir) {
+  const gitignorePath = path.join(dataDir, '.gitignore');
+  const entry = '.update-cache.json';
+  if (fs.existsSync(gitignorePath)) {
+    const content = fs.readFileSync(gitignorePath, 'utf8');
+    if (!content.includes(entry)) {
+      fs.appendFileSync(gitignorePath, '\n' + entry + '\n');
+    }
+  } else {
+    fs.writeFileSync(gitignorePath, entry + '\n');
+  }
+}
+
 // Initialize version.json after successful install
 function initializeVersionJson(isGlobal) {
   const dataDir = getDataPath(isGlobal);
@@ -400,13 +414,13 @@ function initializeVersionJson(isGlobal) {
 
   const versionData = {
     packageVersion: version,
-    installedVersion: version,
     installedAt: now,
     lastUpdated: now,
     installationType: isGlobal ? 'global' : 'local'
   };
 
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  ensureDotFiveGitignore(dataDir);
   log.success('Initialized version tracking');
 }
 
@@ -554,26 +568,23 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   // Update version.json
   const dataDir = getDataPath(isGlobal);
   const versionFile = path.join(dataDir, 'version.json');
+  const now = new Date().toISOString();
 
-  let versionData;
-  if (fs.existsSync(versionFile)) {
-    versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-  } else {
-    // Legacy install, create version.json
-    versionData = {
-      installedAt: new Date().toISOString(),
-      installationType: isGlobal ? 'global' : 'local'
-    };
-  }
-
-  versionData.packageVersion = versionInfo.available;
-  versionData.installedVersion = versionInfo.available;
-  versionData.lastUpdated = new Date().toISOString();
+  const existing = fs.existsSync(versionFile)
+    ? JSON.parse(fs.readFileSync(versionFile, 'utf8'))
+    : {};
+  const versionData = {
+    packageVersion: versionInfo.available,
+    installedAt: existing.installedAt || now,
+    lastUpdated: now,
+    installationType: existing.installationType || (isGlobal ? 'global' : 'local')
+  };
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  ensureDotFiveGitignore(dataDir);
 
   // Create features directory if it doesn't exist
   const featuresDir = path.join(dataDir, 'features');

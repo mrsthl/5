@@ -40,7 +40,7 @@ async function checkForUpdates(workspaceDir) {
   }
 
   // Compare versions
-  const installed = versionData.installedVersion;
+  const installed = versionData.packageVersion;
   const latestVersion = await getLatestVersion();
 
   let newLatest = null;
@@ -48,16 +48,16 @@ async function checkForUpdates(workspaceDir) {
     newLatest = latestVersion;
   }
 
-  // Only write if latestAvailableVersion actually changed
-  const oldLatest = versionData.latestAvailableVersion || null;
+  // Read/write latestAvailableVersion from .update-cache.json (gitignored)
+  const cacheFile = path.join(path.dirname(versionFile), '.update-cache.json');
+  let cacheData = {};
+  if (fs.existsSync(cacheFile)) {
+    try { cacheData = JSON.parse(fs.readFileSync(cacheFile, 'utf8')); } catch(e) {}
+  }
+  const oldLatest = cacheData.latestAvailableVersion || null;
   if (newLatest !== oldLatest) {
-    versionData.latestAvailableVersion = newLatest;
-
-    // Clean up legacy throttling fields
-    delete versionData.updateCheckLastRun;
-    delete versionData.updateCheckFrequency;
-
-    fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+    cacheData.latestAvailableVersion = newLatest;
+    fs.writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2));
   }
 
   process.exit(0);

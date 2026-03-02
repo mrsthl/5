@@ -50,9 +50,16 @@ process.stdin.on('end', () => {
       const versionFile = path.join(dir, '.5', 'version.json');
       const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
 
-      // Update check
-      const latest = versionData.latestAvailableVersion;
-      const installed = versionData.installedVersion;
+      // Update check — read latestAvailableVersion from cache file (gitignored)
+      const cacheFile = path.join(dir, '.5', '.update-cache.json');
+      let latest = null;
+      if (fs.existsSync(cacheFile)) {
+        try {
+          const cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+          latest = cache.latestAvailableVersion || null;
+        } catch(e) {}
+      }
+      const installed = versionData.packageVersion;
       if (latest && installed && compareVersions(installed, latest) < 0) {
         updateIndicator = ` | \x1b[33m↑${latest} → /5:update\x1b[0m`;
       }

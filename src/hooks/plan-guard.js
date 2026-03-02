@@ -20,8 +20,8 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const toolName = data.tool_name || '';
 
-    // Short-circuit: only check Task, Write, and Edit tools
-    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit') {
+    // Short-circuit: only check Task, Write, Edit, and EnterPlanMode tools
+    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit' && toolName !== 'EnterPlanMode') {
       process.exit(0);
     }
 
@@ -41,6 +41,20 @@ process.stdin.on('end', () => {
     }
 
     // Planning mode enforcement
+    if (toolName === 'EnterPlanMode') {
+      const blockCount = incrementBlockCount(workspaceDir);
+      const escalation = blockCount >= 3
+        ? ` WARNING: Block #${blockCount}. Repeated violations. Complete your planning artifact and STOP.`
+        : '';
+      process.stderr.write(
+        `BLOCKED: EnterPlanMode is not allowed during workflow planning phases. ` +
+        `The 5-phase workflow has its own planning process. ` +
+        `REDIRECT: Continue with your current planning task. ` +
+        `Write your output to .5/features/{name}/ and output the completion message when done.${escalation}`
+      );
+      process.exit(2);
+    }
+
     if (toolName === 'Task') {
       const agentType = toolInput.subagent_type || '';
       if (agentType && agentType !== 'Explore') {

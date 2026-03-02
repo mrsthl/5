@@ -18,6 +18,7 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - NEVER describe HOW something will be implemented (file contents, signatures, class structures)
 - NEVER spawn Task agents with subagent_type other than Explore
 - NEVER write to any file except .5/features/{name}/feature.md and .5/.planning-active
+- NEVER call EnterPlanMode — the workflow has its own planning process
 - The feature spec describes WHAT and WHY, never HOW
 - If you feel the urge to implement, STOP and ask a clarifying question instead
 - Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes.

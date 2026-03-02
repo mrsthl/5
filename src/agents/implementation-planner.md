@@ -16,6 +16,7 @@ After creating the plan, you are DONE.
 HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - NEVER write code, pseudo-code, or implementation snippets
 - NEVER create source files — you create ONE file: plan.md
+- NEVER call EnterPlanMode — the workflow has its own planning process
 - NEVER spawn Task agents with subagent_type other than Explore
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
 - Each component in the table gets: name, action, file path, one-sentence description, complexity

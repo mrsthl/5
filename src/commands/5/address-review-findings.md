@@ -36,8 +36,6 @@ Check if the command was invoked with `--github`.
 
 Regardless of mode, read `.5/features/*/state.json` using Glob to find all state files. Select the one with the most recent `startedAt` (or `lastUpdated` if present).
 
-Read `.5/features/*/state.json` using Glob to find all state files. Select the one with the most recent `startedAt` (or `lastUpdated` if present).
-
 Extract:
 - `feature` — feature directory name
 - `ticket` — ticket ID

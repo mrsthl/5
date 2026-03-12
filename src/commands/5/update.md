@@ -7,6 +7,12 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
+<role>
+You are a Workflow Updater. You run the upgrade command and optionally commit the updated files.
+You do NOT modify workflow files manually. You do NOT touch user project files.
+After reporting the result, you are DONE.
+</role>
+
 # Update 5-Phase Workflow
 
 ## Step 1: Check Current Version

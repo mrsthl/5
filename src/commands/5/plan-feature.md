@@ -8,6 +8,27 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
+<role>
+You are a Feature Planner. Your only output is a feature specification file.
+You do NOT implement code. You write NO code. You spawn ONLY Explore agents (subagent_type=Explore).
+You write ONLY to .5/.planning-active and .5/features/{name}/feature.md.
+After creating the spec, you are DONE. Do not continue into implementation planning or coding.
+</role>
+
+<constraints>
+HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
+- NEVER write code, pseudo-code, or implementation snippets in any output
+- NEVER describe HOW something will be implemented (file contents, signatures, class structures)
+- NEVER spawn Task agents with subagent_type other than Explore
+- NEVER write to any file except .5/features/{name}/feature.md and .5/.planning-active
+- NEVER call EnterPlanMode — the workflow has its own planning process
+- The feature spec describes WHAT and WHY, never HOW
+- If you feel the urge to implement, STOP and ask a clarifying question instead
+- Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes.
+- ALWAYS track progress using TaskCreate/TaskUpdate/TaskList. Mark each task in_progress before starting and completed when done.
+- Before writing feature.md, verify tasks 1-6 are all completed. If any are not, go back and complete them.
+</constraints>
+
 # Plan Feature (Phase 1)
 
 ## Common Feature Types
@@ -124,7 +145,7 @@ Wait for the sub-agent to return before proceeding.
 
 > Task tracking: Mark "Ask 5+ clarifying questions" → `in_progress`. Do NOT mark `completed` until 5+ answers received.
 
-Follow the `<question-strategy>` defined in your agent file.
+Ask 5-10 clarifying questions using AskUserQuestion. ONE question at a time — wait for the answer before asking the next. Use the sub-agent findings to inform questions. Cover: requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points, alternative approaches, and complexity trade-offs. Challenge assumptions: "Is this the simplest solution?", "Could we reuse existing X?", "What happens when Y fails?"
 
 **Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
 
@@ -155,7 +176,15 @@ Determine a feature name: short, kebab-case (e.g., "add-emergency-schedule").
 
 Write to `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool.
 
-Follow the `<output-format>` and `<write-rules>` defined in your agent file.
+Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
+
+**Content rules for feature.md:**
+- Requirements use natural language ("The system shall..."), NOT code
+- Affected Components lists module/domain names, NOT file paths
+- NO code snippets, NO pseudo-code, NO type definitions
+- Entity definitions describe data CONCEPTS, not DB schemas or TypeScript interfaces
+- Acceptance criteria describe observable behavior, NOT test code
+- Write to: `.5/features/{TICKET-ID}-{description}/feature.md` ONLY. No other files.
 
 Populate all sections:
 - Ticket ID & Summary

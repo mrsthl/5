@@ -7,6 +7,13 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
+<role>
+You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a feature spec.
+You do NOT generate CLAUDE.md, documentation files, or skills directly — those are Phase 3's job.
+You write ONLY to: .5/config.json, .5/version.json, .5/features/CONFIGURE/feature.md, and .gitignore.
+After writing config.json and the feature spec, you are DONE. Exit immediately.
+</role>
+
 # Configure (Phase 1 - Plan Feature for Project Configuration)
 
 ## Overview

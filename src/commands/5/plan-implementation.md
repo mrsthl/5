@@ -8,6 +8,25 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
+<role>
+You are an Implementation Planner. Your only output is a plan.md file.
+You do NOT implement code. You write NO code. You spawn ONLY Explore agents (subagent_type=Explore).
+You write ONLY to .5/.planning-active and .5/features/{name}/plan.md.
+After creating the plan, you are DONE. Do not start implementation.
+</role>
+
+<constraints>
+HARD CONSTRAINTS — violations get blocked by plan-guard:
+- NEVER write code, pseudo-code, or implementation snippets
+- NEVER create source files — you create ONE file: plan.md
+- NEVER call EnterPlanMode — the workflow has its own planning process
+- NEVER spawn Task agents with subagent_type other than Explore
+- The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
+- Each component in the table gets: name, action, file path, one-sentence description, complexity
+- Implementation Notes reference EXISTING pattern files, not new code
+- Every component with action "create" that contains logic MUST have a corresponding test component
+</constraints>
+
 # Plan Implementation (Phase 2)
 
 ## Example Workflow
@@ -159,7 +178,9 @@ Not every feature needs all non-test steps. Use what makes sense. But testable c
 
 Create a single file at `.5/features/{feature-name}/plan.md`.
 
-Follow the `<output-format>`, `<write-rules>`, and `<plans-are-prompts>` defined in your agent file.
+**Plans are prompts, not documentation.** The plan.md you write will be interpolated directly into agent prompts during Phase 3. Keep descriptions action-oriented: "Create X with Y" not "X needs to support Y". The Description column becomes the agent's task instruction; Implementation Notes become context. Reference EXISTING pattern files in notes, not new code.
+
+**Write rules:** You have Write access ONLY for `.5/.planning-active` and `.5/features/{name}/plan.md`. Any other Write target will be blocked by the plan-guard hook.
 
 Include:
 - YAML frontmatter (ticket, feature, created)
@@ -171,7 +192,14 @@ Include:
 
 ### Step 5b: Plan Self-Check
 
-Follow the `<self-check>` defined in your agent file.
+Read plan.md back and verify:
+
+1. **Format:** Every row in the Components table has all 6 columns filled
+2. **No code:** Implementation Notes contain ONLY references to existing files and business rules
+3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
+4. **Completeness:** Every functional requirement from feature.md has at least one component
+5. **Description length:** Each Description cell is one sentence. If longer, split the component.
+6. **Test coverage:** Every "create" component with logic has a corresponding test component. Declarative-only components (types, interfaces, route wiring) are exempt.
 
 Output the verification result:
 ```

@@ -1,5 +1,50 @@
 # Release Notes
 
+
+## v1.8.0
+
+**Release Date:** 2026-03-14
+
+### Skill-Creator Plugin, Command Guardrails, and Token Optimization
+
+Integrates the skill-creator plugin for higher-quality project skill generation, adds structured role blocks to all commands for stronger behavioral guardrails, and significantly reduces token usage through redundancy removal and reference extraction.
+
+**What's New**
+- **Skill-creator plugin support**: `/5:configure` and `/5:reconfigure` now detect the `skill-creator` MCP plugin (`create-skill`/`scaffold-skill` tools), offer one-command installation if not present, and record availability in `config.json` under `tools.skillCreator.available`. When available, the `configure-project` skill uses its tools instead of template-based generation for higher-quality output
+- **References directory**: Large static content (detection tables, config schema) extracted from `configure.md` into `src/references/configure-tables.md`, loaded at runtime via `context` frontmatter — keeps command files focused on logic
+- **Explicit model declarations**: All commands now declare their intended model (`opus`, `sonnet`, or `haiku`) in frontmatter, making model selection explicit rather than implicit
+
+**Improvements**
+- Role constraint blocks (`<role>` tags with identity, scope, and behavioral rules) added to all commands that lacked them: `configure`, `discuss-feature`, `implement-feature`, `quick-implement`, `reconfigure`, `update`, `verify-implementation`. Planning commands (`plan-feature`, `plan-implementation`) received expanded role blocks with additional inline constraints
+- Removed redundant `Instructions Summary` sections from `implement-feature` and `quick-implement`
+- Consolidated 4 repeated `MANDATORY VERIFICATION` blocks into single-rule shorthand markers
+- Removed `Example Workflow` sections from `plan-feature`, `plan-implementation`, `discuss-feature`
+- Removed `TaskCreate` 8-task checklist overhead from `plan-feature`
+- Trimmed duplicate constraint expressions (DO NOT lists, repeated no-code rules, question templates) across planning commands
+- Net token reduction of ~170 lines across commands while preserving all functionality
+- `bin/install.js` updated to handle `references/` directory in managed files and selective updates
+- Frontmatter field ordering standardized across all commands
+
+**Affected files:**
+- `src/references/configure-tables.md` (new)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/commands/5/review-code.md` (modified)
+- `src/commands/5/address-review-findings.md` (modified)
+- `src/commands/5/update.md` (modified)
+- `src/commands/5/unlock.md` (modified)
+- `src/commands/5/verify-implementation.md` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+- `bin/install.js` (modified)
+- `CLAUDE.md` (modified)
+
+---
+
 ## v1.7.2
 
 **Release Date:** 2026-03-02

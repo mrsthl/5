@@ -2,9 +2,9 @@
 name: 5:reconfigure
 description: Lightweight refresh of project documentation and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, updates CLAUDE.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
-context: fork
 user-invocable: true
 disable-model-invocation: true
+context: fork
 ---
 
 <role>
@@ -57,6 +57,18 @@ Read `.5/config.json`. If it does not exist:
 - **EXIT IMMEDIATELY**
 
 Read `.5/version.json` for current state (configuredAt, configuredAtCommit).
+
+### Step 1b: Check skill-creator plugin
+
+Check if the skill-creator plugin is available (look for skill-creator tools in the current session):
+
+- If available: note for later use during skill generation
+- If NOT available AND config.json has skill selections (i.e., skills exist in `.claude/skills/`):
+  - "The skill-creator plugin is not installed. It can improve skill quality."
+  - Options:
+    1. "Install now (recommended)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash
+    2. "Skip"
+  - If "Install now": execute the install command
 
 ### Step 2: Re-detect Codebase State
 

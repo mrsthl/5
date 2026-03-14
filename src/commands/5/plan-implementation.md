@@ -3,9 +3,10 @@ name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
 agent: implementation-planner
 allowed-tools: Read, Write, Task, AskUserQuestion
-context: fork
 user-invocable: true
 disable-model-invocation: true
+model: opus
+context: fork
 ---
 
 <role>

@@ -2,10 +2,10 @@
 name: 5:address-review-findings
 description: Applies annotated review findings and/or addresses GitHub PR review comments. Use --github to process PR comments only.
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Task, Skill, mcp__jetbrains__*
-model: sonnet
-context: fork
 user-invocable: true
 disable-model-invocation: true
+model: sonnet
+context: fork
 ---
 
 <role>

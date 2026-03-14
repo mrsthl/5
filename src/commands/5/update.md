@@ -2,9 +2,10 @@
 name: 5:update
 description: Update the 5-Phase Workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
-context: inherit
 user-invocable: true
 disable-model-invocation: true
+model: haiku
+context: fork
 ---
 
 <role>
@@ -41,7 +42,7 @@ Run `git status` to show the files modified by the upgrade. Summarize the change
 Ask the user: "Would you like to commit the upgraded workflow files?"
 
 Options:
-1. **Yes** - commit the changes
+1. **Yes** - commit the changes, do not mention claude
 2. **No** - leave changes uncommitted
 
 If the user chooses **No**, stop here.

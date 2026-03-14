@@ -550,6 +550,7 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('  • Generate comprehensive documentation (CLAUDE.md)');
   log.info('  • Create project-specific skills');
   log.info('');
+  log.info('Tip: Configure will offer to install helpful plugins like skill-creator');
 
   showCommandsHelp(isGlobal);
 }

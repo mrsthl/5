@@ -2,9 +2,10 @@
 name: 5:verify-implementation
 description: Verifies a feature implementation is complete and working with multi-layer checks. Phase 4 of the 5-phase workflow.
 allowed-tools: Read, Glob, Grep, Bash, Write, Task, AskUserQuestion
-context: fork
 user-invocable: true
 disable-model-invocation: true
+model: sonnet
+context: fork
 ---
 
 <role>

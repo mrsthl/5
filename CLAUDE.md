@@ -216,9 +216,19 @@ After installing the workflow with `node bin/install.js` or `npx 5-phase-workflo
 **What configure does:**
 1. Analyzes project (detects type, build commands, tools)
 2. Gathers user preferences (ticket patterns, branch conventions, review tool)
-3. Creates feature spec at `.5/features/CONFIGURE/feature.md`
-4. User runs standard workflow: plan-implementation → implement → verify
-5. Results in: config.json, CLAUDE.md, project-specific skills
+3. Detects and optionally installs optional plugins (context7, skill-creator)
+4. Creates feature spec at `.5/features/CONFIGURE/feature.md`
+5. User runs standard workflow: plan-implementation → implement → verify
+6. Results in: config.json, CLAUDE.md, project-specific skills
+
+### Optional Plugins
+
+Configure detects and offers to install optional Claude plugins that enhance the workflow:
+
+- **context7** (`context7@mcp-official`): Provides up-to-date, version-specific documentation during implementation. Detected by checking for `resolve-library-id` / `query-docs` tools.
+- **skill-creator** (`skill-creator@claude-plugins-official`): Improves quality of generated project-specific skills. When available, the `configure-project` skill uses its tools (`create-skill`, `scaffold-skill`) instead of template-based generation. Detected by checking for `create-skill` / `scaffold-skill` tools in the session.
+
+Plugin availability is stored in `.5/config.json` under `tools.context7.available` and `tools.skillCreator.available`.
 
 ### Installation Process (bin/install.js)
 
@@ -277,7 +287,7 @@ When adding/removing/renaming workflow files, update `getWorkflowManagedFiles()`
 **NEVER manually update the `version` field in `package.json`.** The version is bumped automatically during the release process.
 
 1. Add release notes to `RELEASE_NOTES.md`
-2. Commit & Push
+2. Commit & Push (Don't mention Claude in the commits)
 3. Create a new Release in GitHub
 
 ## References

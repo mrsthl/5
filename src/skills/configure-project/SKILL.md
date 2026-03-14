@@ -181,6 +181,12 @@ If CLAUDE.md already exists:
 
 ## B. Generate Project-Specific Skills
 
+### Using skill-creator plugin
+
+If `tools.skillCreator.available` is `true` in `.5/config.json`, use the skill-creator plugin's tools (e.g., `create-skill`, `scaffold-skill`) to generate each SKILL.md instead of the template-based approach below. Pass the extracted patterns, conventions, and example file paths as context to the skill-creator tool so it can produce structured, high-quality skill files.
+
+If skill-creator is not available, use the existing template-based generation below — no degradation in workflow behavior.
+
 **Reads:** Pattern selections from feature spec (`.5/CONFIGURE/feature.md`)
 
 **Creates:** SKILL.md files in `.claude/skills/{name}/SKILL.md`

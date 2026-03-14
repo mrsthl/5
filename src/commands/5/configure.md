@@ -2,9 +2,10 @@
 name: 5:configure
 description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates feature spec for remaining setup. Follow up with /5:plan-implementation CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
-context: inherit
 user-invocable: true
 disable-model-invocation: true
+model: opus
+context: fork
 ---
 
 <role>
@@ -116,6 +117,11 @@ fi
 
 # Context7 - up-to-date documentation MCP server
 # Check if context7 tools are available (resolve-library-id, query-docs)
+
+# skill-creator plugin — helps create better project-specific skills
+# Check if skill-creator tools are available by looking for known tool names
+# in the current session (e.g., create-skill, scaffold-skill).
+# Set skill_creator_available=true if any skill-creator tool is found.
 ```
 
 **1e. Check CLAUDE.md:**
@@ -242,11 +248,26 @@ Context7 provides up-to-date, version-specific documentation and code examples d
     2. "Skip"
   - If user selects "Install now": execute the install command
 
-**2j. Confirm CLAUDE.md generation:**
+**2j. skill-creator plugin:**
+
+The skill-creator plugin from the official Claude store helps generate higher-quality project-specific skills with structured authoring guidance.
+
+- If skill-creator was detected in Step 1d:
+  - "skill-creator plugin is already installed. ✓"
+  - Set `tools.skillCreator.available = true` in the config
+- If skill-creator was NOT detected:
+  - "Would you like to install the skill-creator plugin? It helps generate higher-quality project-specific skills."
+  - Options:
+    1. "Install now (recommended)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash
+    2. "Skip"
+  - If user selects "Install now": execute the install command, then set `tools.skillCreator.available = true` in the config
+  - If user selects "Skip": `tools.skillCreator.available` remains `false`
+
+**2k. Confirm CLAUDE.md generation:**
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
-**2k. Review detected patterns for skill generation:**
+**2l. Review detected patterns for skill generation:**
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
 
@@ -287,7 +308,7 @@ If no patterns/commands detected:
 - Inform user: "No common patterns detected. Would you like to specify patterns manually?"
 - Allow manual entry of pattern names/locations or command names
 
-**2l. Git-ignore `.5/features/` folder:**
+**2m. Git-ignore `.5/features/` folder:**
 - "The `.5/features/` folder will contain feature specs, implementation plans, and state files. Would you like to add it to `.gitignore`?"
   - Options:
     1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
@@ -335,6 +356,9 @@ mkdir -p .5
       "type": null
     },
     "context7": {
+      "available": false
+    },
+    "skillCreator": {
       "available": false
     }
   },

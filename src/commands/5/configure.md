@@ -67,40 +67,9 @@ else
 fi
 ```
 
-**1b. Detect project type** by checking files (first match wins):
+**1b. Detect project type** — Read `.claude/references/configure-tables.md` section "Project Type Detection" for the lookup table.
 
-| File Present | Dependency / Sub-check | Type |
-|---|---|---|
-| `package.json` | `next` | nextjs |
-| `package.json` | `@nestjs/core` | nestjs |
-| `package.json` | `express` | express |
-| `package.json` | `react` | react |
-| `package.json` | `vue` | vue |
-| `package.json` | *(none matched)* | javascript |
-| `build.gradle(.kts)` | — | gradle-java |
-| `pom.xml` | — | maven-java |
-| `requirements.txt` / `pyproject.toml` | + `manage.py` | django |
-| `requirements.txt` / `pyproject.toml` | + `app.py`/`wsgi.py` | flask |
-| `requirements.txt` / `pyproject.toml` | *(none matched)* | python |
-| `Cargo.toml` | — | rust |
-| `go.mod` | — | go |
-| `Gemfile` | + `config/routes.rb` | rails |
-| `Gemfile` | *(none matched)* | ruby |
-
-**1c. Detect build/test commands** based on project type:
-
-| Type | Build Command | Test Command |
-|------|--------------|--------------|
-| javascript | `npm run build` | `npm test` |
-| nextjs | `npm run build` | `npm test` |
-| nestjs | `npm run build` | `npm test` |
-| express | `npm run build \|\| tsc` | `npm test` |
-| gradle-java | `./gradlew build -x test -x javadoc --offline` | `./gradlew test --offline` |
-| maven-java | `mvn package -DskipTests` | `mvn test` |
-| python | `python -m py_compile **/*.py` | `pytest` |
-| django | `python manage.py check` | `python manage.py test` |
-| rust | `cargo build` | `cargo test` |
-| go | `go build ./...` | `go test ./...` |
+**1c. Detect build/test commands** — Read `.claude/references/configure-tables.md` section "Build/Test Commands by Type" for the lookup table.
 
 **1d. Detect available tools:**
 
@@ -130,33 +99,9 @@ fi
 **1f. Scan existing skills:**
 - Check `.claude/skills/` for existing project-specific skills
 
-**1g. Detect codebase patterns** for potential skills:
+**1g. Detect codebase patterns** — Read `.claude/references/configure-tables.md` section "Codebase Pattern Categories to Scan" for the full list and scanning approach.
 
-Use Glob to scan for architectural patterns. For each, check both suffix-based (`*{Pattern}.{ts,js,java,py,rb}`) and directory-based (`{patterns}/**`) globs.
-
-**Pattern categories to scan:**
-- **Core:** Controllers, Services, Repositories, Models/Entities, Handlers
-- **Data Transfer:** DTOs, Requests, Responses, Mappers, Validators, Schemas
-- **Frontend:** Components, Hooks, Contexts, Stores, Pages, Layouts
-- **API/Routes:** API Routes, Middleware, Guards, Interceptors, Filters
-- **Testing:** Tests/Specs, Fixtures, Factories, Mocks
-- **Utilities:** Utils, Helpers, Constants, Types/Interfaces, Config
-- **Framework-Specific:** Modules, Pipes, Decorators, Blueprints, Views, Serializers
-- **Background/Async:** Jobs, Workers, Events, Listeners, Commands
-- **Database:** Migrations, Seeds
-- **Error Handling:** Exceptions, Errors
-
-For each pattern found: count matching files, identify primary location, sample 1 filename.
-
-**1h. Detect runnable commands** for potential command skills:
-
-Scan config files (`package.json` scripts, `Makefile` targets, `pyproject.toml` scripts, `Cargo.toml`, `build.gradle` tasks, `composer.json` scripts, `Rakefile` tasks) for commands in these categories:
-
-Build, Test, Lint, Format, Type Check, Dev Server, Database (migrate/seed), Docker, Deploy, Clean, Generate
-
-Skill naming: `run-{category}` (e.g., `run-build`, `run-tests`, `run-lint`).
-
-For each command found: record exact syntax, note variants (e.g., `test:unit`, `test:e2e`), and environment requirements. Only include commands that are actually detected.
+**1h. Detect runnable commands** — Read `.claude/references/configure-tables.md` section "Runnable Command Categories" for categories and scanning approach.
 
 ### Step 2: Gather User Preferences (interactive via AskUserQuestion)
 
@@ -326,56 +271,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:**
-
-```json
-{
-  "projectType": "{type}",
-  "ticket": {
-    "pattern": "{regex-pattern-or-null}",
-    "extractFromBranch": true
-  },
-  "branch": {
-    "convention": "{convention}"
-  },
-  "build": {
-    "command": "{build-command}",
-    "testCommand": "{test-command}",
-    "timeout": {
-      "compile": 120000,
-      "test": 300000
-    }
-  },
-  "tools": {
-    "coderabbit": {
-      "available": false,
-      "authenticated": false
-    },
-    "ide": {
-      "available": false,
-      "type": null
-    },
-    "context7": {
-      "available": false
-    },
-    "skillCreator": {
-      "available": false
-    }
-  },
-  "reviewTool": "claude",
-  "git": {
-    "autoCommit": false,
-    "commitMessage": {
-      "pattern": "{ticket-id} {short-description}"
-    }
-  },
-  "dotFiveFolder": {
-    "gitignore": true
-  }
-}
-```
-
-Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 

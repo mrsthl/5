@@ -134,37 +134,7 @@ Use Task tool with subagent_type=Explore for complex exploration.
 
 Based on the discussion topic, ask targeted follow-up questions using AskUserQuestion.
 
-**Question types by topic:**
-
-**Clarify Requirements:**
-- "The current requirement says X. Should it also handle Y scenario?"
-- "How should the system behave when Z happens?"
-- "Are there edge cases we haven't considered?"
-
-**Add Requirements:**
-- "What is the expected behavior for this new requirement?"
-- "How does this interact with existing requirement X?"
-- "Should this be in scope or future work?"
-
-**Simplify/Remove:**
-- "If we remove X, what's the minimum viable version?"
-- "Can we defer Y to a future iteration?"
-- "Would simpler approach Z meet the core need?"
-
-**Change Approach:**
-- "What are the pros/cons of approach A vs B?"
-- "Have you considered alternative C?"
-- "What's the trade-off we're trying to optimize?"
-
-**Technical Constraints:**
-- "Is performance constraint X realistic?"
-- "Should we use existing component Y instead?"
-- "How will this integrate with system Z?"
-
-**Acceptance Criteria:**
-- "How will we verify requirement X is met?"
-- "What does success look like for this feature?"
-- "Are there specific test scenarios?"
+Ask targeted follow-up questions informed by the feature spec and any codebase exploration. Focus on: requirements clarity, scope boundaries, edge cases, technical constraints, and acceptance criteria. Challenge assumptions constructively — suggest simpler alternatives when appropriate.
 
 ### Step 6: Iterative Refinement
 
@@ -225,38 +195,4 @@ After updating the spec, tell the developer:
    - "Proceed to implementation planning (run `/clear` followed by `/5:plan-implementation {feature-name}`)"
    - "Review the updated spec first"
 
-## Key Principles
 
-1. **User-driven** - Follow user's focus areas, don't prescribe
-2. **Iterative** - Allow multiple discussion rounds
-3. **Contextual** - Explore codebase when relevant
-4. **Challenge constructively** - Question complexity, suggest alternatives
-5. **Document evolution** - Track how requirements changed
-6. **Preserve history** - Keep previous Q&A, add new discussions
-7. **Clear next steps** - Guide user on what to do next
-
-
-## Example Workflow
-
-```
-User: /discuss-feature PROJ-1234-add-feature
-
-Skill: [Reads feature spec]
-Skill: "What would you like to discuss or change about this feature?"
-User: "Clarify existing requirements"
-
-Skill: "The current spec mentions 'emergency schedule window'. Should this support single or multiple windows? Recurring schedules?"
-User: "Just single window per product for now"
-
-Skill: "Should we support updating/deleting the window after it's set?"
-User: "Yes, full CRUD"
-
-Skill: "Would you like to discuss anything else?"
-User: "No, update the spec"
-
-Skill: [Updates Requirements and Acceptance Criteria sections]
-Skill: "Feature spec updated. Changes:
-- Clarified: Single emergency window per product
-- Added: Full CRUD operations
-Next: /clear then /5:plan-implementation PROJ-1234-add-feature"
-```

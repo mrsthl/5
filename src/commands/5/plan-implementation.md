@@ -30,17 +30,7 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 
 # Plan Implementation (Phase 2)
 
-## Example Workflow
-
-1. User runs `/5:plan-implementation PROJ-1234-add-emergency-schedule`
-2. Agent reads `.5/features/PROJ-1234-add-emergency-schedule/feature.md`
-3. Agent spawns Explore sub-agent for codebase scan
-4. Sub-agent returns: project structure, naming conventions, pattern files
-5. Agent asks 2-3 technical questions (one at a time)
-6. Agent creates `.5/features/PROJ-1234-add-emergency-schedule/plan.md`
-7. Agent outputs: "Plan created. Next: /clear then /5:implement-feature"
-
-## Example Plan
+## Example Plan (output format reference)
 
 ```markdown
 ---

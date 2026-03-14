@@ -30,18 +30,13 @@ You are a thin orchestrator:
 - Track progress
 - Report completion
 
-**DO NOT:**
-- Write code directly — spawn agents
-- Skip state file updates between steps
-- Mark a step complete before writing state
-- Proceed to next step if state write fails
-- Use `git add .` at any point
-
 **Key Principles:**
 - Thin orchestrator: read, delegate, track, report
 - State is the source of truth: write it before moving on
 - Forward progress: failed components are logged, not blocking
 - Resumable: state enables restart from any interrupted step
+
+**State verification rule:** After every state.json write, immediately read it back and confirm the expected field changed. If verification fails, stop with an error message. This applies to every state write below — marked as **(verify write)**.
 
 ## Process
 
@@ -96,8 +91,7 @@ Create `.5/features/{feature-name}/state.json` with the full components table pa
 
 `pendingComponents` is populated by parsing the full components table from plan.md at startup — one entry per row.
 
-**MANDATORY VERIFICATION:** Read state.json back immediately after writing. Confirm `status` is `"in-progress"` and `pendingComponents` is non-empty.
-If the read fails or content is wrong, stop: "Failed to initialize state file. Cannot proceed safely."
+**(verify write)** — confirm `status` is `"in-progress"` and `pendingComponents` is non-empty.
 
 Then remove the planning guard marker (planning is over, implementation is starting):
 
@@ -178,8 +172,7 @@ Update state.json:
 - Increment `currentStep`
 - Update `lastUpdated`
 
-**MANDATORY VERIFICATION:** Read state.json back and confirm `lastUpdated` changed.
-If verify fails, stop: "State write failed after step {N}. Cannot proceed safely."
+**(verify write)** — confirm `lastUpdated` changed.
 
 Mark the current step's TaskCreate task as `completed`. Mark the next step's task as `in_progress`.
 
@@ -255,7 +248,7 @@ For each non-test component with action "create" that contains logic:
 - Check if its corresponding test component exists in the plan
 - If a test was planned but is in `failedAttempts`, flag it prominently
 
-**MANDATORY VERIFICATION:** Read state.json back and confirm `verificationResults.builtAt` is set.
+**(verify write)** — confirm `verificationResults.builtAt` is set.
 
 If build or tests fail:
 - Record in state.json
@@ -274,8 +267,7 @@ Update state.json:
 }
 ```
 
-**MANDATORY VERIFICATION:** Read state.json back and confirm `status` is `"completed"`.
-If read fails, warn the user but do not re-attempt — the implementation work is done; only tracking failed.
+**(verify write)** — confirm `status` is `"completed"`. If this one fails, warn the user but continue — the implementation work is done.
 
 Tell the user:
 ```
@@ -307,39 +299,3 @@ If implementation is interrupted, the state file enables resuming:
 4. Skip steps where ALL components are in `completedComponents` AND their files are verified present on disk
 5. Write reconciled state (update `lastUpdated`) before re-executing any steps
 
-## Example Flow
-
-```
-Step 1: 2 simple components → 2 parallel haiku agents → update state → verify write
-Step 2: 2 moderate components → 2 parallel agents → update state → verify write
-Step 3: 1 complex component → 1 sonnet agent → update state → verify write
-Step 4: Verify (build + test) → update verificationResults → verify write → report
-```
-
-## Instructions Summary
-
-### Before starting:
-1. Check for existing state.json → handle resume / restart / completed cases
-2. Read plan.md → parse components table, implementation notes, verification commands
-3. Read config.json → extract `git.autoCommit`, `git.commitMessage.pattern`
-4. Initialize state.json with richer schema → **MANDATORY: verify write**
-5. Create TaskCreate tasks for all steps + verification → mark step 1 `in_progress`
-
-### For each step:
-1. Determine parallelism (same-step components = parallel)
-2. Determine model per component (simple→haiku, complex→sonnet)
-3. Spawn agents (one per component, parallel when possible)
-4. Collect results, parse `---RESULT---` blocks
-5. Run per-step file existence check (Glob) on `FILES_CREATED`
-6. Run retry logic for failures (max 2 retries per component)
-7. Update state.json → **MANDATORY: verify write**
-8. Run auto-commit if enabled and step had successes (stage specific files only)
-9. Mark step task `completed`, mark next step task `in_progress`
-
-### After all steps:
-1. Run build command
-2. Run test command
-3. Update `verificationResults` in state.json → **verify write**
-4. Update `status: "completed"` in state.json → **MANDATORY: verify write**
-5. Mark verification task `completed`
-6. Report to user

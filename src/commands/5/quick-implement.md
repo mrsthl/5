@@ -38,17 +38,12 @@ Your job is NOT:
 ❌ Create feature spec files
 ❌ Commit without config (only if git.autoCommit is enabled)
 
-**DO NOT:**
-- Write code directly without using a Skill or spawning an agent
-- Skip state file updates after each component
-- Mark a component complete before writing state
-- Proceed if a state write fails
-- Use `git add .` at any point
-
 **Key Principles:**
 - Small scope: 1-5 files, treated as a single logical step
 - State is the source of truth: write it after every component
 - Resumable: state enables restart from the last completed component
+
+**State verification rule:** After every state.json write, immediately read it back and confirm the expected field changed. If verification fails, stop with an error message. This applies to every state write below — marked as **(verify write)**.
 
 ## Process
 
@@ -177,8 +172,7 @@ Create state file at `.5/features/${feature_name}/state.json`:
 
 `pendingComponents` is populated from the approved plan's components table — one entry per row.
 
-**MANDATORY VERIFICATION:** Read state.json back immediately after writing. Confirm `status` is `"in-progress"` and `pendingComponents` is non-empty.
-If the read fails or content is wrong, stop: "Failed to initialize state file. Cannot proceed safely."
+**(verify write)** — confirm `status` is `"in-progress"` and `pendingComponents` is non-empty.
 
 Then remove the planning guard marker (implementation is starting):
 
@@ -218,7 +212,7 @@ For each component in `pendingComponents`:
      ```
    - Update `lastUpdated` timestamp
    - Write back to state file
-   - **Verify write:** Read state.json back and confirm `lastUpdated` changed. If verify fails, stop.
+   - **(verify write)** — confirm `lastUpdated` changed.
 4. Mark component's TaskCreate task as `completed`. Mark next component's task as `in_progress`.
 
 **If a component fails:**
@@ -290,7 +284,7 @@ After the agent returns:
    - Move failed components: append to `failedAttempts` with `retryCount`
    - Update `lastUpdated`
    - Write back to state file
-   - **Verify write:** Read state.json back and confirm `lastUpdated` changed. If verify fails, stop.
+   - **(verify write)** — confirm `lastUpdated` changed.
 5. Mark TaskCreate tasks: completed components → `completed`, remaining → adjust `in_progress`.
 
 ### Step 9: Verification
@@ -327,7 +321,7 @@ Update `verificationResults` in state.json:
   "builtAt": "{ISO-timestamp}"
 }
 ```
-Also update `lastUpdated`. **Verify write:** Read state.json back and confirm `verificationResults.builtAt` is set.
+Also update `lastUpdated`. **(verify write)** — confirm `verificationResults.builtAt` is set.
 
 Mark the "Run verification" TaskCreate task as `completed`.
 
@@ -348,8 +342,7 @@ Update state file:
 }
 ```
 
-**MANDATORY VERIFICATION:** Read state.json back and confirm `status` is `"completed"`.
-If read fails, warn the user but do not re-attempt — the implementation work is done; only tracking failed.
+**(verify write)** — confirm `status` is `"completed"`. If this one fails, warn but continue — the work is done.
 
 Report: ticket, description, files created/modified, build/test status, commit status (if auto-commit), skipped components (if any), and next steps (manual commit if needed, `/clear` before new task).
 
@@ -369,30 +362,3 @@ Skills are project-specific and should be configured in your project's `.claude/
 | Tests | Project-specific test skill |
 | Simple edits | Edit tool directly |
 
-## Instructions Summary
-
-### Before starting:
-1. Get task description from user
-2. Extract and sanitize ticket ID from branch name
-3. Generate `feature_name` slug
-4. Check for existing state.json → handle resume / restart / completed cases
-5. Analyze codebase, identify components (max 5)
-6. Create plan.md → get user approval (iterate if needed)
-7. Initialize state.json with richer schema → **MANDATORY: verify write**
-8. Create TaskCreate tasks for all components + verification → mark first component `in_progress`
-
-### For each component:
-1. Invoke skill or spawn agent
-2. Verify files exist on disk (Glob)
-3. Apply retry logic if failed (max 2 retries per component)
-4. Update state.json → **MANDATORY: verify write**
-5. Mark component task `completed`, mark next task `in_progress`
-
-### After all components:
-1. Run build skill (if configured)
-2. Run test skill (if affected)
-3. Update `verificationResults` in state.json → **verify write**
-4. Auto-commit if enabled (stage specific files only)
-5. Update `status: "completed"` in state.json → **MANDATORY: verify write**
-6. Mark verification task `completed`
-7. Report to user

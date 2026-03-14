@@ -278,6 +278,11 @@ function getWorkflowManagedFiles() {
       'config-guard.js'
     ],
 
+    // References: lookup tables and schemas read on-demand by commands
+    references: [
+      'configure-tables.md'
+    ],
+
     // Templates: specific template files
     templates: [
       // Project documentation templates
@@ -384,6 +389,23 @@ function selectiveUpdate(targetPath, sourcePath) {
     }
   }
   log.success('Updated templates/ (workflow files only)');
+
+  // Update specific references
+  if (managed.references && managed.references.length > 0) {
+    const referencesSrc = path.join(sourcePath, 'references');
+    const referencesDest = path.join(targetPath, 'references');
+    if (!fs.existsSync(referencesDest)) {
+      fs.mkdirSync(referencesDest, { recursive: true });
+    }
+    for (const ref of managed.references) {
+      const src = path.join(referencesSrc, ref);
+      const dest = path.join(referencesDest, ref);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+      }
+    }
+    log.success('Updated references/ (workflow files only)');
+  }
 }
 
 // Ensure .5/.gitignore exists and contains .update-cache.json
@@ -522,7 +544,7 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   }
 
   // Copy directories
-  const dirs = ['commands', 'agents', 'skills', 'hooks', 'templates'];
+  const dirs = ['commands', 'agents', 'skills', 'hooks', 'templates', 'references'];
   for (const dir of dirs) {
     const src = path.join(sourcePath, dir);
     const dest = path.join(targetPath, dir);
@@ -712,6 +734,17 @@ function uninstall() {
     }
   }
   log.success('Removed workflow templates (preserved user-created templates)');
+
+  // Remove only workflow-managed references
+  if (managed.references) {
+    for (const ref of managed.references) {
+      const refPath = path.join(targetPath, 'references', ref);
+      if (fs.existsSync(refPath)) {
+        fs.unlinkSync(refPath);
+      }
+    }
+    log.success('Removed workflow references (preserved user-created references)');
+  }
 
   // Remove data directory (.5/)
   const dataDir = getDataPath(false);

@@ -1,6 +1,34 @@
 # Release Notes
 
 
+## v1.8.1
+
+**Release Date:** 2026-03-15
+
+### Streamlined Planning Commands
+
+Inlines agent content directly into planning commands, improves plan-implementation with better test tier guidance and config awareness, and removes task tracking overhead from the planning phases.
+
+**Improvements**
+- **Inlined planning agents**: Removed separate `feature-planner.md` and `implementation-planner.md` agent files — their content is now embedded directly in `plan-feature` and `plan-implementation` commands, reducing indirection and improving maintainability
+- **Deferred ticket extraction**: `plan-feature` no longer prompts for ticket confirmation — it silently extracts the ticket ID from the git branch when writing the spec, keeping the Q&A flow uninterrupted
+- **Three-tier test planning**: `plan-implementation` now detects and plans for unit, integration, and e2e tests based on what frameworks the explore agent finds in the project, instead of only planning unit tests
+- **Config-aware planning**: `plan-implementation` reads `.5/config.json` for build/test commands and project type, passing them to the explore agent and using them in the Verification section
+- **Plans-as-prompts guidance**: Added explicit documentation that plan.md is interpolated into agent prompts — descriptions should be action-oriented instructions, not passive documentation
+- **Complexity rubric**: Added structured rubric with decision heuristic for assigning simple/moderate/complex to components
+- **Plan template updated**: `PLAN.md` template now includes `spec` frontmatter field, testing strategy section, and integration/e2e test rows
+- **Removed task tracking**: Planning phases no longer use Task-based progress tracking, reducing overhead
+
+**Affected files:**
+- `src/agents/feature-planner.md` (removed)
+- `src/agents/implementation-planner.md` (removed)
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/templates/workflow/PLAN.md` (modified)
+- `bin/install.js` (modified)
+
+---
+
 ## v1.8.0
 
 **Release Date:** 2026-03-14

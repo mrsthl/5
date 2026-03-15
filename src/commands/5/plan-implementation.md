@@ -30,44 +30,9 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 
 # Plan Implementation (Phase 2)
 
-## Example Plan (output format reference)
+## Output Format
 
-```markdown
----
-ticket: PROJ-1234
-feature: PROJ-1234-add-emergency-schedule
-created: 2026-01-28T10:00:00Z
----
-
-# Implementation Plan: PROJ-1234
-
-Add emergency schedule tracking to products with date validation.
-
-## Components
-
-| Step | Component | Action | File | Description | Complexity |
-|------|-----------|--------|------|-------------|------------|
-| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity with name, startDate, endDate, isEmergency | simple |
-| 1 | Schedule types | create | src/types/schedule.ts | TypeScript interfaces for schedule data | simple |
-| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD operations with date validation (endDate > startDate) | moderate |
-| 2 | Schedule repository | create | src/repositories/ScheduleRepository.ts | Database access for schedules | simple |
-| 3 | Schedule controller | create | src/controllers/ScheduleController.ts | REST endpoints: GET/POST/DELETE /api/schedules | moderate |
-| 3 | Register routes | modify | src/routes/index.ts | Add schedule routes to router | simple |
-| 4 | Schedule service tests | create | src/services/__tests__/ScheduleService.test.ts | Test validation and CRUD | moderate |
-| 4 | Schedule controller tests | create | src/controllers/__tests__/ScheduleController.test.ts | Test REST endpoints and error handling | moderate |
-
-## Implementation Notes
-
-- Follow the pattern from src/services/UserService.ts for the service
-- Follow the pattern from src/controllers/UserController.ts for the controller
-- Date validation: endDate must be after startDate, throw ValidationError if not
-- Emergency schedules have `isEmergency: true` flag
-
-## Verification
-
-- Build: npm run build
-- Test: npm test
-```
+Read the plan template at `.claude/templates/workflow/PLAN.md` for the exact structure and rules. Your output must follow that template precisely — fill in the placeholders with real values from the feature spec and codebase scan.
 
 ## Process
 
@@ -109,13 +74,17 @@ Quick codebase scan for implementation planning.
 3. Note naming conventions from existing files
 4. Find example files that can serve as patterns for new components
 5. Identify the project's test framework, test file conventions, and test directory structure (e.g., __tests__/, tests/, *.test.ts, *.spec.ts, test_*.py)
+6. Detect e2e test framework and config (Cypress, Playwright, Selenium, Supertest, etc.) — look for config files like playwright.config.ts, cypress.config.js, e2e/ directories
+7. Detect integration test patterns (test containers, in-memory DBs, API test helpers, fixtures) — look for setup files, docker-compose.test.yml, test utilities
 
 **Report Format:**
 - Project structure (key directories)
 - Naming conventions observed
 - Pattern files for each component type
 - Where new files should be placed
-- Test setup: framework, file naming pattern, test directory location (or "no test setup detected")
+- Unit test setup: framework, file naming pattern, test directory location (or "no test setup detected")
+- E2e test setup: framework, config file, test directory, naming pattern (or "none detected")
+- Integration test setup: framework/helpers, directory, patterns (or "none detected")
 
 **IMPORTANT:** Quick scan, not deep analysis. Focus on structure and patterns.
 **READ-ONLY:** Only use Read, Glob, and Grep tools.
@@ -155,13 +124,19 @@ Group into steps:
 - **Step 1**: Foundation (models, types, interfaces)
 - **Step 2**: Logic (services, business rules)
 - **Step 3**: Integration (controllers, routes, wiring)
-- **Final step**: Tests for all logic-bearing components
+- **Final step**: Tests (unit, integration, and e2e as applicable)
 
-**Test requirement:** Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component. Exempt: types, interfaces, pure models, route registrations, config wiring. When uncertain, include the test.
+**Test tiers — plan from the explore agent's detection results:**
 
-If the explore agent reported "no test setup detected," still include test components but add an Implementation Note: "Project has no test framework detected — test components may need framework setup first or may be skipped during implementation."
+- **Unit tests** (always required): Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding unit test component. Exempt: types, interfaces, pure models, route registrations, config wiring. When uncertain, include the test.
+- **Integration tests** (when detected): If the explore agent detected integration test patterns, plan integration test components for features involving cross-module interactions, database operations, or external service calls.
+- **E2e tests** (when detected): If the explore agent detected an e2e framework, plan e2e test components for features that add or modify user-facing endpoints or UI flows.
 
-Not every feature needs all non-test steps. Use what makes sense. But testable components always need tests.
+If the explore agent reported "no test setup detected" for unit tests, still include unit test components but add an Implementation Note: "Project has no test framework detected — test components may need framework setup first or may be skipped during implementation."
+
+If no e2e or integration framework was detected, do NOT plan components for them. Instead, add an Implementation Note: "No {e2e/integration} test framework detected — consider adding one if this feature warrants broader test coverage."
+
+Not every feature needs all non-test steps. Use what makes sense. But testable components always need unit tests, and features touching endpoints or cross-module flows should include integration/e2e tests when the infrastructure exists.
 
 **Parallel execution:** Components in the same step run in parallel. Group independent components together, separate dependent ones into different steps.
 
@@ -190,7 +165,8 @@ Read plan.md back and verify:
 3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
 4. **Completeness:** Every functional requirement from feature.md has at least one component
 5. **Description length:** Each Description cell is one sentence. If longer, split the component.
-6. **Test coverage:** Every "create" component with logic has a corresponding test component. Declarative-only components (types, interfaces, route wiring) are exempt.
+6. **Unit test coverage:** Every "create" component with logic has a corresponding unit test component. Declarative-only components (types, interfaces, route wiring) are exempt.
+7. **Integration/e2e coverage:** If the explore agent detected integration or e2e frameworks AND the feature touches endpoints or cross-module flows, verify at least one integration or e2e test component is planned.
 
 Output the verification result:
 ```
@@ -200,7 +176,8 @@ Plan self-check:
 - Scope: pass/fail
 - Completeness: pass/fail
 - Description length: pass/fail
-- Test coverage: pass/fail
+- Unit test coverage: pass/fail
+- Integration/e2e coverage: pass/fail/n-a
 ```
 
 If any check fails, fix plan.md before proceeding to the completion output.

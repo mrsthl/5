@@ -1,7 +1,7 @@
 ---
 name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
-allowed-tools: Read, Write, Task, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
+allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
 disable-model-invocation: true
 model: opus
@@ -26,8 +26,6 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - If a component needs more than one sentence to describe, split it into multiple components
 - Implementation Notes reference EXISTING pattern files, not new code
 - Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component. Declarative components (types, interfaces, models without logic, route registrations, config files) are exempt. When uncertain, include the test.
-- ALWAYS track progress using TaskCreate/TaskUpdate/TaskList. Mark each task `in_progress` before starting and `completed` when done. NEVER skip tasks. NEVER work on a later task while an earlier task is still pending.
-- Before writing plan.md, call TaskList and verify all tasks are `completed`. If any are not, go back and complete them.
 </constraints>
 
 <write-rules>

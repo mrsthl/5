@@ -1,7 +1,7 @@
 ---
 name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
-allowed-tools: Read, Write, Task, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
+allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
 disable-model-invocation: true
 model: opus
@@ -25,8 +25,6 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - The feature spec describes WHAT and WHY, never HOW
 - If you feel the urge to implement, STOP and ask a clarifying question instead
 - Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes.
-- ALWAYS track progress using TaskCreate/TaskUpdate/TaskList. Mark each task `in_progress` before starting and `completed` when done. NEVER skip tasks. NEVER work on a later task while an earlier task is still pending.
-- Before writing feature.md, call TaskList and verify all tasks are `completed`. If any are not, go back and complete them.
 </constraints>
 
 <write-rules>

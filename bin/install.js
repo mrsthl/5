@@ -248,6 +248,19 @@ function removeDir(dir) {
   }
 }
 
+// Files removed from the package before manifest tracking existed.
+// This list is frozen — future removals are handled by manifest diffing.
+const LEGACY_REMOVED_FILES = [
+  'agents/feature-planner.md',
+  'agents/implementation-planner.md',
+  'agents/review-processor.md',
+  'agents/step-executor.md',
+  'agents/integration-agent.md',
+  'agents/step-fixer.md',
+  'agents/step-verifier.md',
+  'agents/verification-agent.md'
+];
+
 // Get list of workflow-owned files/directories (not user-created)
 function getWorkflowManagedFiles() {
   return {
@@ -301,6 +314,46 @@ function getWorkflowManagedFiles() {
       'workflow/FIX-PLAN.md'
     ]
   };
+}
+
+// Flatten getWorkflowManagedFiles() into a list of relative paths (relative to .claude/)
+function getFileManifest() {
+  const managed = getWorkflowManagedFiles();
+  const manifest = [];
+
+  // Commands are directories
+  for (const cmd of managed.commands) {
+    manifest.push(`commands/${cmd}`);
+  }
+
+  // Agents are files
+  for (const agent of managed.agents) {
+    manifest.push(`agents/${agent}`);
+  }
+
+  // Skills are directories
+  for (const skill of managed.skills) {
+    manifest.push(`skills/${skill}`);
+  }
+
+  // Hooks are files
+  for (const hook of managed.hooks) {
+    manifest.push(`hooks/${hook}`);
+  }
+
+  // Templates are files (may include nested paths like workflow/FEATURE-SPEC.md)
+  for (const template of managed.templates) {
+    manifest.push(`templates/${template}`);
+  }
+
+  // References are files
+  if (managed.references) {
+    for (const ref of managed.references) {
+      manifest.push(`references/${ref}`);
+    }
+  }
+
+  return manifest;
 }
 
 // Selectively update only workflow-managed files, preserve user content
@@ -406,6 +459,50 @@ function selectiveUpdate(targetPath, sourcePath) {
   }
 }
 
+// Clean up files that were previously installed but are no longer managed
+function cleanupOrphanedFiles(targetPath, dataDir) {
+  const versionFile = path.join(dataDir, 'version.json');
+  const currentManifest = getFileManifest();
+  const currentSet = new Set(currentManifest);
+
+  let oldManifest = null;
+  if (fs.existsSync(versionFile)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      oldManifest = data.manifest || null;
+    } catch (e) {
+      // Corrupted file, treat as no manifest
+    }
+  }
+
+  if (oldManifest) {
+    // Manifest exists: diff old vs current, delete orphans
+    for (const entry of oldManifest) {
+      if (!currentSet.has(entry)) {
+        const fullPath = path.join(targetPath, entry);
+        if (fs.existsSync(fullPath)) {
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+            removeDir(fullPath);
+          } else {
+            fs.unlinkSync(fullPath);
+          }
+          log.info(`Removed orphaned: ${entry}`);
+        }
+      }
+    }
+  } else {
+    // No manifest (legacy upgrade): use static legacy removals list
+    for (const entry of LEGACY_REMOVED_FILES) {
+      const fullPath = path.join(targetPath, entry);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        log.info(`Removed legacy orphan: ${entry}`);
+      }
+    }
+  }
+}
+
 // Ensure .5/.gitignore exists and contains .update-cache.json
 function ensureDotFiveGitignore(dataDir) {
   const gitignorePath = path.join(dataDir, '.gitignore');
@@ -436,7 +533,8 @@ function initializeVersionJson(isGlobal) {
     packageVersion: version,
     installedAt: now,
     lastUpdated: now,
-    installationType: isGlobal ? 'global' : 'local'
+    installationType: isGlobal ? 'global' : 'local',
+    manifest: getFileManifest()
   };
 
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
@@ -583,11 +681,14 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   // Selectively update only workflow-managed files (preserves user content)
   selectiveUpdate(targetPath, sourcePath);
 
+  // Clean up orphaned files from previous versions
+  const dataDir = getDataPath(isGlobal);
+  cleanupOrphanedFiles(targetPath, dataDir);
+
   // Merge settings (deep merge preserves user customizations)
   mergeSettings(targetPath, sourcePath);
 
   // Update version.json
-  const dataDir = getDataPath(isGlobal);
   const versionFile = path.join(dataDir, 'version.json');
   const now = new Date().toISOString();
 
@@ -598,7 +699,8 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
     packageVersion: versionInfo.available,
     installedAt: existing.installedAt || now,
     lastUpdated: now,
-    installationType: existing.installationType || (isGlobal ? 'global' : 'local')
+    installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
+    manifest: getFileManifest()
   };
 
   if (!fs.existsSync(dataDir)) {
@@ -689,6 +791,15 @@ function uninstall() {
   }
 
   const managed = getWorkflowManagedFiles();
+
+  // Remove legacy orphaned files that may still exist from older versions
+  for (const entry of LEGACY_REMOVED_FILES) {
+    const fullPath = path.join(targetPath, entry);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      log.info(`Removed legacy orphan: ${entry}`);
+    }
+  }
 
   // Remove commands/5/ (workflow namespace only)
   const commands5 = path.join(targetPath, 'commands', '5');

@@ -21,7 +21,7 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - NEVER write code, pseudo-code, or implementation snippets in any output
 - NEVER describe HOW something will be implemented (file contents, signatures, class structures)
 - NEVER spawn Task agents with subagent_type other than Explore
-- NEVER write to any file except .5/features/{name}/feature.md and .5/.planning-active
+- NEVER write to any file except .5/features/{name}/feature.md (where {name} may include a ticket prefix) and .5/.planning-active
 - NEVER call EnterPlanMode — the workflow has its own planning process
 - The feature spec describes WHAT and WHY, never HOW
 - If you feel the urge to implement, STOP and ask a clarifying question instead
@@ -54,18 +54,7 @@ Ask the developer for the feature description using AskUserQuestion:
 - Expect free-text answer, do NOT provide options
 - Do NOT ask follow-up questions yet
 
-### Step 2: Extract Ticket ID
-
-Extract the ticket ID from the current git branch:
-- Use `git branch --show-current` via a Bash-free approach: spawn a quick Explore agent if needed
-- Branch format: `{TICKET-ID}-description`
-- Extract using configurable pattern from config
-- Ask the developer to confirm the ticket ID
-- If not found, ask for it
-
-**Sanitize the ticket ID:** The ticket ID is used in directory paths (`.5/features/{TICKET-ID}-{desc}/`). Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Reject or strip any other characters (especially `/`, `..`, `~`, spaces). If the sanitized result is empty, ask the user for a valid ticket ID.
-
-### Step 3: Spawn Explore Agent for Codebase Analysis
+### Step 2: Spawn Explore Agent for Codebase Analysis
 
 Spawn a Task with `subagent_type=Explore`:
 
@@ -96,7 +85,7 @@ Analyze the codebase for a feature planning session.
 
 Wait for the sub-agent to return before proceeding.
 
-### Step 4: Intensive Q&A (5-10 Questions, One at a Time)
+### Step 3: Intensive Q&A (5-10 Questions, One at a Time)
 
 Ask 5-10 clarifying questions using AskUserQuestion. ONE question at a time — wait for the answer before asking the next. Use the sub-agent findings to inform questions. Cover: requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points, alternative approaches, and complexity trade-offs. Challenge assumptions: "Is this the simplest solution?", "Could we reuse existing X?", "What happens when Y fails?"
 
@@ -109,19 +98,27 @@ Targeted exploration for feature planning.
 **READ-ONLY.** Only use Read, Glob, and Grep tools.
 ```
 
-### Step 4b: Pre-Write Checkpoint
+### Step 3b: Pre-Write Checkpoint
 
 Before writing the feature spec, verify:
 1. You asked at least 5 questions and received answers
 2. You can summarize the feature in 1-2 sentences without mentioning files, classes, or functions
 
-If you have fewer than 5 Q&A pairs, go back to Step 4 and ask more questions.
+If you have fewer than 5 Q&A pairs, go back to Step 3 and ask more questions.
 
-### Step 5: Create Feature Specification
+### Step 4: Create Feature Specification
+
+**Extract ticket ID from git branch:**
+- The Explore agent from Step 2 already ran `git branch --show-current` — find the branch name in its results
+- Use the configurable ticket pattern from `.5/config.json` (e.g., `PROJ-\d+`) to extract the ticket ID from the branch name
+- **Sanitize the ticket ID:** Only allow alphanumeric characters, dashes (`-`), and underscores (`_`). Strip any other characters (especially `/`, `..`, `~`, spaces).
+- **If ticket found:** use folder name `{TICKET-ID}-{feature-name}` and write the ticket ID into the spec
+- **If no ticket found:** use folder name `{feature-name}` and write `<no-ticket>` as the ticket ID in the spec
+- Do NOT prompt the user to confirm or provide a ticket ID — just extract silently
 
 Determine a feature name: short, kebab-case (e.g., "add-emergency-schedule").
 
-Write to `.5/features/{TICKET-ID}-{description}/feature.md` using Write tool.
+Write to `.5/features/{name}/feature.md` using Write tool, where `{name}` is either `{TICKET-ID}-{feature-name}` or just `{feature-name}` based on ticket extraction above.
 
 Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
 

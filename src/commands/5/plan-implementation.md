@@ -1,8 +1,7 @@
 ---
 name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
-agent: implementation-planner
-allowed-tools: Read, Write, Task, AskUserQuestion
+allowed-tools: Read, Write, Task, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 user-invocable: true
 disable-model-invocation: true
 model: opus
@@ -24,9 +23,40 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - NEVER spawn Task agents with subagent_type other than Explore
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
 - Each component in the table gets: name, action, file path, one-sentence description, complexity
+- If a component needs more than one sentence to describe, split it into multiple components
 - Implementation Notes reference EXISTING pattern files, not new code
-- Every component with action "create" that contains logic MUST have a corresponding test component
+- Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component. Declarative components (types, interfaces, models without logic, route registrations, config files) are exempt. When uncertain, include the test.
+- ALWAYS track progress using TaskCreate/TaskUpdate/TaskList. Mark each task `in_progress` before starting and `completed` when done. NEVER skip tasks. NEVER work on a later task while an earlier task is still pending.
+- Before writing plan.md, call TaskList and verify all tasks are `completed`. If any are not, go back and complete them.
 </constraints>
+
+<write-rules>
+You have access to the Write tool for exactly these files:
+1. `.5/.planning-active` — Step 0 only
+2. `.5/features/{name}/plan.md` — Step 5 only
+Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it.
+</write-rules>
+
+<plans-are-prompts>
+**Key principle: Plans are prompts, not documentation.**
+The plan.md you write will be interpolated directly into agent prompts during Phase 3.
+- The Description column becomes the agent's task instruction
+- The File column tells the agent where to work
+- Implementation Notes become the agent's context
+- Keep descriptions action-oriented: "Create X with Y" not "X needs to support Y"
+</plans-are-prompts>
+
+<complexity-rubric>
+Assign complexity per component using this rubric:
+
+**simple** → haiku: Type/interface definitions, models without logic, simple CRUD following an existing pattern, config/route wiring, tests for simple components.
+
+**moderate** → haiku/sonnet: Services with validation or business rules, combining 2-3 existing patterns, modifications to existing files, tests needing mocks or multiple scenarios, controllers with validation.
+
+**complex** → sonnet: Integration points (DB, APIs, queues), conditional logic or state machines, significant refactoring of existing code, security-sensitive code (auth, crypto, input sanitization), integration or e2e tests.
+
+**Decision heuristic:** Copy-and-rename from an existing file = simple. Understand business rules to write it = moderate. Reason about interactions between multiple systems = complex.
+</complexity-rubric>
 
 # Plan Implementation (Phase 2)
 
@@ -58,6 +88,15 @@ Extract: Ticket ID, requirements (functional and non-functional), acceptance cri
 
 If the file doesn't exist, tell the user to run `/5:plan-feature` first.
 
+### Step 1b: Load Project Configuration
+
+Read `.5/config.json` if it exists. Extract:
+- `projectType` — to scope the explore agent's search
+- `build.command` — for the plan's Verification section
+- `build.testCommand` — for the plan's Verification section
+
+If config.json doesn't exist, proceed without it.
+
 ### Step 2: Spawn Explore Agent for Codebase Scan
 
 Spawn a Task with `subagent_type=Explore`:
@@ -67,6 +106,13 @@ Quick codebase scan for implementation planning.
 
 **Feature:** {one-line summary from feature.md}
 **Affected Components:** {list from feature.md}
+
+{If config.json was loaded:}
+**Project Context (from config.json):**
+- Project type: {projectType}
+- Build: {build.command}
+- Test: {build.testCommand}
+Focus scan on {projectType}-relevant directories and patterns.
 
 **Your Task:**
 1. Find source directories and understand project structure
@@ -120,11 +166,20 @@ Based on feature spec and codebase scan, identify:
 - Files to modify
 - Implementation order (dependencies)
 
-Group into steps:
-- **Step 1**: Foundation (models, types, interfaces)
-- **Step 2**: Logic (services, business rules)
-- **Step 3**: Integration (controllers, routes, wiring)
-- **Final step**: Tests (unit, integration, and e2e as applicable)
+<step-grouping>
+Group components into steps using these principles:
+
+1. Components in the same step MUST be independent (parallel agents, no shared state)
+2. If B imports or reads from A, B goes in a later step
+3. Fewer steps is better — group aggressively when dependencies allow
+4. Tests go in the final step
+
+**Example patterns** (starting points, not prescriptions):
+- **Small feature** (3-5 components): Types/models → Implementation + tests
+- **Standard feature**: Types → Services → Integration → Tests
+- **Refactoring**: Prep → Core refactor → Dependent updates → Tests
+- **API feature**: Types/DTOs → Service layer → Controller/routes → Tests
+</step-grouping>
 
 **Test tiers — plan from the explore agent's detection results:**
 
@@ -144,17 +199,16 @@ Not every feature needs all non-test steps. Use what makes sense. But testable c
 
 Create a single file at `.5/features/{feature-name}/plan.md`.
 
-**Plans are prompts, not documentation.** The plan.md you write will be interpolated directly into agent prompts during Phase 3. Keep descriptions action-oriented: "Create X with Y" not "X needs to support Y". The Description column becomes the agent's task instruction; Implementation Notes become context. Reference EXISTING pattern files in notes, not new code.
-
-**Write rules:** You have Write access ONLY for `.5/.planning-active` and `.5/features/{name}/plan.md`. Any other Write target will be blocked by the plan-guard hook.
-
 Include:
 - YAML frontmatter (ticket, feature, created)
 - One-sentence summary
 - Components table
 - Implementation Notes (references to existing pattern files + business rules)
-- Complexity Guide
 - Verification commands
+
+**Verification section — prefer config.json values:**
+- Build: {build.command from config.json, or explore agent value, or "auto"}
+- Test: {build.testCommand from config.json, or explore agent value, or "auto"}
 
 ### Step 5b: Plan Self-Check
 
@@ -198,3 +252,9 @@ Next steps:
 ```
 
 STOP. You are a planner. Your job is done. Do not implement.
+
+<constraints>
+REMINDER: You are an Implementation Planner. You wrote a components table. You did NOT implement.
+If you wrote any code, pseudo-code, or implementation snippets in plan.md, you have violated your role.
+The plan describes WHAT and WHERE. Phase 3 agents handle HOW.
+</constraints>

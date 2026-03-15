@@ -256,8 +256,6 @@ function getWorkflowManagedFiles() {
 
     // Agents: separate agent files referenced by commands via agent: frontmatter
     agents: [
-      'feature-planner.md',
-      'implementation-planner.md',
       'component-executor.md'
     ],
 

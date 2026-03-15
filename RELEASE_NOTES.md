@@ -1,6 +1,25 @@
 # Release Notes
 
 
+## v1.8.2
+
+**Release Date:** 2026-03-15
+
+### Orphaned File Cleanup
+
+Automatically removes files from previous versions that are no longer part of the package, keeping user projects clean after updates.
+
+**Improvements**
+- **File manifest tracking**: Fresh installs and updates now save a manifest of installed files in `.5/version.json`, enabling precise orphan detection on future updates
+- **Manifest-based cleanup**: On update, diffs the old manifest against the current one and deletes files/directories that are no longer managed
+- **Legacy upgrade support**: For upgrades from versions without a manifest, a static list of 8 known removed agent files is cleaned up automatically
+- **Thorough uninstall**: Uninstall now also removes legacy orphaned files, not just currently managed ones
+
+**Affected files:**
+- `bin/install.js` (modified)
+
+---
+
 ## v1.8.1
 
 **Release Date:** 2026-03-15

@@ -1,6 +1,19 @@
 # Release Notes
 
 
+## v1.8.3
+
+**Release Date:** 2026-03-17
+
+### Remove disable-model-invocation from All Commands
+
+Removes the `disable-model-invocation: true` frontmatter property from all 12 workflow commands, allowing model invocation during command execution.
+
+**Affected files:**
+- All 12 command files in `src/commands/5/`
+
+---
+
 ## v1.8.2
 
 **Release Date:** 2026-03-15

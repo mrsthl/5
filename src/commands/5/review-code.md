@@ -3,7 +3,6 @@ name: 5:review-code
 description: Reviews code changes using Claude (built-in) or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Task, mcp__jetbrains__*
 user-invocable: true
-disable-model-invocation: true
 model: sonnet
 context: fork
 ---

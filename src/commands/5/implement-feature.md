@@ -3,7 +3,6 @@ name: 5:implement-feature
 description: Executes an implementation plan by delegating to agents. Phase 3 of the 5-phase workflow.
 allowed-tools: Task, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
 user-invocable: true
-disable-model-invocation: true
 model: opus
 context: fork
 ---

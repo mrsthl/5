@@ -3,7 +3,6 @@ name: 5:reconfigure
 description: Lightweight refresh of project documentation and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, updates CLAUDE.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 context: fork
 ---
 

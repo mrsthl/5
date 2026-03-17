@@ -3,7 +3,6 @@ name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
 allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 model: opus
 context: fork
 ---

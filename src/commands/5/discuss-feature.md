@@ -3,7 +3,6 @@ name: 5:discuss-feature
 description: Discusses and refines an existing feature specification through iterative Q&A. Use after /plan-feature when requirements need clarification or changes. Updates the feature spec based on discussion.
 allowed-tools: Read, Write, Glob, Grep, Task, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 model: opus
 context: inherit
 ---

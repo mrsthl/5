@@ -3,7 +3,6 @@ name: 5:configure
 description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates feature spec for remaining setup. Follow up with /5:plan-implementation CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 model: opus
 context: fork
 ---

@@ -3,7 +3,6 @@ name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
 allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 model: opus
 context: fork
 ---

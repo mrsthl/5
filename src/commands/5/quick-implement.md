@@ -3,7 +3,6 @@ name: 5:quick-implement
 description: Execute small, focused implementations quickly with state tracking and atomic commits. Skips extensive planning phases and verification agents - use for tasks where you know exactly what to do.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, TaskCreate, TaskUpdate, TaskList, mcp__jetbrains__*
 user-invocable: true
-disable-model-invocation: true
 context: fork
 ---
 

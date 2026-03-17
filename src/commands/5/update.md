@@ -3,7 +3,6 @@ name: 5:update
 description: Update the 5-Phase Workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
-disable-model-invocation: true
 model: haiku
 context: fork
 ---

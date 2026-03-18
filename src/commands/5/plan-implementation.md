@@ -57,6 +57,22 @@ Assign complexity per component using this rubric:
 
 # Plan Implementation (Phase 2)
 
+## Progress Checklist
+
+Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step until the current one is complete. After completing each step, output a status line: `✓ Step N complete`.
+
+- [ ] Step 0: Activate planning guard — write `.5/.planning-active`
+- [ ] Step 1: Load feature spec — read `.5/features/{name}/feature.md`
+- [ ] Step 1b: Load project configuration — read `.5/config.json` if it exists
+- [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results
+- [ ] Step 3: Ask 2-3 technical questions — one at a time via AskUserQuestion
+- [ ] Step 4: Design components — identify files, order, step grouping
+- [ ] Step 5: Write the plan — create `.5/features/{name}/plan.md`
+- [ ] Step 5b: Plan self-check — verify format, no code, scope, completeness, tests
+- [ ] Output completion message and STOP
+
+> **MANDATORY:** After each step, output `✓ Step N complete` before moving on. This is your progress anchor — if you cannot say which step you just completed, you are skipping ahead. If Step 5b fails, fix plan.md before outputting completion.
+
 ## Output Format
 
 Read the plan template at `.claude/templates/workflow/PLAN.md` for the exact structure and rules. Your output must follow that template precisely — fill in the placeholders with real values from the feature spec and codebase scan.

@@ -62,6 +62,20 @@ testing strategy, integration points (from findings), alternative approaches, co
 
 # Plan Feature (Phase 1)
 
+## Progress Checklist
+
+Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step until the current one is complete. After completing each step, output a status line: `✓ Step N complete`.
+
+- [ ] Step 0: Activate planning guard — write `.5/.planning-active`
+- [ ] Step 1: Gather feature description — ask developer via AskUserQuestion
+- [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results
+- [ ] Step 3: Ask 5+ clarifying questions — one at a time, minimum 5 before proceeding
+- [ ] Step 3b: Pre-write checkpoint — verify ≥5 Q&A pairs exist, no code in spec
+- [ ] Step 4: Write feature specification — create `.5/features/{name}/feature.md`
+- [ ] Output completion message and STOP
+
+> **MANDATORY:** After each step, output `✓ Step N complete` before moving on. This is your progress anchor — if you cannot say which step you just completed, you are skipping ahead. If Step 3b fails (< 5 Q&A), return to Step 3.
+
 ## Process
 
 ### Step 0: Activate Planning Guard
@@ -81,7 +95,7 @@ This activates the plan-guard hook which prevents accidental source file edits d
 
 Ask the developer for the feature description using AskUserQuestion:
 
-"Please describe the feature you want to develop. Paste the full ticket description or explain it in your own words."
+"Please describe the feature you want to specify. Paste the full ticket description or explain it in your own words."
 
 - Expect free-text answer, do NOT provide options
 - Do NOT ask follow-up questions yet
@@ -91,7 +105,7 @@ Ask the developer for the feature description using AskUserQuestion:
 Spawn a Task with `subagent_type=Explore`:
 
 ```
-Analyze the codebase for a feature planning session.
+Analyze the codebase for a feature specification session.
 
 **Feature Description:** {paste the user's feature description}
 
@@ -117,7 +131,7 @@ Analyze the codebase for a feature planning session.
 
 Wait for the sub-agent to return before proceeding.
 
-### Step 3: Intensive Q&A (5-10 Questions, One at a Time)
+### Step 3: Intensive Q&A
 
 Ask 5-10 clarifying questions using AskUserQuestion. ONE question at a time — wait for the answer before asking the next. Use the sub-agent findings to inform questions. Cover: requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points, alternative approaches, and complexity trade-offs. Challenge assumptions: "Is this the simplest solution?", "Could we reuse existing X?", "What happens when Y fails?"
 

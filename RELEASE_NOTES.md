@@ -1,6 +1,43 @@
 # Release Notes
 
 
+## v1.8.4
+
+**Release Date:** 2026-03-20
+
+### Explore Caching, Deep Work Enforcement, and Implementation Reliability
+
+Reduces redundant codebase scans across phases, strengthens planning guardrails, and adds regression detection and dependency verification to implementation.
+
+**What's New**
+- **Explore caching**: Phase 1 now saves codebase scan results to `codebase-scan.md`. Phase 2 reuses the cache instead of re-scanning, saving significant tokens and time
+- **Decision propagation**: Feature specs now tag Q&A answers as `[DECIDED]`, `[FLEXIBLE]`, or `[DEFERRED]`. Phase 2 honors decided items exactly, exercises discretion on flexible ones, and excludes deferred items from the plan
+- **Pattern File & Verify columns**: Plan table expanded from 6 to 8 columns — each component now specifies an existing file to read before implementing and a concrete verification command
+- **Regression baseline**: Phase 3 runs build/tests before implementation starts, then classifies post-implementation failures as regressions vs. pre-existing
+- **Pre-step dependency check**: Before executing each step, the orchestrator verifies prior steps' output files still exist on disk, preventing cascading failures
+- **Quick-implement scope gate**: Blocks tasks that exceed 5 files or 3 modules, redirecting to the full workflow
+
+**Improvements**
+- **Context budget rules**: Orchestrator now follows strict rules to keep context lean — never reads source files directly, discards full agent output after parsing RESULT blocks
+- **Bash blocked in planning**: Plan-guard hook now intercepts file-writing Bash commands (`cat >`, `echo >`, `sed -i`, etc.) that would bypass Write/Edit guards
+- **Stronger role checks**: Added `ROLE CHECK` callouts at each planning step to prevent premature implementation
+- **Escalating block messages**: Plan-guard now references the specific planning phase and directs back to the Progress Checklist on repeated violations
+- **Executor improvements**: Component executor now reads pattern files before writing code, runs verify commands after implementation, reports deviations, and has a 3-attempt auto-fix limit
+- **Progress checklists**: Re-added to planning commands for step tracking
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `src/agents/component-executor.md` (modified)
+- `src/hooks/plan-guard.js` (modified)
+- `src/settings.json` (modified)
+- `src/templates/workflow/FEATURE-SPEC.md` (modified)
+- `src/templates/workflow/PLAN.md` (modified)
+
+---
+
 ## v1.8.3
 
 **Release Date:** 2026-03-17

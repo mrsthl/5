@@ -98,6 +98,37 @@ Then remove the planning guard marker (planning is over, implementation is start
 rm -f .5/.planning-active
 ```
 
+### Step 2c: Regression Baseline
+
+Before spawning any agents, establish a baseline by running the project's build and test commands:
+
+```bash
+# Build command from plan (or auto-detect)
+{build-command}
+
+# Test command from plan (or auto-detect)
+{test-command}
+```
+
+Record the results in state.json as `baseline`:
+```json
+{
+  "baseline": {
+    "buildStatus": "success|failed",
+    "testStatus": "success|failed|skipped",
+    "checkedAt": "{ISO-timestamp}"
+  }
+}
+```
+
+**(verify write)** — confirm `baseline.checkedAt` is set.
+
+**If the baseline build fails:** Warn the user: `"⚠ Build fails BEFORE implementation. Any post-implementation build failures may be pre-existing."` Continue — don't block on pre-existing failures.
+
+**If baseline tests fail:** Warn the user: `"⚠ {N} tests fail BEFORE implementation. These will be excluded from regression comparison."` Record the failing test names/patterns if available, so Step 4 can distinguish pre-existing failures from new ones.
+
+This baseline enables Step 4 to detect regressions: tests that passed before but fail after implementation.
+
 ### Step 2b: Create Progress Checklist
 
 Before executing any steps, create one TaskCreate entry per step:
@@ -113,6 +144,19 @@ Then mark the task for Step 1 as `in_progress`.
 ### Step 3: Execute Steps
 
 Group components by step number from the plan. For each step (starting from `currentStep` in state.json):
+
+**3pre. Pre-step dependency check (steps 2+)**
+
+Before executing step N (where N > 1), verify that prior steps' outputs exist on disk:
+
+1. For each component in `completedComponents` from prior steps: use Glob to confirm every file in `filesCreated` and `filesModified` still exists
+2. If ANY file is missing:
+   - Log: `"⚠ Pre-step check: {file} from step {M} component {name} not found on disk"`
+   - Move the component back from `completedComponents` to `pendingComponents`
+   - STOP execution for this step. Report to user: `"Step {N} blocked: prior step output missing. Re-run step {M} or fix manually."`
+3. If all files verified, proceed to 3a
+
+This prevents cascading failures where step N assumes step N-1's outputs exist but they don't.
 
 **3a. Analyze step for parallel execution**
 
@@ -144,7 +188,13 @@ Task tool call:
 
     ## Feature: {feature-name}
     ## Components
-    {component(s) from plan table: name, action, file, description}
+    {component(s) from plan table: name, action, file, description, complexity}
+
+    ## Read First
+    {Pattern File value(s) from plan table — executor MUST read these before writing any code}
+
+    ## Verify
+    {Verify command(s) from plan table — executor runs these after implementation}
 
     ## Implementation Notes
     {relevant notes from plan}
@@ -250,8 +300,13 @@ For each non-test component with action "create" that contains logic:
 **(verify write)** — confirm `verificationResults.builtAt` is set.
 
 If build or tests fail:
+- Compare against `baseline` in state.json:
+  - If build failed in baseline AND still fails → report as `"Pre-existing build failure (not a regression)"`
+  - If build passed in baseline BUT fails now → report as `"⚠ REGRESSION: Build broke during implementation"`
+  - If tests that passed in baseline now fail → report as `"⚠ REGRESSION: {N} tests broke during implementation: {test names}"`
+  - If tests that failed in baseline still fail → report as `"Pre-existing test failure (not a regression)"`
 - Record in state.json
-- Report to user with error details
+- Report to user with error details and regression classification
 
 Mark the "Run verification" TaskCreate task as `completed`.
 

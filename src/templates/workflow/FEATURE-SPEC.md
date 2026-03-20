@@ -76,13 +76,22 @@
 ### Chosen Approach: {Selected approach}
 **Rationale:** {Why this approach was chosen}
 
-## Questions & Answers
+## Decisions
+
+<!-- Tag every Q&A with exactly one of: [DECIDED], [FLEXIBLE], [DEFERRED]
+  - [DECIDED]: Locked decision — Phase 2 planner and Phase 3 agents MUST honor exactly
+  - [FLEXIBLE]: Claude's discretion — planner chooses the best approach
+  - [DEFERRED]: Explicitly out of scope — planner MUST NOT include in the plan
+-->
 
 ### Q1: {Question from collaboration phase}
-**A:** {Answer from developer}
+**A:** {Answer from developer} **[DECIDED]**
 
 ### Q2: {Question}
-**A:** {Answer}
+**A:** {Answer} **[FLEXIBLE]**
+
+### Q3: {Question about a nice-to-have}
+**A:** {Answer — let's skip this for now} **[DEFERRED]**
 
 ...
 

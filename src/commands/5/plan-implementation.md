@@ -23,7 +23,9 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
 - NEVER continue past the completion message — when you output "Plan created at...", you are DONE
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
-- Each component in the table gets: name, action, file path, one-sentence description, complexity
+- Each component in the table gets: name, action, file path, one-sentence description, pattern file, verify command, complexity
+- **Pattern File** (required for "create" actions): Path to an existing file the executor reads before implementing. For "modify" actions, this is the target file itself. Helps executor match conventions exactly.
+- **Verify** (required): A concrete command or grep check the executor runs after implementing. Examples: `grep -q 'export class UserService' src/services/user.service.ts`, `npm test -- --testPathPattern=user`, `npx tsc --noEmit`. Never use vague checks like "works correctly".
 - If a component needs more than one sentence to describe, split it into multiple components
 - Implementation Notes reference EXISTING pattern files, not new code
 - Every component with action "create" that contains logic (services, controllers, repositories, hooks, utilities, helpers) MUST have a corresponding test component. Declarative components (types, interfaces, models without logic, route registrations, config files) are exempt. When uncertain, include the test.
@@ -99,7 +101,12 @@ This activates (or refreshes) the plan-guard hook which prevents accidental sour
 
 Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
 
-Extract: Ticket ID, requirements (functional and non-functional), acceptance criteria, affected components.
+Extract: Ticket ID, requirements (functional and non-functional), acceptance criteria, affected components, and **decisions**.
+
+**Decision labels from feature spec:**
+- **[DECIDED]** items are locked — your plan MUST honor them exactly. Do not override or reinterpret.
+- **[FLEXIBLE]** items are your discretion — choose the best approach based on codebase patterns.
+- **[DEFERRED]** items are out of scope — do NOT plan components for them. If a deferred item is needed as a dependency, flag it in Implementation Notes.
 
 If the file doesn't exist, tell the user to run `/5:plan-feature` first.
 
@@ -235,22 +242,26 @@ Include:
 
 Read plan.md back and verify:
 
-1. **Format:** Every row in the Components table has all 6 columns filled
+1. **Format:** Every row in the Components table has all 8 columns filled (Step, Component, Action, File, Description, Pattern File, Verify, Complexity)
 2. **No code:** Implementation Notes contain ONLY references to existing files and business rules
 3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
 4. **Completeness:** Every functional requirement from feature.md has at least one component
 5. **Description length:** Each Description cell is one sentence. If longer, split the component.
-6. **Unit test coverage:** Every "create" component with logic has a corresponding unit test component. Declarative-only components (types, interfaces, route wiring) are exempt.
-7. **Integration/e2e coverage:** If the explore agent detected integration or e2e frameworks AND the feature touches endpoints or cross-module flows, verify at least one integration or e2e test component is planned.
+6. **Pattern files:** Every "create" component has a Pattern File pointing to an existing file. Verify these files exist via Glob.
+7. **Verify commands:** Every component has a concrete Verify command (grep, test, build). No vague checks.
+8. **Unit test coverage:** Every "create" component with logic has a corresponding unit test component. Declarative-only components (types, interfaces, route wiring) are exempt.
+9. **Integration/e2e coverage:** If the explore agent detected integration or e2e frameworks AND the feature touches endpoints or cross-module flows, verify at least one integration or e2e test component is planned.
 
 Output the verification result:
 ```
 Plan self-check:
-- Format: pass/fail
+- Format (8 columns): pass/fail
 - No code: pass/fail
 - Scope: pass/fail
 - Completeness: pass/fail
 - Description length: pass/fail
+- Pattern files exist: pass/fail
+- Verify commands concrete: pass/fail
 - Unit test coverage: pass/fail
 - Integration/e2e coverage: pass/fail/n-a
 ```

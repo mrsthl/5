@@ -184,7 +184,13 @@ Populate all sections:
 - Affected Components (from exploration)
 - Acceptance Criteria
 - Alternatives Considered
-- Questions & Answers (from Q&A session)
+- Decisions (from Q&A session) — label each with **[DECIDED]**, **[FLEXIBLE]**, or **[DEFERRED]**
+
+**Decision labeling rules:**
+- **[DECIDED]**: The user gave a clear, specific answer → Phase 2 planner and Phase 3 agents MUST honor exactly
+- **[FLEXIBLE]**: The user said "up to you", "whatever works", or didn't express a strong preference → planner chooses
+- **[DEFERRED]**: The user explicitly said "not now", "later", "skip this" → planner MUST NOT include in the plan
+- When in doubt, label as **[DECIDED]** — it's safer to honor a decision than to override it
 
 ## PLANNING COMPLETE
 

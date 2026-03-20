@@ -34,7 +34,8 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 <write-rules>
 You have access to the Write tool for exactly these files:
 1. `.5/.planning-active` — Step 0 only
-2. `.5/features/{name}/plan.md` — Step 5 only
+2. `.5/features/{name}/codebase-scan.md` — Step 2 only (if fresh scan was needed)
+3. `.5/features/{name}/plan.md` — Step 5 only
 Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it.
 </write-rules>
 
@@ -68,7 +69,7 @@ Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step u
 - [ ] Step 0: Activate planning guard — write `.5/.planning-active`
 - [ ] Step 1: Load feature spec — read `.5/features/{name}/feature.md`
 - [ ] Step 1b: Load project configuration — read `.5/config.json` if it exists
-- [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results
+- [ ] Step 2: Load or generate codebase scan — reuse cached scan from Phase 1, or spawn Explore if missing
 - [ ] Step 3: Ask 2-3 technical questions — one at a time via AskUserQuestion
 - [ ] Step 4: Design components — identify files, order, step grouping
 - [ ] Step 5: Write the plan — create `.5/features/{name}/plan.md`
@@ -119,9 +120,15 @@ Read `.5/config.json` if it exists. Extract:
 
 If config.json doesn't exist, proceed without it.
 
-### Step 2: Spawn Explore Agent for Codebase Scan
+### Step 2: Load or Generate Codebase Scan
 
 > **ROLE CHECK:** You are an Implementation Planner. Your ONLY output is plan.md. You do NOT write code, create source files, or start implementation. If you feel the urge to implement, STOP — that is Phase 3's job.
+
+**First, check for a cached scan from Phase 1:**
+
+Read `.5/features/{feature-name}/codebase-scan.md`. If it exists and is non-empty, use it as the codebase scan results. This was generated during Phase 1 (`/5:plan-feature`) and contains project structure, naming conventions, pattern files, and test framework detection.
+
+**If `codebase-scan.md` does NOT exist** (e.g., user skipped Phase 1 or ran an older version), spawn a fresh Explore agent:
 
 Spawn a Task with `subagent_type=Explore`:
 
@@ -161,6 +168,8 @@ Focus scan on {projectType}-relevant directories and patterns.
 ```
 
 Wait for the sub-agent to return before proceeding.
+
+**If a fresh scan was spawned**, write the results to `.5/features/{feature-name}/codebase-scan.md` for future reference.
 
 ### Step 3: Ask 2-3 Technical Questions (One at a Time)
 

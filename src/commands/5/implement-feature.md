@@ -34,6 +34,15 @@ You are a thin orchestrator:
 - State is the source of truth: write it before moving on
 - Forward progress: failed components are logged, not blocking
 - Resumable: state enables restart from any interrupted step
+- Context budget: keep orchestrator lean — delegate ALL implementation to agents
+
+**Context Budget Rules:**
+Your context window is shared across all steps. To avoid running out of context on large features:
+- NEVER read source files yourself — that's the executor agent's job
+- NEVER paste full agent outputs into your reasoning — extract only the `---RESULT---` block
+- Keep state.json updates minimal — write only changed fields
+- If an agent returns a very long response, parse the RESULT block and discard the rest
+- For features with 10+ components: after processing each step's results, summarize the step outcome in one line and move on. Do NOT accumulate detailed logs across steps.
 
 **State verification rule:** After every state.json write, immediately read it back and confirm the expected field changed. If verification fails, stop with an error message. This applies to every state write below — marked as **(verify write)**.
 
@@ -202,9 +211,9 @@ Task tool call:
 
 The agent file defines the implementation process, output format, and deviation rules. If the agent file is not found (local install), fall back to `.claude/agents/component-executor.md` relative to the project root.
 
-**3d. Process results**
+**3d. Process results (context-lean)**
 
-Collect results from all agents (parallel or sequential). Parse the `---RESULT---` block from each agent's response. For each:
+Collect results from all agents (parallel or sequential). Parse ONLY the `---RESULT---` block from each agent's response — do NOT retain the full agent output in your context. For each:
 - If `STATUS: success` → component succeeded; note files from `FILES_CREATED`/`FILES_MODIFIED`
 - If `STATUS: failed` → component failed; log the `ERROR` message
 - If no `---RESULT---` block found → treat as success if the agent reported creating/modifying files, otherwise treat as failed

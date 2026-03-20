@@ -24,6 +24,7 @@ Fast path for small, well-understood tasks (1-5 files). Skips extensive planning
 Your job in this command:
 ✅ Get task description
 ✅ Extract ticket ID
+✅ Scope check (>5 files or >3 modules → redirect to full workflow)
 ✅ Create quick plan (max 5 components)
 ✅ Get user approval on plan
 ✅ Initialize state tracking
@@ -89,11 +90,22 @@ Check if `.5/features/${feature_name}/state.json` already exists:
   - If Resume: skip Steps 4–7 initialization; go directly to Step 7b (recreate TaskCreate tasks) and Step 8 (resume remaining `pendingComponents`)
   - If Restart: delete state.json, proceed normally from Step 4
 
-### Step 4: Analyze and Plan
+### Step 4: Analyze and Scope Check
 
 1. **Identify affected files** using Glob and Grep
 2. **Determine skills needed** based on task type
 3. **List components** (max 5 for quick mode)
+
+**Scope gate — check BEFORE planning:**
+
+Count the number of files that will be created or modified and the number of distinct modules/directories involved. Apply these rules:
+
+- **>5 files** → STOP. Tell the user: `"This task affects {N} files, which exceeds quick-implement's scope (max 5). Use the full workflow instead: /5:plan-feature"`. Do NOT continue.
+- **>3 distinct modules/directories** → STOP. Tell the user: `"This task spans {N} modules ({list}), which is too broad for quick-implement. Use the full workflow: /5:plan-feature"`. Do NOT continue.
+- **Involves database schema changes, new API endpoints with auth, or architectural decisions** → STOP. Tell the user: `"This task involves {reason}, which needs proper planning. Use: /5:plan-feature"`. Do NOT continue.
+- **≤5 files AND ≤3 modules AND no architectural changes** → Proceed to Step 5.
+
+This gate prevents quick-implement from being used for tasks that should go through full planning, where the absence of a feature spec and structured plan leads to poor results.
 
 **If unclear about implementation details**, ask 2-3 focused questions using AskUserQuestion:
 - What validation rules apply?

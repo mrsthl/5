@@ -31,7 +31,8 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 <write-rules>
 You have access to the Write tool for exactly these files:
 1. `.5/.planning-active` — Step 0 only
-2. `.5/features/{name}/feature.md` — Step 4 only
+2. `.5/features/{name}/codebase-scan.md` — Step 2 only (Explore agent results cache)
+3. `.5/features/{name}/feature.md` — Step 4 only
 Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it.
 </write-rules>
 
@@ -70,7 +71,7 @@ Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step u
 
 - [ ] Step 0: Activate planning guard — write `.5/.planning-active`
 - [ ] Step 1: Gather feature description — ask developer via AskUserQuestion
-- [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results
+- [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results, cache to codebase-scan.md
 - [ ] Step 3: Ask 5+ clarifying questions — one at a time, minimum 5 before proceeding
 - [ ] Step 3b: Pre-write checkpoint — verify ≥5 Q&A pairs exist, no code in spec
 - [ ] Step 4: Write feature specification — create `.5/features/{name}/feature.md`
@@ -134,6 +135,8 @@ Analyze the codebase for a feature specification session.
 ```
 
 Wait for the sub-agent to return before proceeding.
+
+**Cache the results:** Write the Explore agent's full output to `.5/features/{name}/codebase-scan.md` using the Write tool. This saves Phase 2 from re-scanning the same codebase and saves significant tokens.
 
 ### Step 3: Intensive Q&A
 

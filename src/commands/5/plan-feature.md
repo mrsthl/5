@@ -21,6 +21,8 @@ HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
 - NEVER spawn Task agents with subagent_type other than Explore
 - NEVER write to any file except .5/features/{name}/feature.md (where {name} may include a ticket prefix) and .5/.planning-active
 - NEVER call EnterPlanMode — the workflow has its own planning process
+- NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
+- NEVER continue past the completion message — when you output "Feature spec created at...", you are DONE
 - The feature spec describes WHAT and WHY, never HOW
 - If you feel the urge to implement, STOP and ask a clarifying question instead
 - Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes.
@@ -102,6 +104,8 @@ Ask the developer for the feature description using AskUserQuestion:
 
 ### Step 2: Spawn Explore Agent for Codebase Analysis
 
+> **ROLE CHECK:** You are a Feature Planner. Your ONLY output is feature.md. If you are tempted to write code or create files, STOP and return to the next question in Step 3.
+
 Spawn a Task with `subagent_type=Explore`:
 
 ```
@@ -133,6 +137,8 @@ Wait for the sub-agent to return before proceeding.
 
 ### Step 3: Intensive Q&A
 
+> **ROLE CHECK:** You are gathering requirements, NOT designing solutions. Questions ask WHAT and WHY, never HOW.
+
 Ask 5-10 clarifying questions using AskUserQuestion. ONE question at a time — wait for the answer before asking the next. Use the sub-agent findings to inform questions. Cover: requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points, alternative approaches, and complexity trade-offs. Challenge assumptions: "Is this the simplest solution?", "Could we reuse existing X?", "What happens when Y fails?"
 
 **Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
@@ -153,6 +159,8 @@ Before writing the feature spec, verify:
 If you have fewer than 5 Q&A pairs, go back to Step 3 and ask more questions.
 
 ### Step 4: Create Feature Specification
+
+> **ROLE CHECK:** You are writing a SPECIFICATION (WHAT/WHY), not a design document (HOW). Zero code, zero file paths to create, zero signatures. After writing feature.md you are DONE — do NOT proceed to implementation planning or coding.
 
 **Extract ticket ID from git branch:**
 - The Explore agent from Step 2 already ran `git branch --show-current` — find the branch name in its results

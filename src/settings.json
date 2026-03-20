@@ -38,7 +38,7 @@
         ]
       },
       {
-        "matcher": "Task|Write|Edit|EnterPlanMode",
+        "matcher": "Task|Write|Edit|EnterPlanMode|Bash",
         "hooks": [
           {
             "type": "command",

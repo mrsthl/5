@@ -20,8 +20,8 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const toolName = data.tool_name || '';
 
-    // Short-circuit: only check Task, Write, Edit, and EnterPlanMode tools
-    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit' && toolName !== 'EnterPlanMode') {
+    // Short-circuit: only check Task, Write, Edit, EnterPlanMode, and Bash tools
+    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit' && toolName !== 'EnterPlanMode' && toolName !== 'Bash') {
       process.exit(0);
     }
 
@@ -43,13 +43,15 @@ process.stdin.on('end', () => {
     // Planning mode enforcement
     if (toolName === 'EnterPlanMode') {
       const blockCount = incrementBlockCount(workspaceDir);
+      const phase = getPlanningPhase(workspaceDir);
       const escalation = blockCount >= 3
-        ? ` WARNING: Block #${blockCount}. Repeated violations. Complete your planning artifact and STOP.`
+        ? ` CRITICAL: Block #${blockCount}. You have attempted to break out of planning ${blockCount} times. You MUST return to your current step in the Progress Checklist, complete your planning artifact, output the completion message, and STOP. Do NOT attempt any other action.`
         : '';
       process.stderr.write(
         `BLOCKED: EnterPlanMode is not allowed during workflow planning phases. ` +
         `The 5-phase workflow has its own planning process. ` +
-        `REDIRECT: Continue with your current planning task. ` +
+        `REDIRECT: You are in ${phase || 'a planning phase'}. Return to your Progress Checklist. ` +
+        `Find the last "✓ Step N complete" you output, then continue with Step N+1. ` +
         `Write your output to .5/features/{name}/ and output the completion message when done.${escalation}`
       );
       process.exit(2);
@@ -59,15 +61,37 @@ process.stdin.on('end', () => {
       const agentType = toolInput.subagent_type || '';
       if (agentType && agentType !== 'Explore') {
         const blockCount = incrementBlockCount(workspaceDir);
+        const phase = getPlanningPhase(workspaceDir);
         const escalation = blockCount >= 3
-          ? ` WARNING: Block #${blockCount}. You are repeatedly attempting actions outside your planning role. STOP. Complete your planning artifact and output the completion message.`
+          ? ` CRITICAL: Block #${blockCount}. You are a planner, NOT an implementer. You have attempted to spawn non-Explore agents ${blockCount} times. This is Phase 1 or 2 — implementation happens in Phase 3. Return to your Progress Checklist immediately, complete your planning artifact, and STOP.`
           : '';
         process.stderr.write(
           `BLOCKED: Only Explore agents are allowed during planning phases. ` +
           `Attempted: subagent_type="${agentType}". ` +
-          `REDIRECT: Return to your planning process. ` +
+          `You are in ${phase || 'a planning phase'}. Implementation agents are Phase 3 only. ` +
+          `REDIRECT: Return to your Progress Checklist. Find your last "✓ Step N complete" and continue with Step N+1. ` +
           `If you need codebase information, use subagent_type=Explore. ` +
           `If you are done planning, output the completion message and STOP.${escalation}`
+        );
+        process.exit(2);
+      }
+    }
+
+    if (toolName === 'Bash') {
+      const command = toolInput.command || '';
+      // Detect file-writing shell commands that bypass Write/Edit guards
+      const writePatterns = /\b(cat\s*>|cat\s*<<|echo\s.*>|tee\s|printf\s.*>|cp\s|mv\s|mkdir\s.*&&.*>|sed\s+-i|awk\s.*>|touch\s|install\s)/;
+      if (writePatterns.test(command)) {
+        const blockCount = incrementBlockCount(workspaceDir);
+        const phase = getPlanningPhase(workspaceDir);
+        const escalation = blockCount >= 3
+          ? ` CRITICAL: Block #${blockCount}. You are repeatedly attempting to write files via Bash to bypass planning guards. STOP immediately.`
+          : '';
+        process.stderr.write(
+          `BLOCKED: File-writing Bash commands are not allowed during planning phases. ` +
+          `You are in ${phase || 'a planning phase'}. ` +
+          `REDIRECT: Return to your Progress Checklist. Planners do not create or modify source files. ` +
+          `Complete your planning artifact and output the completion message.${escalation}`
         );
         process.exit(2);
       }
@@ -77,13 +101,15 @@ process.stdin.on('end', () => {
       const filePath = toolInput.file_path || '';
       if (filePath && !isInsideDotFive(filePath, workspaceDir)) {
         const blockCount = incrementBlockCount(workspaceDir);
+        const phase = getPlanningPhase(workspaceDir);
         const isSourceFile = !filePath.includes('.5/') && !filePath.includes('.claude/');
         const escalation = blockCount >= 3
-          ? ` WARNING: Block #${blockCount}. Repeated violations. Complete your planning artifact and STOP.`
+          ? ` CRITICAL: Block #${blockCount}. You have attempted to write source files ${blockCount} times. You are a PLANNER, not an implementer. Writing source code is Phase 3's job. Return to your Progress Checklist, finish your planning artifact, and STOP.`
           : '';
         const redirectMsg = isSourceFile
-          ? `REDIRECT: You are in a planning phase. You may ONLY write to .5/features/. ` +
-            `Source file creation happens in Phase 3 (/5:implement-feature).`
+          ? `REDIRECT: You are in ${phase || 'a planning phase'}. You may ONLY write to .5/features/. ` +
+            `Source file creation happens in Phase 3 (/5:implement-feature). ` +
+            `Return to your Progress Checklist — find your last "✓ Step N complete" and continue with Step N+1.`
           : `REDIRECT: The path "${filePath}" is outside the allowed .5/ directory. ` +
             `Check your file path — you should be writing to .5/features/{name}/.`;
         process.stderr.write(
@@ -176,6 +202,16 @@ function incrementBlockCount(workspaceDir) {
     return marker.blockCount;
   } catch (e) {
     return 1;
+  }
+}
+
+function getPlanningPhase(workspaceDir) {
+  const markerPath = path.join(workspaceDir, '.5', '.planning-active');
+  try {
+    const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+    return marker.phase || null;
+  } catch (e) {
+    return null;
   }
 }
 

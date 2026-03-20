@@ -20,6 +20,8 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - NEVER create source files — you create ONE file: plan.md
 - NEVER call EnterPlanMode — the workflow has its own planning process
 - NEVER spawn Task agents with subagent_type other than Explore
+- NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
+- NEVER continue past the completion message — when you output "Plan created at...", you are DONE
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
 - Each component in the table gets: name, action, file path, one-sentence description, complexity
 - If a component needs more than one sentence to describe, split it into multiple components
@@ -112,6 +114,8 @@ If config.json doesn't exist, proceed without it.
 
 ### Step 2: Spawn Explore Agent for Codebase Scan
 
+> **ROLE CHECK:** You are an Implementation Planner. Your ONLY output is plan.md. You do NOT write code, create source files, or start implementation. If you feel the urge to implement, STOP — that is Phase 3's job.
+
 Spawn a Task with `subagent_type=Explore`:
 
 ```
@@ -174,6 +178,8 @@ Targeted scan for implementation planning.
 
 ### Step 4: Design Components
 
+> **ROLE CHECK:** You are identifying WHAT and WHERE — component names, actions, file paths, one-sentence descriptions. You are NOT writing code, pseudo-code, or implementation details. The HOW is figured out by Phase 3 agents reading existing code.
+
 Based on feature spec and codebase scan, identify:
 - Files to create
 - Files to modify
@@ -209,6 +215,8 @@ Not every feature needs all non-test steps. Use what makes sense. But testable c
 **Parallel execution:** Components in the same step run in parallel. Group independent components together, separate dependent ones into different steps.
 
 ### Step 5: Write the Plan
+
+> **ROLE CHECK:** You are writing plan.md — a components table with descriptions, NOT code. After writing and verifying, output the completion message and STOP. Do NOT continue to implementation.
 
 Create a single file at `.5/features/{feature-name}/plan.md`.
 

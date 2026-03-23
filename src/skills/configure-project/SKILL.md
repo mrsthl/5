@@ -166,6 +166,13 @@ CLAUDE.md structure:
 - **Quick Reference:** Links to all 7 `.5/*.md` files (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, TESTING, INTEGRATIONS, CONCERNS)
 - **Project Overview:** 1-2 paragraphs from README/package.json
 - **Build & Run Commands:** Build, test, and other detected commands
+- **Workflow Rules:** Include this section verbatim:
+  ```
+  ## Workflow Rules
+  When running `/5:` workflow commands, follow the command instructions exactly as written.
+  Do not skip steps, combine phases, or proceed to actions not specified in the current command.
+  Each phase produces a specific artifact — do not create artifacts belonging to other phases.
+  ```
 - **Coding Guidelines:** The 6 mandatory principles (types, concise docs, short files, extract methods, SRP/DRY, maintainable/modular)
 - **Getting Started:** Links to relevant `.5/` files for new devs and specific tasks
 

@@ -327,6 +327,13 @@ Analyze the codebase and generate modular documentation:
 - Quick reference section with links to all `.5/*.md` files
 - Project overview and build commands
 - "Getting Started" guide with references to appropriate files
+- Workflow rules section (verbatim):
+  ```
+  ## Workflow Rules
+  When running `/5:` workflow commands, follow the command instructions exactly as written.
+  Do not skip steps, combine phases, or proceed to actions not specified in the current command.
+  Each phase produces a specific artifact — do not create artifacts belonging to other phases.
+  ```
 - Mandatory coding guidelines:
   1. Types should be clear and types should be available when possible
   2. Use doc (jsdoc, javadoc, pydoc, etc) concisely. No doc is better than meaningless doc

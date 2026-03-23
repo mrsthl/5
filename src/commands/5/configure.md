@@ -211,6 +211,11 @@ The skill-creator plugin from the official Claude store helps generate higher-qu
 - "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
   - Options: "Yes (recommended)", "Skip"
 
+**2k2. Confirm rules generation:**
+- "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when Claude works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
+  - Options: "Yes (recommended)", "Skip"
+- Note: Rules complement CLAUDE.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
+
 **2l. Review detected patterns for skill generation:**
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
@@ -270,7 +275,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses. Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2k2). Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 
@@ -347,6 +352,15 @@ Analyze the codebase and generate modular documentation:
 
 Include only patterns/commands where user selected "Generate".
 
+### Requirement 3: Generate Scoped Rules (if selected)
+Generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
+Rules are concise directives (15-40 lines, NOT documentation) derived from codebase analysis.
+Only generate rules for patterns that were actually detected:
+- `code-style.md` — naming, formatting, import conventions (scoped to source files)
+- `testing.md` — test patterns, mocking, fixtures (scoped to test files)
+- `api-patterns.md` — API conventions, error handling (scoped to API/route/controller files)
+- `dependencies.md` — dependency usage patterns, env var conventions (unconditional)
+
 ## Acceptance Criteria
 - [ ] `.5/` directory created
 - [ ] All 7 documentation files exist and are populated:
@@ -363,6 +377,10 @@ Include only patterns/commands where user selected "Generate".
 - [ ] All specified project-specific skills are generated in `.claude/skills/`
 - [ ] Generated skills reference actual project conventions
 - [ ] If CLAUDE.md existed before, user-written sections are preserved
+- [ ] `.claude/rules/` directory exists with scoped rule files (if rules generation selected)
+- [ ] Generated rules use `paths:` frontmatter for scoping where applicable
+- [ ] Rules contain concise directives, not documentation
+- [ ] No rules generated for undetected patterns
 ```
 
 **Important:** Use `mkdir -p .5/features/CONFIGURE` before writing the feature spec.

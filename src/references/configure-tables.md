@@ -109,6 +109,9 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
   },
   "dotFiveFolder": {
     "gitignore": true
+  },
+  "rules": {
+    "generate": true
   }
 }
 ```

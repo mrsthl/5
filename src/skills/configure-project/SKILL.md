@@ -327,6 +327,97 @@ Executes the project's {command} command.
 
 ---
 
+## C. Generate Scoped Rules
+
+If `rules.generate` is `true` in `.5/config.json`, generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
+
+Rules are **concise directives** (15-40 lines each), NOT documentation. Documentation lives in `.5/*.md` files. Rules tell Claude what to do when working with specific file types.
+
+### C1. Determine Which Rules to Generate
+
+Based on the A1 analysis results, determine which rules apply:
+
+| Rule File | Generate When | Source Analysis |
+|-----------|---------------|-----------------|
+| `code-style.md` | Always (if source files exist) | Conventions Analysis |
+| `testing.md` | Test files detected | Testing Analysis |
+| `api-patterns.md` | Controller/route/handler patterns detected | Architecture Analysis |
+| `dependencies.md` | External integrations detected | Integration Analysis |
+
+**Skip** any rule whose prerequisite patterns were not detected. Do NOT generate empty or placeholder rule files.
+
+### C2. Extract Directives and Write Rules
+
+For each applicable rule:
+
+1. **Derive `paths:` globs** from detected file locations (e.g., if tests are at `src/**/*.test.ts` and `tests/**/*.spec.ts`, use those patterns)
+2. **Convert analysis observations into imperative directives** — "Use X", "Always Y", "Never Z"
+3. **Keep each file 15-40 lines** — be concise and actionable
+4. **Do NOT repeat** the 6 mandatory coding guidelines from CLAUDE.md
+
+Write files to `.claude/rules/`:
+
+```bash
+mkdir -p .claude/rules
+```
+
+### C3. Rule File Format
+
+Each rule file uses YAML frontmatter with `paths:` for scoping. Rules without `paths:` load unconditionally.
+
+**Example — `testing.md`:**
+
+```markdown
+---
+paths:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+---
+
+# Testing Conventions
+
+- Use `describe`/`it` blocks with descriptive names
+- Mock external dependencies with jest.mock, never mock internal modules
+- Use factory functions from `tests/factories/` for test data
+- Each test file mirrors its source file path: `src/foo/Bar.ts` → `src/foo/__tests__/Bar.test.ts`
+- Assert one behavior per test
+```
+
+**Example — `code-style.md`:**
+
+```markdown
+---
+paths:
+  - "src/**/*.{ts,tsx}"
+---
+
+# Code Style
+
+- Use PascalCase for classes and types, camelCase for functions and variables
+- Import order: external packages → internal modules → relative imports
+- Use absolute imports with `@/` alias
+- Prefer named exports over default exports
+```
+
+**Example — `dependencies.md` (unconditional):**
+
+```markdown
+# Dependency Conventions
+
+- Database access through Prisma client only, never raw SQL
+- HTTP requests use axios instance from `src/lib/http.ts`
+- Environment variables accessed via `src/config/env.ts`, never `process.env` directly
+```
+
+### Refresh Mode Behavior for Rules
+
+When running in REFRESH MODE:
+- Re-analyze codebase and overwrite all existing rule files with updated directives
+- Remove rule files for patterns no longer detected in the codebase
+- Create new rule files if new patterns are detected that weren't present before
+
+---
+
 ## Output Contract
 
 Returns structured results for each component:
@@ -343,6 +434,7 @@ Component A (Documentation): SUCCESS - Created 7 documentation files + index
   - CLAUDE.md (index with references)
 Component B (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
 Component C (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
+Component D (Rules): SUCCESS - Generated 3 rule files (code-style, testing, dependencies)
 ```
 
 Or on failure:
@@ -350,6 +442,7 @@ Or on failure:
 ```
 Component A (Documentation): FAILED - Unable to read template files
 Component B (Pattern Skills): FAILED - No patterns found in codebase
+Component D (Rules): SKIPPED - rules.generate is false in config
 ```
 
 ## DO NOT
@@ -357,7 +450,9 @@ Component B (Pattern Skills): FAILED - No patterns found in codebase
 - DO NOT overwrite existing user-written CLAUDE.md sections
 - DO NOT generate skills for patterns that don't exist in the project
 - DO NOT generate command skills for commands that don't exist in the project
+- DO NOT generate rules for patterns not detected in the codebase
 - DO NOT include `steps` in config.json
 - DO NOT hardcode conventions - always derive from actual project analysis
-- DO NOT generate empty or placeholder skill files
+- DO NOT generate empty or placeholder skill or rule files
 - DO NOT assume command syntax - always read from actual config files (package.json, Makefile, etc.)
+- DO NOT repeat the 6 mandatory coding guidelines from CLAUDE.md in rule files

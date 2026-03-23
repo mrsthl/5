@@ -90,6 +90,11 @@ Perform the same detection as configure Steps 1b-1h:
 - Read each skill's SKILL.md frontmatter
 - Categorize as workflow-generated (create-*, run-*) or user-created
 
+**2f. Scan existing rules** — list ALL rule files in `.claude/rules/`:
+- Read each `.md` file
+- Note which are workflow-generated (code-style, testing, api-patterns, dependencies) vs user-created
+- User-created rules are never modified or removed
+
 ### Step 3: Compare and Prepare Summary
 
 Use the existing skills in `.claude/skills/` (from Step 2e) as the source of truth — not config.json. Compare what's installed with what's detected in the codebase:
@@ -102,14 +107,22 @@ Use the existing skills in `.claude/skills/` (from Step 2e) as the source of tru
 - **Stale commands**: a `run-*` skill exists but the command is no longer detected → offer to remove or keep
 - **User-created skills** (not matching `create-*` or `run-*` naming) → always refresh with current conventions, never remove
 
+**Rules comparison** (if `rules.generate` is `true` in config.json):
+- **Existing workflow rules** (from Step 2f) — code-style, testing, api-patterns, dependencies
+- **Stale rules**: a workflow rule exists but its prerequisite patterns are no longer detected → offer to remove
+- **New rules**: patterns detected that could benefit from a rule but none exists yet → offer to create
+- **User-created rules** → never modify or remove
+
 ### Step 4: Confirm with User
 
 Use `AskUserQuestion` to show a summary and get confirmation. Present:
 
 1. **Documentation files that will be rewritten** — list all 7 `.5/*.md` files + CLAUDE.md
 2. **Skills that will be refreshed** — list ALL skills found in `.claude/skills/` (both workflow-generated and user-created)
-3. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
-4. **Stale patterns** (if any) — "These patterns are in your config but weren't found in the codebase: [list]. Remove them?"
+3. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
+4. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
+5. **Stale patterns** (if any) — "These patterns are in your config but weren't found in the codebase: [list]. Remove them?"
+6. **Stale rules** (if any) — "These rule files no longer have matching patterns in the codebase: [list]. Remove them?"
 
 Options:
 - "Proceed with refresh" — regenerate everything as shown
@@ -133,12 +146,20 @@ Refresh ALL existing skills in .claude/skills/:
 - New skills to create: [list from user confirmation, if any]
 - Skills to remove: [list from user confirmation, if any]
 
+Refresh rules in .claude/rules/ (if rules.generate is true):
+- Existing workflow rules: [list from Step 2f]
+- Rules to remove: [list from user confirmation, if any]
+- New rules to create: [if applicable]
+
 Re-analyze the entire codebase (A1 analysis) and:
 1. Rewrite all 7 .5/*.md documentation files
 2. Update CLAUDE.md (preserve user-written sections)
 3. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
 4. Create new skills for newly-added patterns
-5. Remove skills the user chose to drop"
+5. Remove skills the user chose to drop
+6. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
+7. Create new rule files for newly-detected patterns
+8. Remove rule files the user chose to drop"
 ```
 
 Use `subagent_type: "general-purpose"` for the Task.
@@ -166,6 +187,9 @@ Show the user a summary:
 - List of skills refreshed
 - List of new skills created (if any)
 - List of skills removed (if any)
+- List of rules refreshed (if any)
+- List of new rules created (if any)
+- List of rules removed (if any)
 - Timestamp of reconfiguration
 - Suggest running `/clear` to reset context
 

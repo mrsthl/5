@@ -99,9 +99,15 @@ process.stdin.on('end', () => {
 
     if (toolName === 'Write' || toolName === 'Edit') {
       const filePath = toolInput.file_path || '';
-      if (filePath && !isInsideDotFive(filePath, workspaceDir)) {
+      if (!filePath) {
+        process.exit(0);
+      }
+
+      const phase = getPlanningPhase(workspaceDir);
+
+      // First check: block anything outside .5/
+      if (!isInsideDotFive(filePath, workspaceDir)) {
         const blockCount = incrementBlockCount(workspaceDir);
-        const phase = getPlanningPhase(workspaceDir);
         const isSourceFile = !filePath.includes('.5/') && !filePath.includes('.claude/');
         const escalation = blockCount >= 3
           ? ` CRITICAL: Block #${blockCount}. You have attempted to write source files ${blockCount} times. You are a PLANNER, not an implementer. Writing source code is Phase 3's job. Return to your Progress Checklist, finish your planning artifact, and STOP.`
@@ -118,6 +124,22 @@ process.stdin.on('end', () => {
         );
         process.exit(2);
       }
+
+      // Second check: during plan-feature, only allow specific files
+      if (phase === 'plan-feature' && !isAllowedPlanFeatureFile(filePath, workspaceDir)) {
+        const blockCount = incrementBlockCount(workspaceDir);
+        const escalation = blockCount >= 3
+          ? ` CRITICAL: Block #${blockCount}. You are attempting to create implementation artifacts during Phase 1. Phase 1 ONLY produces feature.md. STOP and output your completion message.`
+          : '';
+        process.stderr.write(
+          `BLOCKED: During plan-feature (Phase 1), you may only write to .planning-active, codebase-scan.md, and feature.md. ` +
+          `Attempted: "${filePath}". ` +
+          `You are creating implementation artifacts (e.g., plan.md) which belongs to Phase 2. ` +
+          `REDIRECT: If you have already written feature.md, output the completion message and STOP. ` +
+          `Do NOT create implementation plans, file lists, or any other artifacts.${escalation}`
+        );
+        process.exit(2);
+      }
     }
 
     process.exit(0);
@@ -126,6 +148,23 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 });
+
+function isAllowedPlanFeatureFile(filePath, workspaceDir) {
+  const resolved = path.resolve(workspaceDir, filePath);
+  const dotFiveDir = path.join(workspaceDir, '.5');
+
+  // Allow .5/.planning-active
+  if (resolved === path.join(dotFiveDir, '.planning-active')) return true;
+
+  // Allow .5/features/{name}/feature.md and .5/features/{name}/codebase-scan.md
+  const featuresDir = path.join(dotFiveDir, 'features');
+  if (resolved.startsWith(featuresDir + path.sep)) {
+    const basename = path.basename(resolved);
+    if (basename === 'feature.md' || basename === 'codebase-scan.md') return true;
+  }
+
+  return false;
+}
 
 function isInsideDotFive(filePath, workspaceDir) {
   const resolved = path.resolve(workspaceDir, filePath);

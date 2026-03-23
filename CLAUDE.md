@@ -35,6 +35,8 @@ node bin/install.js
 # Test with different options
 node bin/install.js --global
 node bin/install.js --uninstall
+node bin/install.js --upgrade
+node bin/install.js --check     # Check if update is available
 ```
 
 ### Package Testing
@@ -49,9 +51,16 @@ npm pack
 # This creates a .tgz file you can install elsewhere
 ```
 
-### No Build/Test Commands
+### Testing
 
-This package has no build step, test suite, or runtime. The files are static Markdown that get copied during installation.
+```bash
+npm test              # Run all tests
+npm run test:install  # Verify install.js file list matches src/
+npm run test:hook     # Test check-updates hook
+npm run test:update   # Test update system
+```
+
+There is no build step. The workflow files are static Markdown copied during installation.
 
 ## Architecture
 
@@ -59,34 +68,47 @@ This package has no build step, test suite, or runtime. The files are static Mar
 
 ```
 src/
-├── commands/5/          # User-facing workflow commands
-│   ├── configure.md
-│   ├── plan-feature.md          # Phase 1
-│   ├── plan-implementation.md   # Phase 2
-│   ├── implement-feature.md     # Phase 3
-│   ├── verify-implementation.md # Phase 4
-│   ├── review-code.md           # Phase 5
-│   ├── discuss-feature.md
-│   └── quick-implement.md
+├── commands/5/              # User-facing workflow commands
+│   ├── configure.md         # Initial project setup
+│   ├── reconfigure.md       # Re-run configuration
+│   ├── plan-feature.md      # Phase 1: Feature planning
+│   ├── plan-implementation.md # Phase 2: Implementation planning
+│   ├── implement-feature.md # Phase 3: Orchestrated implementation
+│   ├── verify-implementation.md # Phase 4: Verification
+│   ├── review-code.md       # Phase 5: Code review
+│   ├── address-review-findings.md # Fix review findings
+│   ├── discuss-feature.md   # Feature discussion
+│   ├── quick-implement.md   # Lightweight implementation
+│   ├── unlock.md            # Unlock stuck workflows
+│   └── update.md            # Update workflow version
 │
-├── skills/              # Atomic operations
+├── skills/                  # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/
 │   ├── configure-project/
 │   └── generate-readme/
 │
-├── templates/           # Output templates
-│   ├── workflow/        # Workflow output templates
-│   └── ...              # Project documentation templates
+├── templates/               # Output templates
+│   ├── workflow/            # Workflow output templates (PLAN.md, STATE.json, etc.)
+│   ├── ARCHITECTURE.md      # Project documentation templates
+│   ├── CONCERNS.md
+│   ├── CONVENTIONS.md
+│   ├── INTEGRATIONS.md
+│   ├── STACK.md
+│   ├── STRUCTURE.md
+│   └── TESTING.md
 │
 ├── hooks/
-│   ├── statusline.js    # Status line integration
-│   └── check-updates.js # Update notifications
+│   ├── statusline.js        # Status line integration
+│   ├── check-updates.js     # Update notifications
+│   ├── check-reconfig.js    # Reconfiguration prompts
+│   ├── config-guard.js      # Configuration enforcement
+│   └── plan-guard.js        # Plan phase enforcement
 │
-└── settings.json        # Claude Code settings
+└── settings.json            # Claude Code settings
 
 bin/
-└── install.js           # Main installer script
+└── install.js               # Main installer script
 ```
 
 ### The 5-Phase Workflow

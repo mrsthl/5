@@ -1,6 +1,29 @@
 # Release Notes
 
 
+## v1.8.6
+
+**Release Date:** 2026-03-23
+
+### Phase Boundary Enforcement and CLAUDE.md Workflow Rules
+
+Strengthens guardrails that prevent plan-feature from leaking into implementation planning, and adds persistent workflow rules to the generated CLAUDE.md.
+
+**Bug Fixes**
+- **Plan-feature phase containment**: Added explicit constraints in the plan-feature command against creating implementation plans, offering to continue into Phase 2, or suggesting next phases — prevents the LLM from jumping into Phase 2 territory mid-command
+- **Plan-guard file whitelist**: During Phase 1 (plan-feature), only `.planning-active`, `codebase-scan.md`, and `feature.md` are writable; attempts to create `plan.md` or other implementation artifacts are blocked
+
+**Improvements**
+- **Workflow rules in CLAUDE.md**: Configure and reconfigure now include a "Workflow Rules" section in the generated `CLAUDE.md`, instructing the LLM to follow `/5:` command instructions exactly, not skip steps or combine phases, and only create artifacts belonging to the current phase — provides persistent context-level reinforcement against phase breakout
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/hooks/plan-guard.js` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+
+---
+
 ## v1.8.5
 
 **Release Date:** 2026-03-23

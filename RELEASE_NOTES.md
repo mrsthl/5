@@ -1,6 +1,32 @@
 # Release Notes
 
 
+## v1.8.5
+
+**Release Date:** 2026-03-23
+
+### Scoped Rules Generation
+
+Adds support for generating `.claude/rules/` files during configuration — scoped instruction files that automatically load when Claude works with matching file types.
+
+**What's New**
+- **Rules generation**: Configure and reconfigure now offer to generate `.claude/rules/` files with project-specific conventions derived from codebase analysis
+- **File-type scoping**: Rules use `paths:` frontmatter so they only load when editing relevant files (e.g., testing rules for test files, API rules for controller files)
+- **Four rule categories**: `code-style.md`, `testing.md`, `api-patterns.md`, and `dependencies.md` — each generated only when matching patterns are detected
+
+**Improvements**
+- **Reconfigure rules support**: Reconfigure detects existing rules, identifies stale ones, and offers to create/refresh/remove as needed
+- **Config schema updated**: Added `rules.generate` field to `.5/config.json`
+- **Concise directives**: Rules are 15-40 lines of actionable directives, not documentation — documentation stays in `.5/*.md` files
+
+**Affected files:**
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+- `src/references/configure-tables.md` (modified)
+
+---
+
 ## v1.8.4
 
 **Release Date:** 2026-03-20

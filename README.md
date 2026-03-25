@@ -130,6 +130,7 @@ All commands are available under the `/5:` namespace:
 | `/5:review-code` | 5 | AI-powered code review (Claude or CodeRabbit) |
 | `/5:address-review-findings` | 5 | Apply annotated findings and address PR comments |
 | `/5:quick-implement` | Fast | Streamlined workflow for small tasks |
+| `/5:eject` | Utility | Permanently remove update infrastructure |
 | `/5:unlock` | Utility | Remove planning guard lock |
 
 ## Configuration
@@ -264,6 +265,7 @@ After installation, your `.claude/` directory will contain:
 │   ├── discuss-feature.md
 │   ├── quick-implement.md
 │   ├── configure.md
+│   ├── eject.md
 │   └── unlock.md
 ├── skills/                   # Atomic operations
 │   ├── build-project/
@@ -363,6 +365,21 @@ npx 5-phase-workflow
 - Config files in `.5/` are preserved
 - User-created commands, agents, skills, hooks, and templates are preserved
 - Only workflow-managed files are updated
+
+### Ejecting
+
+If you want to permanently opt out of the update system (e.g., to customize workflow files without future updates overwriting them), run:
+
+```bash
+/5:eject
+```
+
+This permanently removes the update infrastructure:
+- Deletes `check-updates.js` hook, `update.md` and `eject.md` commands
+- Deletes `.5/version.json` and `.5/.update-cache.json`
+- Removes the update check hook entry from `.claude/settings.json`
+
+All other workflow files remain untouched. **This is irreversible.** To restore update functionality, reinstall with `npx 5-phase-workflow`.
 
 ## Development
 

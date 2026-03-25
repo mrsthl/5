@@ -626,6 +626,7 @@ function showCommandsHelp(isGlobal) {
   log.info('  /5:address-review-findings   - Apply review findings & PR comments');
   log.info('  /5:configure                 - Interactive project setup');
   log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
+  log.info('  /5:eject                     - Eject from update mechanism');
   log.info('  /5:unlock                    - Remove planning guard lock');
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);

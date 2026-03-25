@@ -77,11 +77,23 @@ function getVersionInfo(targetPath, isGlobal) {
 
   const needsUpdate = compareVersions(installed, available) < 0;
 
+  // Check if ejected from updates
+  const versionFile = path.join(getDataPath(isGlobal), 'version.json');
+  let ejected = false;
+  let ejectedAt = null;
+  try {
+    const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+    ejected = data.ejected === true;
+    ejectedAt = data.ejectedAt || null;
+  } catch (e) {}
+
   return {
     exists: true,
     installed,
     available,
-    needsUpdate
+    needsUpdate,
+    ejected,
+    ejectedAt
   };
 }
 
@@ -626,6 +638,7 @@ function showCommandsHelp(isGlobal) {
   log.info('  /5:address-review-findings   - Apply review findings & PR comments');
   log.info('  /5:configure                 - Interactive project setup');
   log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
+  log.info('  /5:eject                     - Eject from update mechanism');
   log.info('  /5:unlock                    - Remove planning guard lock');
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);
@@ -742,6 +755,10 @@ function install(isGlobal, forceUpgrade = false) {
       log.warn('Detected legacy installation (no version tracking)');
       log.info(`Upgrading from legacy install to ${versionInfo.available}`);
       performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+      return;
+    } else if (versionInfo.ejected) {
+      log.warn(`Installation ejected from updates (since ${versionInfo.ejectedAt})`);
+      log.info('Updates are disabled. To re-enable, remove the "ejected" field from .5/version.json');
       return;
     } else if (versionInfo.needsUpdate) {
       log.info(`Installed: ${versionInfo.installed}`);

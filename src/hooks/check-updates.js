@@ -39,6 +39,11 @@ async function checkForUpdates(workspaceDir) {
     process.exit(0);
   }
 
+  // Skip if ejected
+  if (versionData.ejected) {
+    process.exit(0);
+  }
+
   // Compare versions
   const installed = versionData.packageVersion;
   const latestVersion = await getLatestVersion();

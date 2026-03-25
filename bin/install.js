@@ -77,23 +77,11 @@ function getVersionInfo(targetPath, isGlobal) {
 
   const needsUpdate = compareVersions(installed, available) < 0;
 
-  // Check if ejected from updates
-  const versionFile = path.join(getDataPath(isGlobal), 'version.json');
-  let ejected = false;
-  let ejectedAt = null;
-  try {
-    const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-    ejected = data.ejected === true;
-    ejectedAt = data.ejectedAt || null;
-  } catch (e) {}
-
   return {
     exists: true,
     installed,
     available,
-    needsUpdate,
-    ejected,
-    ejectedAt
+    needsUpdate
   };
 }
 
@@ -755,10 +743,6 @@ function install(isGlobal, forceUpgrade = false) {
       log.warn('Detected legacy installation (no version tracking)');
       log.info(`Upgrading from legacy install to ${versionInfo.available}`);
       performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
-      return;
-    } else if (versionInfo.ejected) {
-      log.warn(`Installation ejected from updates (since ${versionInfo.ejectedAt})`);
-      log.info('Updates are disabled. To re-enable, remove the "ejected" field from .5/version.json');
       return;
     } else if (versionInfo.needsUpdate) {
       log.info(`Installed: ${versionInfo.installed}`);

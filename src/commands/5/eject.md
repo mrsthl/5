@@ -1,34 +1,36 @@
 ---
 name: 5:eject
-description: Eject from the update mechanism — keep all workflow files but stop receiving updates
-allowed-tools: Bash, Read, Write, AskUserQuestion
+description: Eject from the update mechanism — permanently removes update infrastructure
+allowed-tools: Bash, Read, Edit, AskUserQuestion
 user-invocable: true
 model: haiku
 context: fork
 ---
 
 <role>
-You are a Workflow Ejector. You decouple the current installation from automatic updates.
+You are a Workflow Ejector. You permanently remove the update infrastructure from this installation.
 After ejecting, you are DONE.
 </role>
 
 # Eject from Update Mechanism
 
-Ejecting keeps all workflow files in place but permanently opts out of the update system. After ejecting:
-- No more update checks on session start
-- No update indicators in the statusline
-- The `/5:update` command will refuse to run
-- The installer (`npx 5-phase-workflow --upgrade`) will skip this project
+Ejecting permanently removes the update system from this installation. After ejecting:
+- The update check hook (`check-updates.js`) is deleted
+- The update command (`/5:update`) is deleted
+- The eject command (`/5:eject`) is deleted
+- Version tracking (`.5/version.json`) is deleted
+- The update cache (`.5/.update-cache.json`) is deleted
+- The `check-updates.js` hook entry is removed from `.claude/settings.json`
 
-This is useful when you've customized workflow files and want to prevent future updates from overwriting your changes.
+All other workflow files (commands, skills, hooks, templates) remain untouched.
 
-**This action is reversible** — the user can re-enable updates by removing the `ejected` field from `.5/version.json`.
+**This is irreversible.** To restore update functionality, reinstall with `npx 5-phase-workflow`.
 
 ## Step 1: Check Current State
 
-Read `.5/version.json`. If it doesn't exist, tell the user: "No 5-Phase Workflow installation found." and stop.
+Read `.5/version.json`. If it doesn't exist, tell the user: "No 5-Phase Workflow installation found (or already ejected)." and stop.
 
-If `ejected` is already `true`, tell the user: "This installation is already ejected (since {ejectedAt}). No updates will be applied." and stop.
+Note the `packageVersion` for the confirmation message.
 
 ## Step 2: Confirm with User
 
@@ -36,42 +38,54 @@ Tell the user what ejecting means:
 
 > **Eject from 5-Phase Workflow updates?**
 >
-> This will:
-> - Stop automatic update checks
-> - Remove the update indicator from the statusline
-> - Prevent `/5:update` and `npx 5-phase-workflow --upgrade` from modifying workflow files
+> This will permanently delete:
+> - `.claude/hooks/check-updates.js` (update check hook)
+> - `.claude/commands/5/update.md` (update command)
+> - `.claude/commands/5/eject.md` (this command)
+> - `.5/version.json` (version tracking)
+> - `.5/.update-cache.json` (update cache)
 >
-> All current workflow files remain untouched. You can reverse this later by removing the `ejected` field from `.5/version.json`.
+> The `check-updates.js` hook entry will also be removed from `.claude/settings.json`.
+>
+> All other workflow files remain untouched. To restore updates later, reinstall with `npx 5-phase-workflow`.
 
 Ask: "Proceed with eject?"
 
 If the user declines, stop here.
 
-## Step 3: Eject
+## Step 3: Delete Update Files
 
-Read `.5/version.json`, add the following fields, and write it back:
+Run this command to delete the update-related files:
+
+```bash
+rm -f .claude/hooks/check-updates.js .claude/commands/5/update.md .claude/commands/5/eject.md .5/version.json .5/.update-cache.json
+```
+
+## Step 4: Clean Up settings.json
+
+Read `.claude/settings.json`. Remove the hook entry from the `hooks.SessionStart` array where the command is `node .claude/hooks/check-updates.js`.
+
+Specifically, find and remove the object in the `SessionStart` array that looks like:
 
 ```json
 {
-  "ejected": true,
-  "ejectedAt": "<current ISO timestamp>"
+  "matcher": "startup",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "node .claude/hooks/check-updates.js",
+      "timeout": 10
+    }
+  ]
 }
 ```
 
-Preserve all existing fields (packageVersion, installedAt, lastUpdated, installationType, manifest, etc.).
-
-## Step 4: Clean Up Update Cache
-
-Remove the update cache file if it exists:
-
-```bash
-rm -f .5/.update-cache.json
-```
+If the `SessionStart` array becomes empty after removal, remove the `SessionStart` key entirely. Write the updated settings back.
 
 ## Step 5: Confirm
 
 Tell the user:
 
-> Ejected successfully. This installation (v{packageVersion}) will no longer receive updates.
+> Ejected successfully. Update infrastructure has been removed from this installation (was v{packageVersion}).
 >
-> To reverse this later, remove the `ejected` and `ejectedAt` fields from `.5/version.json`.
+> To restore update functionality, reinstall with: `npx 5-phase-workflow`

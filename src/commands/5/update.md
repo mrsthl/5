@@ -19,8 +19,6 @@ After reporting the result, you are DONE.
 
 Read `.5/version.json` and note the current `installedVersion`.
 
-If the `ejected` field is `true`, tell the user: "This installation has been ejected from the update mechanism (since {ejectedAt}). Updates are disabled. To re-enable updates, remove the `ejected` and `ejectedAt` fields from `.5/version.json`." and **stop here**.
-
 ## Step 2: Run Upgrade
 
 ```bash

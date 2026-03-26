@@ -49,97 +49,48 @@ In both modes, the analysis and generation logic is identical — only where the
 
 **Process:**
 
-### A1. Unified Codebase Analysis
+### A1. Codebase Analysis
 
-Perform comprehensive analysis once to gather data for ALL templates:
-
-**Structure Analysis** (for STRUCTURE.md):
-- Use Glob to map directory tree: `**/*` (with depth limits to avoid overwhelming results)
-- Identify source directories (`src/`, `lib/`, `app/`, etc.)
-- Identify test directories and their organization
-- Identify configuration directories
-- Determine file naming conventions (camelCase, kebab-case, PascalCase)
-- Locate key files (entry points, configurations)
-
-**Stack Analysis** (for STACK.md):
-- Read package manifests: `package.json`, `Cargo.toml`, `go.mod`, `pom.xml`, `requirements.txt`, `Gemfile`
-- Extract: language, version, runtime, package manager
-- Identify frameworks in dependencies (React, Express, Django, Rails, etc.)
-- List critical dependencies and their versions
-- Find config files: `tsconfig.json`, `.eslintrc`, etc.
+Perform focused analysis to gather data for documentation templates. Only capture information that **cannot be derived** by reading project files directly — skip version numbers, dependency lists, directory layouts, linter configs, and other facts that Claude Code can look up on demand.
 
 **Architecture Analysis** (for ARCHITECTURE.md):
 - Identify architectural pattern (MVC, layered, modular, microservices) from directory structure
 - Map layers by directory structure (controllers/, services/, models/, routes/, etc.)
 - Trace data flow patterns (read 2-3 example files from different layers)
 - Identify key abstractions (interfaces, base classes, common patterns)
-- Find entry points (`index.ts`, `main.go`, `app.py`, `server.js`)
-- Analyze error handling strategy (try/catch, Result types, middleware, error boundaries)
-
-**Conventions Analysis** (for CONVENTIONS.md):
-- Sample 5-10 files from main source directory
-- Extract naming patterns: files, functions, variables, types/classes
-- Find formatters/linters: `.prettierrc`, `.eslintrc`, `black.toml`, `.rubocop.yml`
-- Identify import organization patterns (order, grouping, aliases)
-- Determine logging approach (console, winston, log4j, etc.)
-- Check comment/documentation patterns (JSDoc, Javadoc, etc.)
+- Identify non-obvious conventions: implicit rules not enforced by tooling (e.g., "all services extend BaseService", "barrel exports required per module"). Skip anything in .eslintrc, .prettierrc, tsconfig, etc.
+- Determine where new code should go (new features, tests, utilities)
 
 **Testing Analysis** (for TESTING.md):
-- Find test files: `**/*.test.{ts,js}`, `**/*.spec.{ts,js}`, `**/*_test.go`, `test_*.py`, `*_spec.rb`
-- Read test config: `jest.config.js`, `vitest.config.ts`, `pytest.ini`, `spec/spec_helper.rb`
 - Determine test organization (co-located vs separate `test/` or `spec/`)
-- Extract test naming patterns
-- Identify mocking framework (jest.mock, sinon, pytest-mock, etc.)
+- Identify mocking framework and project-specific mocking conventions
 - Find fixture/factory patterns
-- Extract test run commands from package.json, Makefile, or similar
+- Note gotchas: setup/teardown quirks, env requirements, flaky areas
 
-**Integration Analysis** (for INTEGRATIONS.md):
-- Scan dependencies for SDK packages (axios, @aws-sdk, stripe, @google-cloud, etc.)
-- Identify database clients/ORMs (prisma, mongoose, sqlalchemy, activerecord, etc.)
-- Find auth providers (passport, next-auth, devise, etc.)
-- Detect monitoring/logging services (datadog, sentry, newrelic)
-- Read CI/CD config: `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/config.yml`
-- Grep for environment variables: `process.env`, `os.getenv`, `ENV[`, etc.
-
-**Concerns Analysis** (for CONCERNS.md):
+**Concerns Analysis** (for CONCERNS.md — conditional):
 - Grep for TODO/FIXME/HACK/XXX/DEPRECATED comments across all code
 - Check for common security issues (SQL injection patterns, XSS vulnerabilities)
-- Identify deprecated dependencies (check for warnings in package manifests)
-- Look for complex code sections (deeply nested conditionals, long functions)
+- Identify non-obvious integration details: auth flows, required env vars not documented elsewhere, webhook contracts, gotchas with external services
+- Look for performance bottlenecks or scaling limits mentioned in comments/docs
 
 ### A2. Fill Templates
 
-For each template in `src/templates/`:
+For each template in `.claude/templates/`:
 
 1. Read template content with Read tool
-2. Replace placeholders with analyzed data:
-   - Date placeholders: `{YYYY-MM-DD}`, `{date}` → current date (format: YYYY-MM-DD)
-   - Template-specific placeholders → actual project data from B1 analysis
-3. Handle missing data gracefully: mark sections as "Not detected" or "None found" rather than omitting
+2. Replace placeholders with analyzed data from A1
+3. **Omit sections entirely if no data was found** — do not write "Not detected" or "None found"
+4. For CONCERNS.md: if ALL sections would be empty, **do not create the file at all**
 
 **Placeholder mapping examples**:
 
 ARCHITECTURE.md:
 - `{Pattern name}` → "Layered Architecture" or "MVC" or "Modular Monolith"
-- `{Layer Name}` → "Controllers", "Services", "Repositories"
+- `{Layer}` → "Controllers", "Services", "Repositories"
 - `{path}` → "src/controllers/", "src/services/"
 
-STACK.md:
-- `{Language} {Version}` → "TypeScript 5.3.3", "Python 3.11"
-- `{Framework} {Version}` → "Express 4.18.2", "Django 4.2"
-- `{Package} {Version}` → "axios 1.6.0"
-
-CONVENTIONS.md:
-- `{Pattern observed}` → "PascalCase for classes, camelCase for functions"
-- `{Tool used}` → "Prettier with 2-space indent"
-
 TESTING.md:
-- `{Framework} {Version}` → "Jest 29.5.0"
-- `{command}` → "npm test", "pytest"
-
-INTEGRATIONS.md:
-- `{Service}` → "PostgreSQL", "Stripe API"
-- `{package}` → "@stripe/stripe-js"
+- Describe actual patterns observed, not framework names/versions (those are in config files)
 
 CONCERNS.md:
 - `{file paths}` → Actual file paths from grep results
@@ -149,22 +100,17 @@ CONCERNS.md:
 Write filled templates to `.5/` folder:
 
 1. Ensure `.5/` directory exists: `mkdir -p .5`
-2. Write each filled template:
-   - `.5/ARCHITECTURE.md`
-   - `.5/STACK.md`
-   - `.5/STRUCTURE.md`
-   - `.5/CONVENTIONS.md`
-   - `.5/TESTING.md`
-   - `.5/INTEGRATIONS.md`
-   - `.5/CONCERNS.md`
+2. Write filled templates:
+   - `.5/ARCHITECTURE.md` — always created
+   - `.5/TESTING.md` — always created
+   - `.5/CONCERNS.md` — **only if concerns were found** (skip if all sections empty)
 
-### A4. Create Master CLAUDE.md
+### A4. Create CLAUDE.md
 
-Generate CLAUDE.md as a navigation hub:
+Generate CLAUDE.md:
 
 CLAUDE.md structure:
-- **Quick Reference:** Links to all 7 `.5/*.md` files (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, TESTING, INTEGRATIONS, CONCERNS)
-- **Project Overview:** 1-2 paragraphs from README/package.json
+- **Project Overview:** 1-2 sentences from README/package.json
 - **Build & Run Commands:** Build, test, and other detected commands
 - **Workflow Rules:** Include this section verbatim:
   ```
@@ -174,7 +120,7 @@ CLAUDE.md structure:
   Each phase produces a specific artifact — do not create artifacts belonging to other phases.
   ```
 - **Coding Guidelines:** The 6 mandatory principles (types, concise docs, short files, extract methods, SRP/DRY, maintainable/modular)
-- **Getting Started:** Links to relevant `.5/` files for new devs and specific tasks
+- **Project Documentation:** Links to whichever `.5/` files were created (only list files that exist)
 
 ### A5. Preserve Existing Content
 
@@ -430,15 +376,11 @@ When running in REFRESH MODE:
 Returns structured results for each component:
 
 ```
-Component A (Documentation): SUCCESS - Created 7 documentation files + index
+Component A (Documentation): SUCCESS - Created documentation files + CLAUDE.md
   - .5/ARCHITECTURE.md (Pattern: Layered, 4 layers identified)
-  - .5/STACK.md (TypeScript + Express, 23 dependencies)
-  - .5/STRUCTURE.md (8 top-level directories mapped)
-  - .5/CONVENTIONS.md (PascalCase/camelCase, Prettier formatting)
-  - .5/TESTING.md (Jest framework, 45 test files)
-  - .5/INTEGRATIONS.md (PostgreSQL, 2 APIs, GitHub Actions)
-  - .5/CONCERNS.md (3 TODO items, 1 deprecated dependency)
-  - CLAUDE.md (index with references)
+  - .5/TESTING.md (mocking patterns, gotchas documented)
+  - .5/CONCERNS.md (3 TODO items, 1 security note) [or "skipped — no concerns found"]
+  - CLAUDE.md (updated with references)
 Component B (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
 Component C (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
 Component D (Rules): SUCCESS - Generated 3 rule files (code-style, testing, dependencies)

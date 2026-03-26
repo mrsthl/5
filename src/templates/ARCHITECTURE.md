@@ -1,64 +1,33 @@
 # Architecture
 
-**Analysis Date:** {YYYY-MM-DD}
+## Pattern
 
-## Pattern Overview
+**Overall:** {Pattern name — e.g., Layered, MVC, Modular Monolith}
 
-**Overall:** {Pattern name}
+{1-2 sentences explaining the architectural approach and key design decisions}
 
-**Key Characteristics:**
-- {Characteristic 1}
-- {Characteristic 2}
-- {Characteristic 3}
+## Layers & Data Flow
 
-## Layers
-
-**{Layer Name}:**
-- Purpose: {What this layer does}
-- Location: `{path}`
-- Contains: {Types of code}
-- Depends on: {What it uses}
-- Used by: {What uses it}
-
-## Data Flow
-
-**{Flow Name}:**
-
-1. {Step 1}
-2. {Step 2}
-3. {Step 3}
-
-**State Management:**
-- {How state is handled}
+| Layer | Location | Depends On | Notes |
+|-------|----------|------------|-------|
+| {Layer} | `{path}` | {Dependencies} | {Key responsibility or constraint} |
 
 ## Key Abstractions
 
 **{Abstraction Name}:**
 - Purpose: {What it represents}
+- Pattern: {How it's used across the codebase}
 - Examples: `{file paths}`
-- Pattern: {Pattern used}
 
-## Entry Points
+## Non-Obvious Conventions
 
-**{Entry Point}:**
-- Location: `{path}`
-- Triggers: {What invokes it}
-- Responsibilities: {What it does}
+{ONLY conventions not enforced by tooling or visible in config files. Skip anything in .eslintrc, .prettierrc, tsconfig, etc.}
 
-## Error Handling
+- {e.g., "All services must extend BaseService for lifecycle hooks"}
+- {e.g., "Barrel exports required in each module directory"}
 
-**Strategy:** {Approach}
+## Where to Add New Code
 
-**Patterns:**
-- {Pattern 1}
-- {Pattern 2}
-
-## Cross-Cutting Concerns
-
-**Logging:** {Approach}
-**Validation:** {Approach}
-**Authentication:** {Approach}
-
----
-
-*Architecture analysis: {date}*
+- New feature: `{path}`
+- New tests: `{path}`
+- Shared utilities: `{path}`

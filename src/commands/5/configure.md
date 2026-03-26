@@ -312,21 +312,16 @@ Generates CLAUDE.md with codebase analysis and creates project-specific skills. 
 ## Requirements
 
 ### Requirement 1: Generate Documentation Files
-Analyze the codebase and generate modular documentation:
+Analyze the codebase and generate focused documentation capturing only non-derivable knowledge (skip version numbers, dependency lists, directory layouts, linter configs — Claude Code can look these up directly):
 
-**Create separate documentation files in `.5/` folder:**
-- `.5/ARCHITECTURE.md` - Architectural patterns and layers
-- `.5/STACK.md` - Technology stack and dependencies
-- `.5/STRUCTURE.md` - Directory layout and organization
-- `.5/CONVENTIONS.md` - Coding standards and patterns
-- `.5/TESTING.md` - Test framework and patterns
-- `.5/INTEGRATIONS.md` - External services and APIs
-- `.5/CONCERNS.md` - Tech debt, bugs, and risks
+**Create documentation files in `.5/` folder:**
+- `.5/ARCHITECTURE.md` - Architecture pattern, layers & data flow, key abstractions, non-obvious conventions, where to add new code
+- `.5/TESTING.md` - Test organization, patterns, mocking approach, gotchas
+- `.5/CONCERNS.md` - Tech debt, known issues, security/integration/performance notes (**only if concerns found — skip file entirely if nothing detected**)
 
-**Create CLAUDE.md as navigation hub:**
-- Quick reference section with links to all `.5/*.md` files
+**Create CLAUDE.md:**
 - Project overview and build commands
-- "Getting Started" guide with references to appropriate files
+- Links to whichever `.5/` documentation files were created
 - Workflow rules section (verbatim):
   ```
   ## Workflow Rules
@@ -370,17 +365,13 @@ Only generate rules for patterns that were actually detected:
 
 ## Acceptance Criteria
 - [ ] `.5/` directory created
-- [ ] All 7 documentation files exist and are populated:
-  - [ ] `.5/ARCHITECTURE.md`
-  - [ ] `.5/STACK.md`
-  - [ ] `.5/STRUCTURE.md`
-  - [ ] `.5/CONVENTIONS.md`
-  - [ ] `.5/TESTING.md`
-  - [ ] `.5/INTEGRATIONS.md`
-  - [ ] `.5/CONCERNS.md`
-- [ ] `CLAUDE.md` exists with references to `.5/` files
+- [ ] Documentation files exist and contain only non-derivable knowledge:
+  - [ ] `.5/ARCHITECTURE.md` — architecture, conventions, where to add code
+  - [ ] `.5/TESTING.md` — test patterns and gotchas
+  - [ ] `.5/CONCERNS.md` — only if concerns were found (omit if empty)
+- [ ] Empty sections omitted (no "Not detected" / "None found" placeholders)
+- [ ] `CLAUDE.md` exists with references to created `.5/` files
 - [ ] CLAUDE.md contains 6 coding guidelines
-- [ ] No placeholder text like `{YYYY-MM-DD}` remains unfilled
 - [ ] All specified project-specific skills are generated in `.claude/skills/`
 - [ ] Generated skills reference actual project conventions
 - [ ] If CLAUDE.md existed before, user-written sections are preserved

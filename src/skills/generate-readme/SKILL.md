@@ -76,8 +76,7 @@ Check for:
 
 Look for patterns in project documentation:
 
-- Check `.5/ARCHITECTURE.md` for architectural patterns (MVC, Clean Architecture, etc.)
-- Check `.5/CONVENTIONS.md` for coding conventions and design patterns
+- Check `.5/ARCHITECTURE.md` for architectural patterns and non-obvious conventions
 - Check `.5/TESTING.md` for test patterns and conventions
 - Fall back to CLAUDE.md if `.5/` documentation not present
 - Check module-specific documentation

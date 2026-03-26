@@ -117,7 +117,7 @@ Use the existing skills in `.claude/skills/` (from Step 2e) as the source of tru
 
 Use `AskUserQuestion` to show a summary and get confirmation. Present:
 
-1. **Documentation files that will be rewritten** — list all 7 `.5/*.md` files + CLAUDE.md
+1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional) + CLAUDE.md
 2. **Skills that will be refreshed** — list ALL skills found in `.claude/skills/` (both workflow-generated and user-created)
 3. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
 4. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
@@ -152,14 +152,16 @@ Refresh rules in .claude/rules/ (if rules.generate is true):
 - New rules to create: [if applicable]
 
 Re-analyze the entire codebase (A1 analysis) and:
-1. Rewrite all 7 .5/*.md documentation files
-2. Update CLAUDE.md (preserve user-written sections)
-3. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
-4. Create new skills for newly-added patterns
-5. Remove skills the user chose to drop
-6. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
-7. Create new rule files for newly-detected patterns
-8. Remove rule files the user chose to drop"
+1. Rewrite .5/ARCHITECTURE.md and .5/TESTING.md
+2. Rewrite .5/CONCERNS.md (or delete if no concerns found)
+3. Delete legacy docs if they exist: .5/STACK.md, .5/STRUCTURE.md, .5/CONVENTIONS.md, .5/INTEGRATIONS.md
+4. Update CLAUDE.md (preserve user-written sections)
+5. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
+6. Create new skills for newly-added patterns
+7. Remove skills the user chose to drop
+8. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
+9. Create new rule files for newly-detected patterns
+10. Remove rule files the user chose to drop"
 ```
 
 Use `subagent_type: "general-purpose"` for the Task.

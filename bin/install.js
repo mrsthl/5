@@ -258,7 +258,11 @@ const LEGACY_REMOVED_FILES = [
   'agents/integration-agent.md',
   'agents/step-fixer.md',
   'agents/step-verifier.md',
-  'agents/verification-agent.md'
+  'agents/verification-agent.md',
+  'templates/STACK.md',
+  'templates/STRUCTURE.md',
+  'templates/CONVENTIONS.md',
+  'templates/INTEGRATIONS.md'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -299,10 +303,6 @@ function getWorkflowManagedFiles() {
       // Project documentation templates
       'ARCHITECTURE.md',
       'CONCERNS.md',
-      'CONVENTIONS.md',
-      'INTEGRATIONS.md',
-      'STACK.md',
-      'STRUCTURE.md',
       'TESTING.md',
       // Workflow output templates
       'workflow/FEATURE-SPEC.md',

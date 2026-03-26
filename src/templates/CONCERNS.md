@@ -1,6 +1,4 @@
-# Codebase Concerns
-
-**Analysis Date:** {YYYY-MM-DD}
+# Concerns
 
 ## Tech Debt
 
@@ -8,68 +6,28 @@
 - Issue: {What's the shortcut/workaround}
 - Files: `{file paths}`
 - Impact: {What breaks or degrades}
-- Fix approach: {How to address it}
 
-## Known Bugs
+## Known Issues
 
-**{Bug description}:**
+**{Issue description}:**
 - Symptoms: {What happens}
 - Files: `{file paths}`
-- Trigger: {How to reproduce}
-- Workaround: {If any}
+- Trigger/Workaround: {How to reproduce, how to avoid}
 
-## Security Considerations
+## Security Notes
 
 **{Area}:**
 - Risk: {What could go wrong}
-- Files: `{file paths}`
 - Current mitigation: {What's in place}
-- Recommendations: {What should be added}
 
-## Performance Bottlenecks
+## Integration Notes
 
-**{Slow operation}:**
-- Problem: {What's slow}
+**{Service/System}:**
+- {Non-obvious details: auth flows, required env vars, webhook contracts, gotchas with external services}
+
+## Performance Notes
+
+**{Slow operation or scaling limit}:**
+- Problem: {What's slow or where it breaks}
 - Files: `{file paths}`
-- Cause: {Why it's slow}
-- Improvement path: {How to speed up}
-
-## Fragile Areas
-
-**{Component/Module}:**
-- Files: `{file paths}`
-- Why fragile: {What makes it break easily}
-- Safe modification: {How to change safely}
-- Test coverage: {Gaps}
-
-## Scaling Limits
-
-**{Resource/System}:**
-- Current capacity: {Numbers}
-- Limit: {Where it breaks}
-- Scaling path: {How to increase}
-
-## Dependencies at Risk
-
-**{Package}:**
-- Risk: {What's wrong}
-- Impact: {What breaks}
-- Migration plan: {Alternative}
-
-## Missing Critical Features
-
-**{Feature gap}:**
-- Problem: {What's missing}
-- Blocks: {What can't be done}
-
-## Test Coverage Gaps
-
-**{Untested area}:**
-- What's not tested: {Specific functionality}
-- Files: `{file paths}`
-- Risk: {What could break unnoticed}
-- Priority: {High/Medium/Low}
-
----
-
-*Concerns audit: {date}*
+- Improvement path: {How to address}

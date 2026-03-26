@@ -74,7 +74,7 @@ The installer copies workflow files to `.claude/` directory. **It does NOT creat
 After completing these steps, you have:
 - `.5/config.json` with your project settings
 - `CLAUDE.md` with comprehensive project documentation
-- `.5/STRUCTURE.md`, `.5/STACK.md`, etc. with modular documentation
+- `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` with focused documentation
 - Project-specific skills in `.claude/skills/`
 
 **Without configuration, workflow commands will fail.**

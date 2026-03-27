@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Claude Code Statusline
-// Shows: model | folder | branch | 5hr-usage | cost | context | reset-time
+// Shows: model | folder | branch | off-peak | 5hr-usage | cost | context | reset-time
 
 const fs = require('fs');
 const path = require('path');
@@ -35,6 +35,17 @@ process.stdin.on('end', () => {
     }
     if (branch && branch !== 'HEAD') {
       parts.push(`\x1b[32m🌿 ${branch}\x1b[0m`);
+    }
+
+    // 🚀 Off-peak indicator (weekdays before 5 AM or after 11 AM PT; all weekends)
+    // PT = UTC-8 (PST) or UTC-7 (PDT). Use UTC-7 as approximation (covers PDT/PST conservatively).
+    const nowUtc = new Date();
+    const ptHour = (nowUtc.getUTCHours() - 7 + 24) % 24; // approximate PT
+    const ptDay = new Date(nowUtc.getTime() - 7 * 3600 * 1000).getUTCDay(); // 0=Sun,6=Sat
+    const isWeekend = ptDay === 0 || ptDay === 6;
+    const isPeak = !isWeekend && ptHour >= 5 && ptHour < 11;
+    if (!isPeak) {
+      parts.push('\x1b[32m🚀 off-peak\x1b[0m');
     }
 
     // ⚡ 5-hour session usage

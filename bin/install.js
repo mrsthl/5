@@ -278,8 +278,6 @@ function getWorkflowManagedFiles() {
 
     // Skills: specific skill directories
     skills: [
-      'build-project',
-      'run-tests',
       'configure-project',
       'generate-readme'
     ],

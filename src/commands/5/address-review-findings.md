@@ -296,8 +296,8 @@ If `gh api` is unavailable or fails, log the failure and continue. Do NOT abort 
 
 After all fixes are applied:
 
-1. **Build:** Use the `/build-project` skill: `Skill tool: skill="build-project", args="target=compile"`
-2. **Test:** Use the `/run-tests` skill: `Skill tool: skill="run-tests", args="target=all"`
+1. **Build:** Use the project's build skill (e.g., `run-build`) generated during configure
+2. **Test:** Use the project's test skill (e.g., `run-tests`) generated during configure
 3. **Lint:** Check for any lint warnings and errors
 
 If build fails:

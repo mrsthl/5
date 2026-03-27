@@ -1,6 +1,37 @@
 # Release Notes
 
 
+## v1.8.7
+
+**Release Date:** 2026-03-27
+
+### Eject Command, Statusline Enhancements, and Leaner Skills
+
+Adds a destructive eject command to fully decouple projects from the update mechanism, enriches the statusline with cost and usage tracking, and removes generic build/test skills in favour of per-project generation.
+
+**What's New**
+- **Eject command** (`/5:eject`): Permanently removes all update infrastructure (hooks, version tracking, update command) from a project, giving teams full ownership of workflow files without ongoing update checks
+- **Statusline branch display**: Current git branch is now shown in the status line for quick orientation
+- **Statusline cost and usage tracking**: Running session cost, 5-hour usage percentage, and the next usage-reset time are now displayed in the status line
+- **Off-peak rocket indicator**: A rocket indicator appears in the status line during off-peak API hours
+
+**Improvements**
+- **Removed generic build and run-tests skills**: `build-project` and `run-tests` are no longer shipped as generic skills — they are generated per-project during `/5:configure`, tailored to the actual build system and test runner in use
+- **Consolidated configure documentation**: Configure-related reference material reduced from 7 files to 3, cutting noise and making the configure flow easier to follow
+
+**Affected files:**
+- `src/commands/5/eject.md` (new)
+- `src/hooks/statusline.js` (modified)
+- `src/skills/build-project/SKILL.md` (removed)
+- `src/skills/run-tests/SKILL.md` (removed)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/skills/configure-project/SKILL.md` (modified)
+- `bin/install.js` (modified)
+- `README.md` (modified)
+
+---
+
 ## v1.8.6
 
 **Release Date:** 2026-03-23

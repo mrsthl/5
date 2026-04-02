@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
+// Active runtime ('claude' or 'codex') — set once in main()
+let activeRuntime = 'claude';
+
 // ANSI colors for terminal output
 const colors = {
   reset: '\x1b[0m',
@@ -94,7 +97,8 @@ function parseArgs() {
     uninstall: false,
     upgrade: false,
     check: false,
-    help: false
+    help: false,
+    runtime: 'claude' // 'claude' or 'codex'
   };
 
   for (const arg of args) {
@@ -104,6 +108,7 @@ function parseArgs() {
     else if (arg === '--upgrade' || arg === '--force' || arg === '-U') options.upgrade = true;
     else if (arg === '--check') options.check = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
+    else if (arg === '--codex') options.runtime = 'codex';
   }
 
   // Default to local if neither specified
@@ -124,6 +129,7 @@ Usage: npx 5-phase-workflow [options]
 Options:
   --global, -g      Install to ~/.claude/ (available across all projects)
   --local, -l       Install to ./.claude/ (project-specific, default)
+  --codex           Install for Codex CLI (to ~/.codex/ or ./.codex/)
   --upgrade, -U     Upgrade to latest version (auto-update, no prompt)
   --force           Alias for --upgrade
   --check           Check installed version and available updates
@@ -131,26 +137,38 @@ Options:
   --help, -h        Show this help message
 
 Examples:
-  npx 5-phase-workflow              # Install locally or prompt for update
-  npx 5-phase-workflow --global     # Install globally
+  npx 5-phase-workflow              # Install locally for Claude Code
+  npx 5-phase-workflow --global     # Install globally for Claude Code
+  npx 5-phase-workflow --codex      # Install locally for Codex CLI
+  npx 5-phase-workflow --codex -g   # Install globally for Codex CLI
   npx 5-phase-workflow --upgrade    # Auto-update to latest version
   npx 5-phase-workflow --check      # Check version without updating
   npx 5-phase-workflow --uninstall  # Remove from current directory
 `);
 }
 
-// Get installation target path (.claude/ directory)
+// Get config directory name for active runtime
+function getRuntimeDirName() {
+  if (activeRuntime === 'codex') return '.codex';
+  return '.claude';
+}
+
+// Get installation target path (.claude/ or .codex/ directory)
 function getTargetPath(isGlobal) {
+  const dirName = getRuntimeDirName();
   if (isGlobal) {
+    if (activeRuntime === 'codex' && process.env.CODEX_HOME) {
+      return process.env.CODEX_HOME;
+    }
     const homeDir = process.env.HOME || process.env.USERPROFILE;
-    return path.join(homeDir, '.claude');
+    return path.join(homeDir, dirName);
   }
-  return path.join(process.cwd(), '.claude');
+  return path.join(process.cwd(), dirName);
 }
 
 // Get data path (.5/ directory for config, version, features)
 // Local installs: <project>/.5 (project root)
-// Global installs: ~/.claude/.5 (alongside global install)
+// Global installs: ~/<runtime-dir>/.5 (alongside global install)
 function getDataPath(isGlobal) {
   if (isGlobal) {
     return path.join(getTargetPath(true), '.5');
@@ -314,8 +332,10 @@ function getWorkflowManagedFiles() {
   };
 }
 
-// Flatten getWorkflowManagedFiles() into a list of relative paths (relative to .claude/)
+// Flatten getWorkflowManagedFiles() into a list of relative paths (relative to target dir)
 function getFileManifest() {
+  if (activeRuntime === 'codex') return getCodexFileManifest();
+
   const managed = getWorkflowManagedFiles();
   const manifest = [];
 
@@ -353,6 +373,141 @@ function getFileManifest() {
 
   return manifest;
 }
+
+// ── Codex conversion functions ──────────────────────────────────────────────
+
+// Extract YAML frontmatter and body from a markdown file
+function extractFrontmatterAndBody(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return { frontmatter: null, body: content };
+  return { frontmatter: match[1], body: match[2] };
+}
+
+// Extract a single field value from YAML frontmatter (simple key: value)
+function extractFrontmatterField(frontmatter, field) {
+  if (!frontmatter) return null;
+  const match = frontmatter.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'));
+  return match ? match[1].trim() : null;
+}
+
+// Convert /5:command-name references to $5-command-name (Codex skill mentions)
+function convertSlashCommandsToCodexMentions(content) {
+  return content.replace(/\/5:([a-z0-9-]+)/g, (_, name) => `$5-${name}`);
+}
+
+// Convert Claude command markdown to Codex-compatible content
+function convertClaudeToCodexMarkdown(content) {
+  let converted = convertSlashCommandsToCodexMentions(content);
+  // Replace .claude/ path references with .codex/
+  converted = converted.replace(/\.claude\//g, '.codex/');
+  return converted;
+}
+
+// Generate the adapter header that teaches Codex how to map Claude Code concepts
+function getCodexSkillAdapterHeader(skillName) {
+  const invocation = `$${skillName}`;
+  return `<codex_skill_adapter>
+## Skill Invocation
+- This skill is invoked by mentioning \`${invocation}\`.
+- Treat all user text after \`${invocation}\` as the skill argument.
+
+## Tool Mapping (Claude Code → Codex)
+This skill was authored for Claude Code. Map these tool references:
+
+| Claude Code | Codex Equivalent |
+|-------------|------------------|
+| \`AskUserQuestion\` | Ask the user directly in conversation |
+| \`Task(subagent_type="Explore")\` | Research the codebase yourself using available tools |
+| \`Task(prompt="...")\` | \`spawn_agent(message="...")\` |
+| \`Read\` | \`read_file\` |
+| \`Write\` | \`write_file\` |
+| \`Edit\` | \`patch\` |
+| \`Bash\` | \`shell\` |
+| \`Glob\` | \`glob\` / \`list_directory\` |
+| \`Grep\` | \`grep\` / \`search\` |
+| \`TaskCreate/TaskUpdate\` | Track progress internally |
+| \`EnterPlanMode\` | Not available — use structured output instead |
+
+## Guard Rules (replaces plan-guard hook)
+During planning phases (plan-feature, plan-implementation):
+- Do NOT write to any file outside \`.5/\`
+- Do NOT write source code — only specifications and plans
+- Do NOT spawn implementation agents — only Explore/research agents
+</codex_skill_adapter>`;
+}
+
+// Convert a Claude command .md file into a Codex SKILL.md
+function convertClaudeCommandToCodexSkill(content, skillName) {
+  const converted = convertClaudeToCodexMarkdown(content);
+  const { frontmatter, body } = extractFrontmatterAndBody(converted);
+
+  let description = `Run 5-Phase Workflow: ${skillName}`;
+  if (frontmatter) {
+    const maybeDesc = extractFrontmatterField(frontmatter, 'description');
+    if (maybeDesc) description = maybeDesc;
+  }
+
+  // Truncate description for metadata
+  const shortDesc = description.length > 180 ? `${description.slice(0, 177)}...` : description;
+  const adapter = getCodexSkillAdapterHeader(skillName);
+
+  return `---
+name: ${skillName}
+description: ${description}
+metadata:
+  short-description: ${shortDesc}
+---
+
+${adapter}
+
+${body.trimStart()}`;
+}
+
+// Convert a Claude SKILL.md to Codex-compatible SKILL.md (lighter conversion, no adapter needed for skills)
+function convertClaudeSkillToCodexSkill(content) {
+  return convertClaudeToCodexMarkdown(content);
+}
+
+// Get file manifest for Codex installs (skills-based structure)
+function getCodexFileManifest() {
+  const managed = getWorkflowManagedFiles();
+  const manifest = [];
+
+  // Commands become skills
+  // Each command file in commands/5/ becomes skills/5-{name}/SKILL.md
+  const commandsSrc = path.join(getSourcePath(), 'commands', '5');
+  if (fs.existsSync(commandsSrc)) {
+    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
+    for (const file of files) {
+      const name = file.replace('.md', '');
+      manifest.push(`skills/5-${name}`);
+    }
+  }
+
+  // Original skills also become Codex skills
+  for (const skill of managed.skills) {
+    manifest.push(`skills/${skill}`);
+  }
+
+  // Templates are copied as-is
+  for (const template of managed.templates) {
+    manifest.push(`templates/${template}`);
+  }
+
+  // References are copied as-is
+  if (managed.references) {
+    for (const ref of managed.references) {
+      manifest.push(`references/${ref}`);
+    }
+  }
+
+  // Instructions file
+  manifest.push('instructions.md');
+
+  return manifest;
+}
+
+// ── End Codex conversion functions ──────────────────────────────────────────
 
 // Selectively update only workflow-managed files, preserve user content
 function selectiveUpdate(targetPath, sourcePath) {
@@ -609,23 +764,42 @@ function mergeSettings(targetPath, sourcePath) {
 
 // Check if installation exists
 function checkExistingInstallation(targetPath) {
+  if (activeRuntime === 'codex') {
+    // Codex: commands are installed as skills/5-plan-feature/SKILL.md
+    const markerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
+    return fs.existsSync(markerFile);
+  }
   const markerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
   return fs.existsSync(markerFile);
 }
 
 // Helper to show commands
 function showCommandsHelp(isGlobal) {
-  log.info('Available commands:');
-  log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
-  log.info('  /5:plan-implementation       - Create implementation plan (Phase 2)');
-  log.info('  /5:implement-feature         - Execute implementation (Phase 3)');
-  log.info('  /5:verify-implementation     - Verify implementation (Phase 4)');
-  log.info('  /5:review-code               - Code review (Phase 5)');
-  log.info('  /5:address-review-findings   - Apply review findings & PR comments');
-  log.info('  /5:configure                 - Interactive project setup');
-  log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
-  log.info('  /5:eject                     - Eject from update mechanism');
-  log.info('  /5:unlock                    - Remove planning guard lock');
+  if (activeRuntime === 'codex') {
+    log.info('Available skills (invoke with $ prefix in Codex):');
+    log.info('  $5-plan-feature              - Start feature planning (Phase 1)');
+    log.info('  $5-plan-implementation       - Create implementation plan (Phase 2)');
+    log.info('  $5-implement-feature         - Execute implementation (Phase 3)');
+    log.info('  $5-verify-implementation     - Verify implementation (Phase 4)');
+    log.info('  $5-review-code               - Code review (Phase 5)');
+    log.info('  $5-address-review-findings   - Apply review findings & PR comments');
+    log.info('  $5-configure                 - Interactive project setup');
+    log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
+    log.info('  $5-eject                     - Eject from update mechanism');
+    log.info('  $5-unlock                    - Remove planning guard lock');
+  } else {
+    log.info('Available commands:');
+    log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
+    log.info('  /5:plan-implementation       - Create implementation plan (Phase 2)');
+    log.info('  /5:implement-feature         - Execute implementation (Phase 3)');
+    log.info('  /5:verify-implementation     - Verify implementation (Phase 4)');
+    log.info('  /5:review-code               - Code review (Phase 5)');
+    log.info('  /5:address-review-findings   - Apply review findings & PR comments');
+    log.info('  /5:configure                 - Interactive project setup');
+    log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
+    log.info('  /5:eject                     - Eject from update mechanism');
+    log.info('  /5:unlock                    - Remove planning guard lock');
+  }
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);
 }
@@ -721,26 +895,320 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   showCommandsHelp(isGlobal);
 }
 
+// ── Codex install/update/uninstall ──────────────────────────────────────────
+
+// Generate instructions.md for Codex (replaces hooks + settings.json)
+function generateCodexInstructions(targetPath) {
+  const content = `# 5-Phase Workflow — Codex Instructions
+
+This file is managed by the 5-Phase Workflow installer. It provides Codex with
+the context it needs to run the workflow skills correctly.
+
+## Workflow Overview
+
+The 5-Phase Workflow provides structured feature development:
+
+1. **Plan Feature** (\`$5-plan-feature\`) — Requirements gathering & feature spec
+2. **Plan Implementation** (\`$5-plan-implementation\`) — Technical planning
+3. **Implement Feature** (\`$5-implement-feature\`) — Orchestrated implementation
+4. **Verify Implementation** (\`$5-verify-implementation\`) — Build & test verification
+5. **Review Code** (\`$5-review-code\`) — Code review
+
+## Data Directory
+
+All workflow state lives in \`.5/\` at the project root:
+- \`.5/config.json\` — Project configuration
+- \`.5/features/{name}/feature.md\` — Feature specifications
+- \`.5/features/{name}/plan.md\` — Implementation plans
+- \`.5/features/{name}/state.json\` — Implementation state
+
+## Guard Rules
+
+During planning phases (plan-feature, plan-implementation):
+- Do NOT write files outside \`.5/\`
+- Do NOT write source code — only specifications and plans
+- The \`.5/.planning-active\` marker indicates planning is in progress
+
+## Configuration
+
+Run \`$5-configure\` after installation to set up your project.
+
+## Templates & References
+
+Templates are in \`.codex/templates/\` and references in \`.codex/references/\`.
+Skills reference these paths for output formatting.
+`;
+
+  fs.writeFileSync(path.join(targetPath, 'instructions.md'), content);
+  log.success('Generated instructions.md');
+}
+
+// Install commands as Codex skills
+function installCodexSkills(targetPath, sourcePath) {
+  const commandsSrc = path.join(sourcePath, 'commands', '5');
+  const skillsDest = path.join(targetPath, 'skills');
+
+  if (!fs.existsSync(commandsSrc)) return;
+
+  const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
+
+  for (const file of files) {
+    const name = file.replace('.md', '');
+    const skillName = `5-${name}`;
+    const content = fs.readFileSync(path.join(commandsSrc, file), 'utf8');
+    const converted = convertClaudeCommandToCodexSkill(content, skillName);
+
+    const skillDir = path.join(skillsDest, skillName);
+    if (!fs.existsSync(skillDir)) {
+      fs.mkdirSync(skillDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), converted);
+  }
+  log.success(`Installed ${files.length} workflow skills`);
+
+  // Also convert and install original skills (configure-project, generate-readme)
+  const managed = getWorkflowManagedFiles();
+  for (const skill of managed.skills) {
+    const skillSrc = path.join(sourcePath, 'skills', skill);
+    if (!fs.existsSync(skillSrc)) continue;
+
+    const skillDestDir = path.join(skillsDest, skill);
+    if (!fs.existsSync(skillDestDir)) {
+      fs.mkdirSync(skillDestDir, { recursive: true });
+    }
+
+    // Copy all files in the skill directory, converting .md files
+    const skillFiles = fs.readdirSync(skillSrc);
+    for (const sf of skillFiles) {
+      const srcFile = path.join(skillSrc, sf);
+      const destFile = path.join(skillDestDir, sf);
+      if (sf.endsWith('.md')) {
+        const content = fs.readFileSync(srcFile, 'utf8');
+        fs.writeFileSync(destFile, convertClaudeSkillToCodexSkill(content));
+      } else {
+        fs.copyFileSync(srcFile, destFile);
+      }
+    }
+  }
+  log.success('Installed utility skills');
+}
+
+// Codex fresh installation
+function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(targetPath, { recursive: true });
+    log.success(`Created ${targetPath}`);
+  }
+
+  // Install commands as Codex skills
+  installCodexSkills(targetPath, sourcePath);
+
+  // Copy templates and references as-is (just path conversion)
+  for (const dir of ['templates', 'references']) {
+    const src = path.join(sourcePath, dir);
+    const dest = path.join(targetPath, dir);
+    if (fs.existsSync(src)) {
+      copyDir(src, dest);
+      log.success(`Installed ${dir}/`);
+    }
+  }
+
+  // Generate instructions.md (replaces hooks + settings.json)
+  generateCodexInstructions(targetPath);
+
+  // Initialize version tracking (shared .5/ directory)
+  initializeVersionJson(isGlobal);
+
+  log.header('Codex Installation Complete!');
+  log.info('');
+  log.info('Next step: Configure your project');
+  log.info('Mention: $5-configure');
+  log.info('');
+  log.info('This will:');
+  log.info('  • Detect your project type and build commands');
+  log.info('  • Set up ticket tracking conventions');
+  log.info('  • Generate comprehensive documentation');
+  log.info('  • Create project-specific skills');
+
+  showCommandsHelp(isGlobal);
+}
+
+// Codex selective update
+function codexSelectiveUpdate(targetPath, sourcePath) {
+  // Remove old skills and re-install
+  const managed = getWorkflowManagedFiles();
+  const skillsDest = path.join(targetPath, 'skills');
+
+  // Remove workflow command skills (5-*)
+  const commandsSrc = path.join(sourcePath, 'commands', '5');
+  if (fs.existsSync(commandsSrc)) {
+    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
+    for (const file of files) {
+      const name = file.replace('.md', '');
+      const skillDir = path.join(skillsDest, `5-${name}`);
+      if (fs.existsSync(skillDir)) removeDir(skillDir);
+    }
+  }
+
+  // Remove utility skills
+  for (const skill of managed.skills) {
+    const skillDir = path.join(skillsDest, skill);
+    if (fs.existsSync(skillDir)) removeDir(skillDir);
+  }
+
+  // Re-install all skills
+  installCodexSkills(targetPath, sourcePath);
+
+  // Update templates and references
+  for (const dir of ['templates', 'references']) {
+    const src = path.join(sourcePath, dir);
+    const dest = path.join(targetPath, dir);
+    if (fs.existsSync(src)) {
+      if (fs.existsSync(dest)) removeDir(dest);
+      copyDir(src, dest);
+    }
+  }
+  log.success('Updated templates and references');
+
+  // Regenerate instructions.md
+  generateCodexInstructions(targetPath);
+}
+
+// Codex update
+function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
+  log.header(`Updating Codex install from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
+  log.info('Preserving user-created skills');
+
+  codexSelectiveUpdate(targetPath, sourcePath);
+
+  // Clean up orphaned files
+  const dataDir = getDataPath(isGlobal);
+  cleanupOrphanedFiles(targetPath, dataDir);
+
+  // Update version.json
+  const versionFile = path.join(dataDir, 'version.json');
+  const now = new Date().toISOString();
+  const existing = fs.existsSync(versionFile)
+    ? JSON.parse(fs.readFileSync(versionFile, 'utf8'))
+    : {};
+  const versionData = {
+    packageVersion: versionInfo.available,
+    installedAt: existing.installedAt || now,
+    lastUpdated: now,
+    installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
+    manifest: getFileManifest()
+  };
+
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  ensureDotFiveGitignore(dataDir);
+
+  const featuresDir = path.join(dataDir, 'features');
+  if (!fs.existsSync(featuresDir)) {
+    fs.mkdirSync(featuresDir, { recursive: true });
+  }
+
+  log.header('Update Complete!');
+  log.success(`Now running version ${versionInfo.available}`);
+  showCommandsHelp(isGlobal);
+}
+
+// Codex uninstallation
+function codexUninstall() {
+  const targetPath = getTargetPath(false);
+
+  log.header('5-Phase Workflow Uninstallation (Codex)');
+  log.info(`Target: ${targetPath}`);
+
+  if (!checkExistingInstallation(targetPath)) {
+    log.warn('No Codex installation found at this location');
+    return;
+  }
+
+  // Remove workflow command skills (5-*)
+  const commandsSrc = path.join(getSourcePath(), 'commands', '5');
+  if (fs.existsSync(commandsSrc)) {
+    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
+    for (const file of files) {
+      const name = file.replace('.md', '');
+      const skillDir = path.join(targetPath, 'skills', `5-${name}`);
+      if (fs.existsSync(skillDir)) removeDir(skillDir);
+    }
+    log.success('Removed workflow skills');
+  }
+
+  // Remove utility skills
+  const managed = getWorkflowManagedFiles();
+  for (const skill of managed.skills) {
+    const skillDir = path.join(targetPath, 'skills', skill);
+    if (fs.existsSync(skillDir)) removeDir(skillDir);
+  }
+  log.success('Removed utility skills (preserved user-created skills)');
+
+  // Remove templates
+  for (const template of managed.templates) {
+    const templatePath = path.join(targetPath, 'templates', template);
+    if (fs.existsSync(templatePath)) fs.unlinkSync(templatePath);
+  }
+  log.success('Removed workflow templates');
+
+  // Remove references
+  if (managed.references) {
+    for (const ref of managed.references) {
+      const refPath = path.join(targetPath, 'references', ref);
+      if (fs.existsSync(refPath)) fs.unlinkSync(refPath);
+    }
+    log.success('Removed workflow references');
+  }
+
+  // Remove instructions.md
+  const instructionsPath = path.join(targetPath, 'instructions.md');
+  if (fs.existsSync(instructionsPath)) {
+    fs.unlinkSync(instructionsPath);
+    log.success('Removed instructions.md');
+  }
+
+  // Remove data directory (.5/)
+  const dataDir = getDataPath(false);
+  if (fs.existsSync(dataDir)) {
+    removeDir(dataDir);
+    log.success('Removed .5/ data directory');
+  }
+
+  log.header('Uninstallation Complete!');
+}
+
+// ── End Codex install/update/uninstall ──────────────────────────────────────
+
 // Perform installation
 function install(isGlobal, forceUpgrade = false) {
   const targetPath = getTargetPath(isGlobal);
   const sourcePath = getSourcePath();
 
-  log.header('5-Phase Workflow Installation');
+  const runtimeLabel = activeRuntime === 'codex' ? 'Codex' : 'Claude Code';
+  log.header(`5-Phase Workflow Installation (${runtimeLabel})`);
   log.info(`Target: ${targetPath}`);
   log.info(`Source: ${sourcePath}`);
 
-  // Migrate data from old .claude/.5/ to new .5/ location
-  migrateDataDir(isGlobal);
+  // Migrate data from old .claude/.5/ to new .5/ location (Claude only)
+  if (activeRuntime === 'claude') {
+    migrateDataDir(isGlobal);
+  }
 
   // Check for existing installation and version
   const versionInfo = getVersionInfo(targetPath, isGlobal);
+
+  // Select the right install/update functions for this runtime
+  const freshInstall = activeRuntime === 'codex' ? performCodexFreshInstall : performFreshInstall;
+  const update = activeRuntime === 'codex' ? performCodexUpdate : performUpdate;
 
   if (versionInfo.exists) {
     if (versionInfo.legacy) {
       log.warn('Detected legacy installation (no version tracking)');
       log.info(`Upgrading from legacy install to ${versionInfo.available}`);
-      performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+      update(targetPath, sourcePath, isGlobal, versionInfo);
       return;
     } else if (versionInfo.needsUpdate) {
       log.info(`Installed: ${versionInfo.installed}`);
@@ -759,12 +1227,12 @@ function install(isGlobal, forceUpgrade = false) {
             log.info('Update cancelled');
             return;
           }
-          performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+          update(targetPath, sourcePath, isGlobal, versionInfo);
         });
         return; // Wait for user input
       }
       // Force upgrade, no prompt
-      performUpdate(targetPath, sourcePath, isGlobal, versionInfo);
+      update(targetPath, sourcePath, isGlobal, versionInfo);
       return;
     } else {
       // Same version
@@ -774,11 +1242,16 @@ function install(isGlobal, forceUpgrade = false) {
   }
 
   // Fresh install (no existing installation)
-  performFreshInstall(targetPath, sourcePath, isGlobal);
+  freshInstall(targetPath, sourcePath, isGlobal);
 }
 
 // Perform uninstallation
 function uninstall() {
+  if (activeRuntime === 'codex') {
+    codexUninstall();
+    return;
+  }
+
   const targetPath = getTargetPath(false); // Always local for uninstall
 
   log.header('5-Phase Workflow Uninstallation');
@@ -875,6 +1348,9 @@ function uninstall() {
 function main() {
   const options = parseArgs();
 
+  // Set module-level runtime before any path resolution
+  activeRuntime = options.runtime;
+
   if (options.help) {
     showHelp();
     return;
@@ -886,16 +1362,17 @@ function main() {
     const versionInfo = getVersionInfo(targetPath, options.global);
 
     if (!versionInfo.exists) {
-      log.info('Not installed');
+      log.info(`Not installed (${activeRuntime})`);
       return;
     }
 
+    log.info(`Runtime: ${activeRuntime}`);
     log.info(`Installed: ${versionInfo.installed || 'legacy (no version)'}`);
     log.info(`Available: ${versionInfo.available}`);
 
     if (versionInfo.needsUpdate) {
       log.warn('Update available');
-      log.info('Run: npx 5-phase-workflow --upgrade');
+      log.info(`Run: npx 5-phase-workflow${activeRuntime === 'codex' ? ' --codex' : ''} --upgrade`);
     } else {
       log.success('Up to date');
     }

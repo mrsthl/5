@@ -144,10 +144,96 @@ else
 fi
 echo ""
 
+# Test 10: Codex Fresh Install
+echo "Test 10: Codex Fresh Install"
+echo "----------------------------"
+cd /tmp
+rm -rf test-5phase-codex-1
+mkdir test-5phase-codex-1
+cd test-5phase-codex-1
+node "$INSTALL_SCRIPT" --codex --local
+if [ -f ".5/version.json" ]; then
+  echo "✓ version.json created"
+else
+  echo "✗ version.json not created"
+  exit 1
+fi
+if [ -f ".codex/skills/5-plan-feature/SKILL.md" ]; then
+  echo "✓ Commands converted to Codex skills"
+else
+  echo "✗ Codex skills not created"
+  exit 1
+fi
+if [ -f ".codex/instructions.md" ]; then
+  echo "✓ instructions.md generated"
+else
+  echo "✗ instructions.md not generated"
+  exit 1
+fi
+if [ -d ".codex/templates" ]; then
+  echo "✓ Templates installed"
+else
+  echo "✗ Templates not installed"
+  exit 1
+fi
+# Verify skill content has adapter header
+if grep -q "codex_skill_adapter" .codex/skills/5-plan-feature/SKILL.md; then
+  echo "✓ Skill has Codex adapter header"
+else
+  echo "✗ Skill missing Codex adapter header"
+  exit 1
+fi
+# Verify slash commands converted to skill mentions
+if grep -q '\$5-plan-implementation' .codex/skills/5-plan-feature/SKILL.md; then
+  echo "✓ Slash commands converted to \$ skill mentions"
+else
+  echo "✗ Slash command conversion failed"
+  exit 1
+fi
+# Verify no .claude/ directory references in converted skills
+if grep -q '\.claude/' .codex/skills/5-plan-feature/SKILL.md; then
+  echo "✗ Still contains .claude/ path references"
+  exit 1
+else
+  echo "✓ Path references converted from .claude/ to .codex/"
+fi
+# Verify no Claude hooks installed
+if [ -d ".codex/hooks" ]; then
+  echo "✗ Hooks directory should not exist for Codex"
+  exit 1
+else
+  echo "✓ No hooks directory (correct for Codex)"
+fi
+echo ""
+
+# Test 11: Codex Uninstall
+echo "Test 11: Codex Uninstall"
+echo "------------------------"
+node "$INSTALL_SCRIPT" --codex --uninstall
+if [ -f ".codex/skills/5-plan-feature/SKILL.md" ]; then
+  echo "✗ Workflow skills not removed"
+  exit 1
+else
+  echo "✓ Workflow skills removed"
+fi
+if [ -f ".codex/instructions.md" ]; then
+  echo "✗ instructions.md not removed"
+  exit 1
+else
+  echo "✓ instructions.md removed"
+fi
+if [ -d ".5" ]; then
+  echo "✗ .5/ directory not removed"
+  exit 1
+else
+  echo "✓ .5/ directory removed"
+fi
+echo ""
+
 # Cleanup
 echo "Cleanup"
 echo "-------"
-rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4
+rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4 /tmp/test-5phase-codex-1
 echo "✓ Cleaned up test directories"
 echo ""
 

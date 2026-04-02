@@ -4,7 +4,6 @@ description: Plans feature implementation by analyzing requirements, identifying
 allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
 model: opus
-context: fork
 ---
 
 <role>

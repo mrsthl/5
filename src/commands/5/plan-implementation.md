@@ -4,7 +4,6 @@ description: Creates an implementation plan from a feature spec. Phase 2 of the 
 allowed-tools: Read, Write, Task, AskUserQuestion
 user-invocable: true
 model: opus
-context: fork
 ---
 
 <role>

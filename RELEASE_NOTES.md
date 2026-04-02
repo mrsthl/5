@@ -1,6 +1,24 @@
 # Release Notes
 
 
+## v1.8.9
+
+**Release Date:** 2026-04-02
+
+### Fix Upgrade Installation for New Configure Skills
+
+Fixes the installer manifest so upgrading existing projects correctly installs the new split configure skills.
+
+**Bug Fixes**
+- **Upgrade-managed skill list**: `bin/install.js` now treats `configure-docs-index` and `configure-skills` as workflow-managed skills, so `--upgrade` installs them into existing Claude and Codex workflow setups
+- **Legacy skill cleanup**: The old `configure-project` skill directory is now included in the legacy cleanup list so stale installs can be cleaned up on upgrade
+
+**Affected files:**
+- `bin/install.js` (modified)
+
+---
+
+
 ## v1.8.8
 
 **Release Date:** 2026-04-02

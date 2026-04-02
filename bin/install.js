@@ -280,7 +280,8 @@ const LEGACY_REMOVED_FILES = [
   'templates/STACK.md',
   'templates/STRUCTURE.md',
   'templates/CONVENTIONS.md',
-  'templates/INTEGRATIONS.md'
+  'templates/INTEGRATIONS.md',
+  'skills/configure-project'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -296,7 +297,8 @@ function getWorkflowManagedFiles() {
 
     // Skills: specific skill directories
     skills: [
-      'configure-project',
+      'configure-docs-index',
+      'configure-skills',
       'generate-readme'
     ],
 
@@ -966,7 +968,7 @@ function installCodexSkills(targetPath, sourcePath) {
   }
   log.success(`Installed ${files.length} workflow skills`);
 
-  // Also convert and install original skills (configure-project, generate-readme)
+  // Also convert and install original workflow skills (configure-docs-index, configure-skills, generate-readme)
   const managed = getWorkflowManagedFiles();
   for (const skill of managed.skills) {
     const skillSrc = path.join(sourcePath, 'skills', skill);

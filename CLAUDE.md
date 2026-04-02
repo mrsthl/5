@@ -85,7 +85,8 @@ src/
 ├── skills/                  # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/
-│   ├── configure-project/
+│   ├── configure-docs-index/
+│   ├── configure-skills/
 │   └── generate-readme/
 │
 ├── templates/               # Output templates
@@ -241,14 +242,14 @@ After installing the workflow with `node bin/install.js` or `npx 5-phase-workflo
 3. Detects and optionally installs optional plugins (context7, skill-creator)
 4. Creates feature spec at `.5/features/CONFIGURE/feature.md`
 5. User runs standard workflow: plan-implementation → implement → verify
-6. Results in: config.json, CLAUDE.md, project-specific skills
+6. Results in: config.json, CLAUDE.md, a rebuildable `.5/index/` codebase index, and project-specific skills
 
 ### Optional Plugins
 
 Configure detects and offers to install optional Claude plugins that enhance the workflow:
 
 - **context7** (`context7@mcp-official`): Provides up-to-date, version-specific documentation during implementation. Detected by checking for `resolve-library-id` / `query-docs` tools.
-- **skill-creator** (`skill-creator@claude-plugins-official`): Improves quality of generated project-specific skills. When available, the `configure-project` skill uses its tools (`create-skill`, `scaffold-skill`) instead of template-based generation. Detected by checking for `create-skill` / `scaffold-skill` tools in the session.
+- **skill-creator** (`skill-creator@claude-plugins-official`): Improves quality of generated project-specific skills. When available, the `configure-skills` skill uses its tools (`create-skill`, `scaffold-skill`) instead of template-based generation. Detected by checking for `create-skill` / `scaffold-skill` tools in the session.
 
 Plugin availability is stored in `.5/config.json` under `tools.context7.available` and `tools.skillCreator.available`.
 

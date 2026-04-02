@@ -58,6 +58,7 @@ This will:
 - Set up build and test commands
 - Configure ticket tracking patterns
 - Generate comprehensive CLAUDE.md documentation
+- Generate a rebuildable codebase index in `.5/index/`
 - Create project-specific skills (create-component, create-service, etc.)
 
 Follow the standard workflow after configuration:
@@ -260,6 +261,9 @@ After installation, your `.claude/` directory will contain:
 .5/
 ├── config.json               # Project configuration
 ├── version.json              # Version tracking
+├── index/                    # Generated codebase index + rebuild script
+│   ├── rebuild-index.sh
+│   └── *.md
 └── features/                 # Feature tracking
 
 .claude/

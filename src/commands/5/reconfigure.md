@@ -1,6 +1,6 @@
 ---
 name: 5:reconfigure
-description: Lightweight refresh of project documentation and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, updates CLAUDE.md, and refreshes all skills.
+description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates CLAUDE.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
 user-invocable: true
 context: fork
@@ -9,7 +9,7 @@ context: fork
 <role>
 You are a Project Reconfigurer. You refresh documentation and skills using existing config.json preferences.
 You do NOT modify user preferences (ticket patterns, review tools, branch conventions, etc.).
-You detect codebase changes, confirm with the user, invoke configure-project skill, then report.
+You detect codebase changes, confirm with the user, invoke the configuration refresh skills, then report.
 After reporting what was updated, you are DONE.
 </role>
 
@@ -37,7 +37,7 @@ Your job:
 ✅ Re-detect codebase patterns and commands (same as configure Steps 1b-1h)
 ✅ Compare detected state with config.json skill selections
 ✅ Show summary and ask for confirmation
-✅ Invoke configure-project skill in refresh mode
+✅ Invoke `configure-docs-index` and `configure-skills` in refresh mode
 ✅ Update version.json with artifacts and timestamps
 ✅ Clean up .reconfig-reminder flag
 ✅ Report what was updated
@@ -117,7 +117,7 @@ Use the existing skills in `.claude/skills/` (from Step 2e) as the source of tru
 
 Use `AskUserQuestion` to show a summary and get confirmation. Present:
 
-1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional) + CLAUDE.md
+1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional), `.5/index/rebuild-index.sh`, `.5/index/*.md`, and `CLAUDE.md`
 2. **Skills that will be refreshed** — list ALL skills found in `.claude/skills/` (both workflow-generated and user-created)
 3. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
 4. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
@@ -134,10 +134,14 @@ New skills will be created and stale skills removed based on the user's choices.
 
 ### Step 5: Regenerate
 
-Invoke the `configure-project` skill in **refresh mode** via the Task tool:
+Invoke the refresh skills in **refresh mode** via the Task tool:
 
 ```
-Task prompt: "Run configure-project skill in REFRESH MODE.
+Task prompt 1: "Run configure-docs-index skill in REFRESH MODE.
+
+Refresh the generated documentation, rebuild the codebase index in `.5/index/`, delete legacy docs if they exist, and update `CLAUDE.md` while preserving user-written sections."
+
+Task prompt 2: "Run configure-skills skill in REFRESH MODE.
 
 Refresh ALL existing skills in .claude/skills/:
 - Existing create-* skills: [list from Step 2e]
@@ -150,18 +154,13 @@ Refresh rules in .claude/rules/ (if rules.generate is true):
 - Existing workflow rules: [list from Step 2f]
 - Rules to remove: [list from user confirmation, if any]
 - New rules to create: [if applicable]
-
-Re-analyze the entire codebase (A1 analysis) and:
-1. Rewrite .5/ARCHITECTURE.md and .5/TESTING.md
-2. Rewrite .5/CONCERNS.md (or delete if no concerns found)
-3. Delete legacy docs if they exist: .5/STACK.md, .5/STRUCTURE.md, .5/CONVENTIONS.md, .5/INTEGRATIONS.md
-4. Update CLAUDE.md (preserve user-written sections)
-5. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
-6. Create new skills for newly-added patterns
-7. Remove skills the user chose to drop
-8. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
-9. Create new rule files for newly-detected patterns
-10. Remove rule files the user chose to drop"
+Re-analyze the codebase and:
+1. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
+2. Create new skills for newly-added patterns
+3. Remove skills the user chose to drop
+4. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
+5. Create new rule files for newly-detected patterns
+6. Remove rule files the user chose to drop"
 ```
 
 Use `subagent_type: "general-purpose"` for the Task.
@@ -186,6 +185,7 @@ rm -f .5/.reconfig-reminder
 
 Show the user a summary:
 - List of documentation files updated
+- Mention whether the codebase index script and index files were regenerated
 - List of skills refreshed
 - List of new skills created (if any)
 - List of skills removed (if any)
@@ -197,4 +197,5 @@ Show the user a summary:
 
 ## Related Documentation
 - [configure command](./configure.md) — full Q&A configuration
-- [configure-project skill](../../skills/configure-project/SKILL.md) — the skill that does the heavy lifting
+- [configure-docs-index skill](../../skills/configure-docs-index/SKILL.md)
+- [configure-skills skill](../../skills/configure-skills/SKILL.md)

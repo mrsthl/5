@@ -25,6 +25,12 @@ Read `.5/version.json` and note the current `installedVersion`.
 npx 5-phase-workflow@latest --upgrade
 ```
 
+If this installation is running in Codex (workflow files live in `.codex/` or the workflow command was invoked as a `$5-...` skill), run this instead:
+
+```bash
+npx 5-phase-workflow@latest --codex --upgrade
+```
+
 ## Step 3: Confirm Upgrade
 
 Read `.5/version.json` again. Compare the new `installedVersion` to the previous one.
@@ -34,14 +40,16 @@ Read `.5/version.json` again. Compare the new `installedVersion` to the previous
 
 ## Step 4: Show What Changed
 
-Run `git status` to show the files modified by the upgrade. Summarize the changes for the user (e.g., "Updated 12 files in `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`").
+Run `git status` to show the files modified by the upgrade. Summarize the changes for the user using the correct runtime paths:
+- Claude Code installs typically update files in `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`, `.claude/templates/`, `.claude/settings.json`, and `.5/version.json`
+- Codex installs typically update files in `.codex/skills/`, `.codex/templates/`, `.codex/references/`, `.codex/instructions.md`, and `.5/version.json`
 
 ## Step 5: Ask to Commit
 
 Ask the user: "Would you like to commit the upgraded workflow files?"
 
 Options:
-1. **Yes** - commit the changes, do not mention claude
+1. **Yes** - commit the changes, do not mention Claude Code
 2. **No** - leave changes uncommitted
 
 If the user chooses **No**, stop here.
@@ -56,6 +64,11 @@ Build the commit message by applying the pattern:
 - If the pattern is the conventional format (`feat({ticket-id}): {short-description}`), use: `chore: update 5-Phase Workflow to {new-version}`
 - If no config or no pattern, use: `update 5-Phase Workflow to {new-version}`
 
-Stage **only** the workflow-managed files shown in `git status` (inside `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`, `.claude/templates/`, `.claude/settings.json`, and `.5/version.json`). Never use `git add .` or `git add -A`.
+Stage **only** the workflow-managed files shown in `git status`.
+
+- For Claude Code installs, this usually means files inside `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`, `.claude/templates/`, `.claude/settings.json`, and `.5/version.json`
+- For Codex installs, this usually means files inside `.codex/skills/`, `.codex/templates/`, `.codex/references/`, `.codex/instructions.md`, and `.5/version.json`
+
+Never use `git add .` or `git add -A`.
 
 Create the commit. Report success to the user.

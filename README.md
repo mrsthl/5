@@ -1,6 +1,6 @@
 # 5-Phase Workflow
 
-A systematic, AI-assisted feature development workflow for Claude Code that works with any tech stack.
+A systematic, AI-assisted feature development workflow for Claude Code and Codex that works with any tech stack.
 
 ## What is This?
 
@@ -25,16 +25,20 @@ The **5-Phase Workflow** is a structured approach to feature development that br
 Install the workflow in your project using npx:
 
 ```bash
-# Install locally in current project
+# Install locally for Claude Code
 npx 5-phase-workflow
 
-# Or install globally for all projects
+# Install locally for Codex
+npx 5-phase-workflow --codex
+
+# Or install globally
 npx 5-phase-workflow --global
+npx 5-phase-workflow --codex --global
 ```
 
 The installer will:
-- Copy workflow commands, agents, and skills to `.claude/`
-- Set up hooks and settings
+- For Claude Code: copy workflow commands, agents, and skills to `.claude/`, then set up hooks and settings
+- For Codex: convert workflow commands into skills in `.codex/skills/` and generate `.codex/instructions.md`
 - Create `.5/features/` directory for feature tracking
 
 **After installation, you must configure your project:**
@@ -42,8 +46,11 @@ The installer will:
 ## Required: Configure Your Project
 
 ```bash
-# Open Claude Code in your project
+# Claude Code
 /5:configure
+
+# Codex
+$5-configure
 ```
 
 This will:
@@ -53,10 +60,13 @@ This will:
 - Generate comprehensive CLAUDE.md documentation
 - Create project-specific skills (create-component, create-service, etc.)
 
-Follow the standard workflow after `/5:configure`:
-1. `/5:plan-implementation CONFIGURE` - Plan the configuration
-2. `/5:implement-feature CONFIGURE` - Execute configuration
-3. `/5:verify-implementation` - Verify setup
+Follow the standard workflow after configuration:
+1. Claude Code: `/5:plan-implementation CONFIGURE`
+2. Codex: `$5-plan-implementation CONFIGURE`
+3. Claude Code: `/5:implement-feature CONFIGURE`
+4. Codex: `$5-implement-feature CONFIGURE`
+5. Claude Code: `/5:verify-implementation`
+6. Codex: `$5-verify-implementation`
 
 **The workflow is ready to use after completing configuration.**
 
@@ -65,26 +75,24 @@ Follow the standard workflow after `/5:configure`:
 After configuration is complete, start your first feature:
 
 ```bash
-# Phase 1: Plan the feature
+# Claude Code
 /5:plan-feature
-
-# Phase 2: Create implementation plan
 /5:plan-implementation {ticket-id}-{description}
-
-# Phase 3: Execute implementation
 /5:implement-feature {ticket-id}-{description}
-
-# Phase 4: Verify implementation
 /5:verify-implementation
-
-# Phase 5: Review code
 /5:review-code
-
-# Phase 5b: Apply review findings (optional — if you chose "Fix later")
 /5:address-review-findings
+
+# Codex
+$5-plan-feature
+$5-plan-implementation {ticket-id}-{description}
+$5-implement-feature {ticket-id}-{description}
+$5-verify-implementation
+$5-review-code
+$5-address-review-findings
 ```
 
-**Tip:** Running `/clear` between phases resets context and keeps conversations focused. Each phase reads necessary artifacts from previous phases, so no context is lost.
+**Tip:** Running `/clear` between phases in Claude Code resets context and keeps conversations focused. In Codex, start a fresh turn or keep the next phase focused. Each phase reads necessary artifacts from previous phases, so no context is lost.
 
 ## Supported Tech Stacks
 
@@ -117,21 +125,21 @@ The workflow auto-detects and supports:
 
 ## Available Commands
 
-All commands are available under the `/5:` namespace:
+Claude Code exposes the workflow under the `/5:` namespace. Codex exposes the same workflow as `$5-...` skills:
 
 | Command | Phase | Purpose |
 |---------|-------|---------|
-| `/5:configure` | Setup | Interactive project configuration |
-| `/5:plan-feature` | 1 | Create feature specification with Q&A |
-| `/5:discuss-feature` | 1 | Refine existing feature spec |
-| `/5:plan-implementation` | 2 | Map feature to technical components |
-| `/5:implement-feature` | 3 | Execute implementation with agents |
-| `/5:verify-implementation` | 4 | Verify completeness and correctness |
-| `/5:review-code` | 5 | AI-powered code review (Claude or CodeRabbit) |
-| `/5:address-review-findings` | 5 | Apply annotated findings and address PR comments |
-| `/5:quick-implement` | Fast | Streamlined workflow for small tasks |
-| `/5:eject` | Utility | Permanently remove update infrastructure |
-| `/5:unlock` | Utility | Remove planning guard lock |
+| `/5:configure` or `$5-configure` | Setup | Interactive project configuration |
+| `/5:plan-feature` or `$5-plan-feature` | 1 | Create feature specification with Q&A |
+| `/5:discuss-feature` or `$5-discuss-feature` | 1 | Refine existing feature spec |
+| `/5:plan-implementation` or `$5-plan-implementation` | 2 | Map feature to technical components |
+| `/5:implement-feature` or `$5-implement-feature` | 3 | Execute implementation with agents |
+| `/5:verify-implementation` or `$5-verify-implementation` | 4 | Verify completeness and correctness |
+| `/5:review-code` or `$5-review-code` | 5 | AI-powered code review (Claude, Codex, or CodeRabbit workflows) |
+| `/5:address-review-findings` or `$5-address-review-findings` | 5 | Apply annotated findings and address PR comments |
+| `/5:quick-implement` or `$5-quick-implement` | Fast | Streamlined workflow for small tasks |
+| `/5:eject` or `$5-eject` | Utility | Permanently remove update infrastructure |
+| `/5:unlock` or `$5-unlock` | Utility | Remove planning guard lock |
 
 ## Configuration
 
@@ -371,13 +379,18 @@ npx 5-phase-workflow
 If you want to permanently opt out of the update system (e.g., to customize workflow files without future updates overwriting them), run:
 
 ```bash
+# Claude Code
 /5:eject
+
+# Codex
+$5-eject
 ```
 
 This permanently removes the update infrastructure:
 - Deletes `check-updates.js` hook, `update.md` and `eject.md` commands
 - Deletes `.5/version.json` and `.5/.update-cache.json`
-- Removes the update check hook entry from `.claude/settings.json`
+- For Claude Code, removes the update check hook entry from `.claude/settings.json`
+- For Codex, removes the converted update/eject skills from `.codex/skills/`
 
 All other workflow files remain untouched. **This is irreversible.** To restore update functionality, reinstall with `npx 5-phase-workflow`.
 

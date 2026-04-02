@@ -3,8 +3,6 @@ name: 5:eject
 description: Eject from the update mechanism — permanently removes update infrastructure
 allowed-tools: Bash, Read, Edit, AskUserQuestion
 user-invocable: true
-model: haiku
-context: fork
 ---
 
 <role>
@@ -14,13 +12,17 @@ After ejecting, you are DONE.
 
 # Eject from Update Mechanism
 
+Determine which runtime is installed before making any changes:
+- Claude Code install: workflow files live in `.claude/`
+- Codex install: workflow files live in `.codex/`
+
+Use runtime-appropriate paths in every step below.
+
 Ejecting permanently removes the update system from this installation. After ejecting:
-- The update check hook (`check-updates.js`) is deleted
-- The update command (`/5:update`) is deleted
-- The eject command (`/5:eject`) is deleted
+- The update infrastructure files are deleted
 - Version tracking (`.5/version.json`) is deleted
 - The update cache (`.5/.update-cache.json`) is deleted
-- The `check-updates.js` hook entry is removed from `.claude/settings.json`
+- Claude Code installs also remove the `check-updates.js` hook entry from `.claude/settings.json`
 
 All other workflow files (commands, skills, hooks, templates) remain untouched.
 
@@ -39,13 +41,19 @@ Tell the user what ejecting means:
 > **Eject from 5-Phase Workflow updates?**
 >
 > This will permanently delete:
-> - `.claude/hooks/check-updates.js` (update check hook)
-> - `.claude/commands/5/update.md` (update command)
-> - `.claude/commands/5/eject.md` (this command)
 > - `.5/version.json` (version tracking)
 > - `.5/.update-cache.json` (update cache)
 >
-> The `check-updates.js` hook entry will also be removed from `.claude/settings.json`.
+> For Claude Code installs:
+> - `.claude/hooks/check-updates.js` (update check hook)
+> - `.claude/commands/5/update.md` (update command)
+> - `.claude/commands/5/eject.md` (this command)
+> - The `check-updates.js` hook entry in `.claude/settings.json`
+>
+> For Codex installs:
+> - `.codex/skills/5-update/` (update skill)
+> - `.codex/skills/5-eject/` (this skill)
+> - `.codex/instructions.md` is removed only if it is workflow-managed and no longer needed for remaining installed workflow files
 >
 > All other workflow files remain untouched. To restore updates later, reinstall with `npx 5-phase-workflow`.
 
@@ -61,9 +69,18 @@ Run this command to delete the update-related files:
 rm -f .claude/hooks/check-updates.js .claude/commands/5/update.md .claude/commands/5/eject.md .5/version.json .5/.update-cache.json
 ```
 
+For Codex installs, remove the runtime-appropriate files instead:
+
+```bash
+rm -rf .codex/skills/5-update .codex/skills/5-eject
+rm -f .5/version.json .5/.update-cache.json
+```
+
 ## Step 4: Clean Up settings.json
 
-Read `.claude/settings.json`. Remove the hook entry from the `hooks.SessionStart` array where the command is `node .claude/hooks/check-updates.js`.
+Claude Code installs only: read `.claude/settings.json`. Remove the hook entry from the `hooks.SessionStart` array where the command is `node .claude/hooks/check-updates.js`.
+
+Codex installs do not use `.claude/settings.json` or Claude hooks for updates, so skip this step for Codex.
 
 Specifically, find and remove the object in the `SessionStart` array that looks like:
 
@@ -89,3 +106,5 @@ Tell the user:
 > Ejected successfully. Update infrastructure has been removed from this installation (was v{packageVersion}).
 >
 > To restore update functionality, reinstall with: `npx 5-phase-workflow`
+>
+> If this was a Codex install, use: `npx 5-phase-workflow --codex`

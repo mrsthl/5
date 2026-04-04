@@ -49,21 +49,34 @@ Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
 - Acceptance criteria describe observable behavior, NOT test code
 </output-format>
 
-<question-strategy>
-Ask 5-10 clarifying questions using AskUserQuestion.
+<collaboration-strategy>
+You are a collaborative thought partner, not an interviewer conducting a checklist.
 
-**Rules:**
-- ONE question at a time — wait for answer before next
-- Use sub-agent findings to ask informed questions
-- At least 5 questions before creating the spec
-- Provide 2-4 options where meaningful
+**Approach:**
+- After the Explore agent returns, propose a draft understanding of the feature (2-3 sentences).
+  Ask the user to confirm, correct, or expand. This anchors the conversation.
+- Use AskUserQuestion — one exchange at a time — but frame questions as a colleague's follow-ups,
+  not a numbered interrogation.
+- When the codebase exploration reveals an obvious pattern or approach, propose it:
+  "Based on how X works, I think this feature would involve Y — does that match your thinking?"
+- When something is genuinely ambiguous, ask openly.
+- Challenge assumptions naturally: "Is this the simplest solution?", "Could we reuse existing X?",
+  "What happens when Y fails?"
 
-**Categories:** Requirements clarity, scope boundaries, edge cases, performance expectations,
-testing strategy, integration points (from findings), alternative approaches, complexity trade-offs.
+**Adaptive depth:**
+- Simple features (config change, small UI tweak) may need 2-3 exchanges.
+- Complex features (new subsystem, multi-component integration) may need 10+.
+- Let the complexity drive the conversation length, not a fixed question count.
 
-**Challenge assumptions:** "Is this the simplest solution?", "Could we reuse existing X?",
-"What happens when Y fails?"
-</question-strategy>
+**Readiness signal — you are ready to write the spec when you can articulate:**
+1. The problem being solved
+2. Clear functional requirements
+3. Scope boundaries (what is in, what is out)
+4. Acceptance criteria (how to verify success)
+5. Key decisions and their labels ([DECIDED], [FLEXIBLE], [DEFERRED])
+
+If any of these are unclear, keep discussing.
+</collaboration-strategy>
 
 # Plan Feature (Phase 1)
 
@@ -74,12 +87,11 @@ Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step u
 - [ ] Step 0: Activate planning guard — write `.5/.planning-active`
 - [ ] Step 1: Gather feature description — ask developer via AskUserQuestion
 - [ ] Step 2: Explore codebase — spawn Explore sub-agent, wait for results, cache to codebase-scan.md
-- [ ] Step 3: Ask 5+ clarifying questions — one at a time, minimum 5 before proceeding
-- [ ] Step 3b: Pre-write checkpoint — verify ≥5 Q&A pairs exist, no code in spec
-- [ ] Step 4: Write feature specification — create `.5/features/{name}/feature.md`
+- [ ] Step 3: Collaborative spec development — discuss with the user until the spec is clear
+- [ ] Step 4: Write feature specification — create `.5/features/{name}/feature.md` (with optional mermaid diagrams)
 - [ ] Output completion message and STOP
 
-> **MANDATORY:** After each step, output `✓ Step N complete` before moving on. This is your progress anchor — if you cannot say which step you just completed, you are skipping ahead. If Step 3b fails (< 5 Q&A), return to Step 3.
+> **MANDATORY:** After completing Steps 0, 1, 2, and 4, output `✓ Step N complete` before moving on. Step 3 is open-ended — it completes when you and the user agree the spec is ready to write.
 
 ## Process
 
@@ -140,11 +152,34 @@ Wait for the sub-agent to return before proceeding.
 
 **Cache the results:** Write the Explore agent's full output to `.5/features/{name}/codebase-scan.md` using the Write tool. This saves Phase 2 from re-scanning the same codebase and saves significant tokens.
 
-### Step 3: Intensive Q&A
+### Step 3: Collaborative Spec Development
 
-> **ROLE CHECK:** You are gathering requirements, NOT designing solutions. Questions ask WHAT and WHY, never HOW.
+> **ROLE CHECK:** You are gathering requirements, NOT designing solutions. Discussion covers WHAT and WHY, never HOW.
 
-Ask 5-10 clarifying questions using AskUserQuestion. ONE question at a time — wait for the answer before asking the next. Use the sub-agent findings to inform questions. Cover: requirements clarity, scope boundaries, edge cases, performance expectations, testing strategy, integration points, alternative approaches, and complexity trade-offs. Challenge assumptions: "Is this the simplest solution?", "Could we reuse existing X?", "What happens when Y fails?"
+**Begin by sharing your understanding.** Based on the user's description (Step 1) and the codebase exploration (Step 2), propose a concise summary of the feature:
+- What problem it solves
+- What the key capabilities are
+- Which existing components are relevant
+
+Ask the user: "Here's my understanding of the feature — [summary]. Does this capture it, or should I adjust anything?"
+
+**Then discuss naturally.** Use AskUserQuestion to explore:
+- Ambiguities or gaps in the description
+- Scope boundaries (what is explicitly NOT included)
+- Edge cases the codebase exploration surfaced
+- Decisions that need to be made now vs. deferred
+- Whether existing patterns can be reused
+
+**Adapt to complexity.** A simple feature may be clear after 2-3 exchanges. A complex one may need extended discussion. Do not rush to write the spec and do not artificially prolong the conversation.
+
+**You are ready to write the spec when you can confidently articulate:**
+1. The problem being solved (Problem Statement)
+2. Clear functional requirements
+3. Scope boundaries (what is in, what is out)
+4. Acceptance criteria (how to verify success)
+5. Key decisions and their labels ([DECIDED], [FLEXIBLE], [DEFERRED])
+
+If any of these are unclear, keep discussing. When you believe clarity has been reached, tell the user: "I think I have a clear picture — ready to write the spec. Anything else before I do?" Then proceed to Step 4.
 
 **Optional re-exploration:** If the user mentions components not covered in the initial report, spawn a targeted Explore agent:
 
@@ -154,14 +189,6 @@ Targeted exploration for feature planning.
 **Task:** Find and analyze {component}, understand patterns, identify relation to planned feature.
 **READ-ONLY.** Only use Read, Glob, and Grep tools.
 ```
-
-### Step 3b: Pre-Write Checkpoint
-
-Before writing the feature spec, verify:
-1. You asked at least 5 questions and received answers
-2. You can summarize the feature in 1-2 sentences without mentioning files, classes, or functions
-
-If you have fewer than 5 Q&A pairs, go back to Step 3 and ask more questions.
 
 ### Step 4: Create Feature Specification
 
@@ -184,12 +211,22 @@ Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
 Populate all sections:
 - Ticket ID & Summary
 - Problem Statement
+- Visual Overview (optional mermaid diagrams — see below)
 - Requirements (functional and non-functional)
 - Constraints
 - Affected Components (from exploration)
 - Acceptance Criteria
 - Alternatives Considered
-- Decisions (from Q&A session) — label each with **[DECIDED]**, **[FLEXIBLE]**, or **[DEFERRED]**
+- Decisions (from the conversation) — label each with **[DECIDED]**, **[FLEXIBLE]**, or **[DEFERRED]**
+
+**Visual Overview (optional mermaid diagrams):**
+Include mermaid diagrams in the spec when they add clarity. Use your judgment:
+- **Flow diagrams**: When the feature involves a multi-step process or state transitions
+- **Entity relationship diagrams**: When new data concepts relate to existing ones
+- **Component interaction diagrams**: When multiple modules/services communicate
+- **Sequence diagrams**: When the order of operations between actors matters
+
+Simple features (single-component changes, straightforward CRUD) typically do not need diagrams. Do not add diagrams for the sake of having them. Diagrams describe WHAT happens, not HOW it is implemented. No class diagrams, no file-level architecture diagrams, no code-level sequence diagrams.
 
 **Decision labeling rules:**
 - **[DECIDED]**: The user gave a clear, specific answer → Phase 2 planner and Phase 3 agents MUST honor exactly

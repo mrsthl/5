@@ -4,6 +4,8 @@
 - Entity definitions describe data concepts, not schemas or interfaces
 - Acceptance criteria describe observable behavior, not test assertions
 - NO code, pseudo-code, or implementation details anywhere in this document
+- Visual Overview section is OPTIONAL — delete it if the feature doesn't benefit from diagrams
+- Mermaid diagrams describe WHAT happens, not HOW it is implemented
 -->
 
 # Feature: {TICKET-ID} - {Title}
@@ -12,27 +14,57 @@
 {TICKET-ID}
 
 ## Summary
-{1-2 sentence overview of what will be implemented}
+{1-2 sentence overview: what capability is being added and who benefits}
 
 ## Problem Statement
-{Why is this feature needed? What problem does it solve?}
+{Describe the current pain point or gap. Who experiences it and what is the impact?}
+
+## Visual Overview
+<!-- OPTIONAL: Include mermaid diagrams only when they add clarity to the feature.
+     Delete this entire section if the feature is simple enough to understand without diagrams.
+     Use whichever diagram types are relevant — you don't need all of them. -->
+
+<!-- Process Flow — use when the feature involves a multi-step process or state transitions -->
+```mermaid
+flowchart TD
+    A[Start state] --> B[Step 1]
+    B --> C{Decision point}
+    C -->|Yes| D[Outcome 1]
+    C -->|No| E[Outcome 2]
+```
+
+<!-- Entity Relationships — use when new data concepts relate to existing ones -->
+```mermaid
+erDiagram
+    ENTITY-A ||--o{ ENTITY-B : "relationship"
+    ENTITY-B }|--|| ENTITY-C : "relationship"
+```
+
+<!-- Component Interactions — use when multiple modules or services communicate -->
+```mermaid
+sequenceDiagram
+    actor User
+    participant ComponentA
+    participant ComponentB
+    User->>ComponentA: action
+    ComponentA->>ComponentB: interaction
+    ComponentB-->>User: result
+```
 
 ## Requirements
 
 ### Functional Requirements
-- {Requirement 1}
-- {Requirement 2}
+- {The system shall... [describe observable behavior]}
 - ...
 
 ### Non-Functional Requirements
-- {Performance requirements}
-- {Compatibility requirements}
+- {Performance, reliability, scalability, or compatibility expectations}
 - ...
 
 ## Constraints
-- {Business constraints}
-- {Technical constraints}
-- {Time/resource constraints}
+- {Business rules that limit the solution space}
+- {Technical boundaries from existing architecture}
+- {Timeline or resource limitations}
 
 ## Affected Components
 - **{component/module-1}** - {What changes here}
@@ -56,9 +88,9 @@
 - ...
 
 ## Acceptance Criteria
-- [ ] {Criterion 1 - how to verify success}
-- [ ] {Criterion 2}
-- [ ] {Criterion 3}
+- [ ] {Observable behavior that proves this requirement is met}
+- [ ] {Observable behavior that proves this requirement is met}
+- [ ] {Observable behavior that proves this requirement is met}
 - ...
 
 ## Alternatives Considered
@@ -78,22 +110,24 @@
 
 ## Decisions
 
-<!-- Tag every Q&A with exactly one of: [DECIDED], [FLEXIBLE], [DEFERRED]
-  - [DECIDED]: Locked decision — Phase 2 planner and Phase 3 agents MUST honor exactly
-  - [FLEXIBLE]: Claude's discretion — planner chooses the best approach
-  - [DEFERRED]: Explicitly out of scope — planner MUST NOT include in the plan
+<!-- Record key decisions from the spec discussion.
+     Tag each with exactly one of: [DECIDED], [FLEXIBLE], [DEFERRED]
+     - [DECIDED]: Locked — Phase 2 planner and Phase 3 agents MUST honor exactly
+     - [FLEXIBLE]: Claude's discretion — planner chooses the best approach
+     - [DEFERRED]: Out of scope — planner MUST NOT include in the plan
 -->
 
-### Q1: {Question from collaboration phase}
-**A:** {Answer from developer} **[DECIDED]**
+### {Topic: brief description of what was decided}
+**Context:** {Why this decision came up}
+**Decision:** {What was decided} **[DECIDED]**
 
-### Q2: {Question}
-**A:** {Answer} **[FLEXIBLE]**
+### {Topic: area left to implementer's discretion}
+**Context:** {What was discussed}
+**Decision:** {General direction, implementer chooses specifics} **[FLEXIBLE]**
 
-### Q3: {Question about a nice-to-have}
-**A:** {Answer — let's skip this for now} **[DEFERRED]**
-
-...
+### {Topic: explicitly deferred item}
+**Context:** {Why it was raised}
+**Decision:** {Not addressing now — reason} **[DEFERRED]**
 
 ## Next Steps
 After approval:

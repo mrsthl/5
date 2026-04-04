@@ -1,6 +1,52 @@
 # Release Notes
 
 
+## v1.9.0
+
+**Release Date:** 2026-04-05
+
+### Improved Planning Phases and Multi-Provider Compatibility
+
+Overhauls both planning phases for more natural, adaptive conversations and adds AGENTS.md as the provider-agnostic instructions file alongside CLAUDE.md.
+
+**What's New**
+- **AGENTS.md migration**: Instructions are now written to `AGENTS.md` (provider-agnostic), with `CLAUDE.md` becoming a thin shim containing only `@AGENTS.md`. Works with Claude Code, Codex, and other AI coding tools
+- **Adaptive feature planning**: `plan-feature` replaces the rigid 5-question minimum interview with a conversational approach — the agent proposes its understanding first, then discusses naturally until spec clarity is reached
+- **Mermaid diagram support**: Feature spec template now supports mermaid diagrams for visualizing architecture and flows
+- **Live context detection**: `plan-implementation` detects when Phase 1 context is still active and skips redundant file loading, codebase scanning, and questions — making `/clear` between Phase 1→2 optional
+- **Scoped implementation notes**: Plan notes now use `[global]`, `[Step N]`, and `[component-name]` prefixes so agents only see relevant guidance
+- **Explicit dependency tracking**: New `Depends On` column in the plan table with pre-step validation that dependency components completed successfully
+
+**Improvements**
+- **Strict agent-only orchestration**: The orchestrator never edits code directly, always spawns agents — even for small fixes
+- **Auto-upgrade model on retry**: Failed components automatically retry with a higher model tier (simple→sonnet, moderate→sonnet)
+- **Conditional technical questions**: Phase 2 asks technical questions only when genuine ambiguity exists (max 2), not by default
+- **Review tool renamed**: `reviewTool: "claude"` renamed to `"native"` for multi-provider compatibility
+
+**Bug Fixes**
+- **discuss-feature**: Fixed to use Decisions section format instead of Q&A
+- **configure-project legacy cleanup**: Fixed `unlinkSync` on directories (now uses proper directory removal)
+- **install.js managed file list**: Added `configure-project` to skills list for upgrade detection
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/commands/5/review-code.md` (modified)
+- `src/templates/workflow/FEATURE-SPEC.md` (modified)
+- `src/templates/workflow/PLAN.md` (modified)
+- `src/skills/configure-docs-index/SKILL.md` (modified)
+- `src/skills/configure-skills/SKILL.md` (modified)
+- `src/skills/generate-readme/SKILL.md` (modified)
+- `src/skills/generate-readme/TEMPLATE.md` (modified)
+- `bin/install.js` (modified)
+
+---
+
+
 ## v1.8.9
 
 **Release Date:** 2026-04-02

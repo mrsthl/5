@@ -78,7 +78,7 @@ Look for patterns in project documentation:
 
 - Check `.5/ARCHITECTURE.md` for architectural patterns and non-obvious conventions
 - Check `.5/TESTING.md` for test patterns and conventions
-- Fall back to CLAUDE.md if `.5/` documentation not present
+- Fall back to AGENTS.md if `.5/` documentation not present
 - Check module-specific documentation
 
 Use these patterns to identify what's critical for the module README.

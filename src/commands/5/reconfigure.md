@@ -1,6 +1,6 @@
 ---
 name: 5:reconfigure
-description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates CLAUDE.md, and refreshes all skills.
+description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates AGENTS.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
 user-invocable: true
 context: fork
@@ -117,7 +117,7 @@ Use the existing skills in `.claude/skills/` (from Step 2e) as the source of tru
 
 Use `AskUserQuestion` to show a summary and get confirmation. Present:
 
-1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional), `.5/index/rebuild-index.sh`, `.5/index/*.md`, and `CLAUDE.md`
+1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional), `.5/index/rebuild-index.sh`, `.5/index/*.md`, and `AGENTS.md`
 2. **Skills that will be refreshed** — list ALL skills found in `.claude/skills/` (both workflow-generated and user-created)
 3. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
 4. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
@@ -139,7 +139,7 @@ Invoke the refresh skills in **refresh mode** via the Task tool:
 ```
 Task prompt 1: "Run configure-docs-index skill in REFRESH MODE.
 
-Refresh the generated documentation, rebuild the codebase index in `.5/index/`, delete legacy docs if they exist, and update `CLAUDE.md` while preserving user-written sections."
+Refresh the generated documentation, rebuild the codebase index in `.5/index/`, delete legacy docs if they exist, and update `AGENTS.md` (plus CLAUDE.md shim) while preserving user-written sections."
 
 Task prompt 2: "Run configure-skills skill in REFRESH MODE.
 

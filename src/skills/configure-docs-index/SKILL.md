@@ -1,6 +1,6 @@
 ---
 name: configure-docs-index
-description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates CLAUDE.md. Used during /5:implement-feature CONFIGURE.
+description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement-feature CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
 context: fork
@@ -11,11 +11,11 @@ user-invocable: false
 
 ## Overview
 
-This skill handles the documentation and indexing work during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `CLAUDE.md`.
+This skill handles the documentation and indexing work during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `AGENTS.md`.
 
 It handles one task:
 
-- **Analyze Codebase and Create/Update Documentation + Index** - Maps codebase, writes `.5/*.md`, generates `.5/index/*`, and updates `CLAUDE.md`
+- **Analyze Codebase and Create/Update Documentation + Index** - Maps codebase, writes `.5/*.md`, generates `.5/index/*`, and updates `AGENTS.md`
 
 Note: config.json is written directly by `/5:configure` during the Q&A phase.
 
@@ -23,28 +23,28 @@ Note: config.json is written directly by `/5:configure` during the Q&A phase.
 
 ## Modes
 
-This skill supports two modes. The analysis (A1), template filling (A2-A3), index generation (A3.5), and CLAUDE.md update (A4-A5) logic is the same in both modes — only the **input source** changes.
+This skill supports two modes. The analysis (A1), template filling (A2-A3), index generation (A3.5), and AGENTS.md update (A4-A5) logic is the same in both modes — only the **input source** changes.
 
 ### Full Mode (default)
 
 Used by `/5:configure` → `/5:implement-feature CONFIGURE` flow.
 
 - **Input:** Pattern/command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
-- **Behavior:** Creates documentation, index files, and `CLAUDE.md` from scratch based on feature spec requirements
+- **Behavior:** Creates documentation, index files, and `AGENTS.md` from scratch based on feature spec requirements
 
 ### Refresh Mode
 
 Used by `/5:reconfigure` for lightweight refresh.
 
 - **Input:** The Task prompt tells it to refresh documentation and the codebase index
-- **Behavior:** Re-analyzes codebase and overwrites docs, index files, and `CLAUDE.md`
+- **Behavior:** Re-analyzes codebase and overwrites docs, index files, and `AGENTS.md`
 - **Trigger:** Task prompt includes "REFRESH MODE"
 
 In both modes, the analysis and generation logic is identical.
 
 ---
 
-## A. Analyze Codebase and Create/Update CLAUDE.md
+## A. Analyze Codebase and Create/Update AGENTS.md
 
 **Process:**
 
@@ -139,11 +139,11 @@ Generate a repository-local codebase index that stays generic and works for any 
 - Skip categories that do not apply. Do not generate empty placeholder files.
 - The script should overwrite previously generated index files on each run so rebuild is idempotent.
 
-### A4. Create CLAUDE.md
+### A4. Create AGENTS.md
 
-Generate CLAUDE.md:
+Generate `AGENTS.md` — the provider-agnostic instructions file that works with any AI coding tool:
 
-CLAUDE.md structure:
+AGENTS.md structure:
 - **Project Overview:** 1-2 sentences from README/package.json
 - **Build & Run Commands:** Build, test, and other detected commands
 - **Workflow Rules:** Include this section verbatim:
@@ -156,15 +156,33 @@ CLAUDE.md structure:
 - **Coding Guidelines:** The 6 mandatory principles (types, concise docs, short files, extract methods, SRP/DRY, maintainable/modular)
 - **Project Documentation:** Links to whichever `.5/` files were created (only list files that exist)
 - **Codebase Index:** Add a section linking `.5/index/README.md`, the generated index files, and the rebuild script
-- **Index Freshness Rule:** State clearly that if the index files are more than one day old, Claude should regenerate them by running `.5/index/rebuild-index.sh` before relying on them
+- **Index Freshness Rule:** State clearly that if the index files are more than one day old, the agent should regenerate them by running `.5/index/rebuild-index.sh` before relying on them
 
-### A5. Preserve Existing Content
+### A4b. Create CLAUDE.md shim (Claude Code only)
 
-If CLAUDE.md already exists:
+After writing `AGENTS.md`, create a `CLAUDE.md` file that contains only:
+
+```
+@AGENTS.md
+```
+
+This single line uses Claude Code's include syntax to pull in the full AGENTS.md content. This way Claude Code users get the instructions automatically, while other AI tools (Codex, etc.) read AGENTS.md directly.
+
+**If `CLAUDE.md` already exists and contains more than just `@AGENTS.md`:** This is a pre-existing CLAUDE.md that needs migration. Handle it in A5 below.
+
+### A5. Migrate and Preserve Existing Content
+
+**If `AGENTS.md` already exists:**
 - Read current content
 - Identify user-written custom sections (not matching template structure)
-- Preserve under "Custom Documentation" section in new CLAUDE.md
+- Preserve under "Custom Documentation" section in new AGENTS.md
 - Ensure 6 mandatory coding guidelines are retained
+
+**If `CLAUDE.md` already exists with real content (not just `@AGENTS.md`):**
+- Read current CLAUDE.md content
+- Identify user-written custom sections (not matching template structure)
+- Migrate all content into the new AGENTS.md (preserve under "Custom Documentation" section)
+- Overwrite CLAUDE.md with just `@AGENTS.md`
 
 ---
 
@@ -173,13 +191,14 @@ If CLAUDE.md already exists:
 Returns structured results for each component:
 
 ```
-Component A (Documentation + Index): SUCCESS - Created documentation files, codebase index, and CLAUDE.md
+Component A (Documentation + Index): SUCCESS - Created documentation files, codebase index, and AGENTS.md
   - .5/ARCHITECTURE.md (Pattern: Layered, 4 layers identified)
   - .5/TESTING.md (mocking patterns, gotchas documented)
   - .5/CONCERNS.md (3 TODO items, 1 security note) [or "skipped — no concerns found"]
   - .5/index/rebuild-index.sh (generated index rebuild script)
   - .5/index/*.md (focused codebase index files)
-  - CLAUDE.md (updated with references)
+  - AGENTS.md (updated with references)
+  - CLAUDE.md (shim: @AGENTS.md)
 ```
 
 Or on failure:
@@ -190,7 +209,7 @@ Component A (Documentation + Index): FAILED - Unable to read template files
 
 ## DO NOT
 
-- DO NOT overwrite existing user-written CLAUDE.md sections
+- DO NOT overwrite existing user-written AGENTS.md sections
 - DO NOT include `steps` in config.json
 - DO NOT hardcode conventions - always derive from actual project analysis
 - DO NOT generate empty or placeholder index files

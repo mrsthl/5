@@ -22,7 +22,7 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
 - NEVER continue past the completion message — when you output "Plan created at...", you are DONE
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
-- Each component in the table gets: name, action, file path, one-sentence description, pattern file, verify command, complexity
+- Each component in the table gets: name, action, file path, one-sentence description, pattern file, verify command, complexity, depends on
 - **Pattern File** (required for "create" actions): Path to an existing file the executor reads before implementing. For "modify" actions, this is the target file itself. Helps executor match conventions exactly.
 - **Verify** (required): A concrete command or grep check the executor runs after implementing. Examples: `grep -q 'export class UserService' src/services/user.service.ts`, `npm test -- --testPathPattern=user`, `npx tsc --noEmit`. Never use vague checks like "works correctly".
 - If a component needs more than one sentence to describe, split it into multiple components
@@ -61,21 +61,32 @@ Assign complexity per component using this rubric:
 
 # Plan Implementation (Phase 2)
 
+## Context Detection
+
+Before starting, determine whether you have **live context from Phase 1**:
+
+**Live context = YES** if ALL of the following are true:
+- `/5:plan-feature` was run earlier in THIS conversation (not a previous one)
+- The feature spec discussion, codebase exploration results, and user decisions are visible in your conversation history
+- No `/clear` was run between Phase 1 and now
+
+**Live context = NO** if any of the above is false (e.g., user ran `/clear`, or this is a fresh conversation).
+
 ## Progress Checklist
 
-Follow these steps IN ORDER. Do NOT skip steps. Do NOT proceed to a later step until the current one is complete. After completing each step, output a status line: `✓ Step N complete`.
+Follow these steps IN ORDER. Steps marked *(skip if live context)* should be skipped when you have live context from Phase 1.
 
 - [ ] Step 0: Activate planning guard — write `.5/.planning-active`
-- [ ] Step 1: Load feature spec — read `.5/features/{name}/feature.md`
+- [ ] Step 1: Load feature spec *(skip if live context)* — read `.5/features/{name}/feature.md`
 - [ ] Step 1b: Load project configuration — read `.5/config.json` if it exists
-- [ ] Step 2: Load or generate codebase scan — reuse cached scan from Phase 1, or spawn Explore if missing
-- [ ] Step 3: Ask 2-3 technical questions — one at a time via AskUserQuestion
+- [ ] Step 2: Load or generate codebase scan *(skip if live context)* — reuse cached scan from Phase 1, or spawn Explore if missing
+- [ ] Step 3: Ask technical questions *(conditional)* — only if the feature spec leaves technical ambiguity
 - [ ] Step 4: Design components — identify files, order, step grouping
 - [ ] Step 5: Write the plan — create `.5/features/{name}/plan.md`
 - [ ] Step 5b: Plan self-check — verify format, no code, scope, completeness, tests
 - [ ] Output completion message and STOP
 
-> **MANDATORY:** After each step, output `✓ Step N complete` before moving on. This is your progress anchor — if you cannot say which step you just completed, you are skipping ahead. If Step 5b fails, fix plan.md before outputting completion.
+> **MANDATORY:** After each step (including skipped ones), output `✓ Step N complete` (or `✓ Step N skipped (live context)`) before moving on. This is your progress anchor — if you cannot say which step you just completed, you are skipping ahead. If Step 5b fails, fix plan.md before outputting completion.
 
 ## Output Format
 
@@ -97,9 +108,11 @@ Write (or refresh) the planning guard marker to `.5/.planning-active` using the 
 
 This activates (or refreshes) the plan-guard hook which prevents accidental source file edits during planning. The marker is removed automatically when implementation starts (`/5:implement-feature`), expires after 4 hours, or can be cleared manually with `/5:unlock`.
 
-### Step 1: Load Feature Spec
+### Step 1: Load Feature Spec *(skip if live context)*
 
-Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
+**If live context:** You already have the feature spec discussion in your conversation history. Extract ticket ID, requirements, acceptance criteria, affected components, and decisions from what was discussed. Output `✓ Step 1 skipped (live context)` and proceed to Step 1b.
+
+**If no live context:** Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
 
 Extract: Ticket ID, requirements (functional and non-functional), acceptance criteria, affected components, and **decisions**.
 
@@ -119,11 +132,13 @@ Read `.5/config.json` if it exists. Extract:
 
 If config.json doesn't exist, proceed without it.
 
-### Step 2: Load or Generate Codebase Scan
+### Step 2: Load or Generate Codebase Scan *(skip if live context)*
 
 > **ROLE CHECK:** You are an Implementation Planner. Your ONLY output is plan.md. You do NOT write code, create source files, or start implementation. If you feel the urge to implement, STOP — that is Phase 3's job.
 
-**First, check for a cached scan from Phase 1:**
+**If live context:** The codebase exploration results from Phase 1 are already in your conversation history. Output `✓ Step 2 skipped (live context)` and proceed to Step 3.
+
+**If no live context — first, check for a cached scan from Phase 1:**
 
 Read `.5/features/{feature-name}/codebase-scan.md`. If it exists and is non-empty, use it as the codebase scan results. This was generated during Phase 1 (`/5:plan-feature`) and contains project structure, naming conventions, pattern files, and test framework detection.
 
@@ -170,17 +185,19 @@ Wait for the sub-agent to return before proceeding.
 
 **If a fresh scan was spawned**, write the results to `.5/features/{feature-name}/codebase-scan.md` for future reference.
 
-### Step 3: Ask 2-3 Technical Questions (One at a Time)
+### Step 3: Ask Technical Questions (Conditional)
 
-Use AskUserQuestion to clarify:
-- Data layer decisions (if applicable)
-- Key implementation choices
-- Anything unclear from the feature spec
+**Evaluate whether questions are needed.** Review what you know from the feature spec (and live context if available). Ask questions ONLY if:
+- A technical decision is genuinely ambiguous (not already labeled [DECIDED] or [FLEXIBLE])
+- The feature spec lacks information needed to identify files, components, or ordering
+- The codebase scan revealed multiple conflicting patterns and you need guidance
 
-**Rules:**
-- ONE question at a time — wait for answer before next
-- Max 3 questions — don't over-question
-- Don't repeat questions already answered in Phase 1
+**If no ambiguity exists** (all decisions are clear, codebase patterns are obvious), skip this step entirely. Output `✓ Step 3 skipped (no ambiguity)` and proceed to Step 4.
+
+**If questions are needed:**
+- Use AskUserQuestion — ONE question at a time
+- Max 2 questions — be surgical, don't over-question
+- NEVER re-ask something already answered in Phase 1 or labeled [DECIDED] in the feature spec
 
 **Optional re-exploration:** If user mentions patterns not in the initial scan, spawn a targeted Explore agent:
 
@@ -227,6 +244,8 @@ If no e2e or integration framework was detected, do NOT plan components for them
 
 Not every feature needs all non-test steps. Use what makes sense. But testable components always need unit tests, and features touching endpoints or cross-module flows should include integration/e2e tests when the infrastructure exists.
 
+**Depends On:** For each component, identify if it has a data dependency on a specific component from a prior step. Use the component name from the Depends On column (or `—` if none). This is for cross-step dependencies where a component needs a specific export, type, or interface from another component. File-level existence is already checked by the orchestrator — Depends On captures *semantic* dependencies (e.g., "auth-service depends on auth-types because it imports AuthToken").
+
 **Parallel execution:** Components in the same step run in parallel. Group independent components together, separate dependent ones into different steps.
 
 ### Step 5: Write the Plan
@@ -239,8 +258,21 @@ Include:
 - YAML frontmatter (ticket, feature, created)
 - One-sentence summary
 - Components table
-- Implementation Notes (references to existing pattern files + business rules)
+- Implementation Notes — **scoped by step or component** (see below)
 - Verification commands
+
+**Scoped Implementation Notes:**
+Each note MUST be prefixed with a scope tag so the orchestrator can filter notes per agent:
+- `[Step N]` — applies to all components in that step
+- `[component-name]` — applies to a specific component
+- `[global]` — applies to all components (use sparingly: project-wide conventions like DI patterns, naming schemes)
+
+Example:
+```
+- [global] All services use constructor-based dependency injection
+- [Step 1] Follow the pattern from src/models/User.ts for entity definitions
+- [schedule-service] endDate must be > startDate, throw ValidationError if not
+```
 
 **Verification section — prefer config.json values:**
 - Build: {build.command from config.json, or explore agent value, or "auto"}
@@ -250,7 +282,7 @@ Include:
 
 Read plan.md back and verify:
 
-1. **Format:** Every row in the Components table has all 8 columns filled (Step, Component, Action, File, Description, Pattern File, Verify, Complexity)
+1. **Format:** Every row in the Components table has all 9 columns filled (Step, Component, Action, File, Description, Pattern File, Verify, Complexity, Depends On)
 2. **No code:** Implementation Notes contain ONLY references to existing files and business rules
 3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
 4. **Completeness:** Every functional requirement from feature.md has at least one component
@@ -287,7 +319,7 @@ Plan created at `.5/features/{feature-name}/plan.md`
 
 Next steps:
 1. Review the plan
-2. /clear to reset context
+2. /clear to reset context (recommended before implementation)
 3. /5:implement-feature {feature-name}
 ```
 

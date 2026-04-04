@@ -9,7 +9,7 @@ context: fork
 
 <role>
 You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a feature spec.
-You do NOT generate CLAUDE.md, documentation files, or skills directly — those are Phase 3's job.
+You do NOT generate AGENTS.md, CLAUDE.md, documentation files, or skills directly — those are Phase 3's job.
 You write ONLY to: .5/config.json, .5/version.json, .5/features/CONFIGURE/feature.md, and .gitignore.
 After writing config.json and the feature spec, you are DONE. Exit immediately.
 </role>
@@ -39,7 +39,7 @@ Your job in this command:
 ✅ Tell user to run /5:plan-implementation CONFIGURE
 
 Your job is NOT:
-❌ Create CLAUDE.md directly (Phase 3 does this)
+❌ Create AGENTS.md or CLAUDE.md directly (Phase 3 does this)
 ❌ Generate documentation files directly (Phase 3 does this)
 ❌ Generate skills directly (Phase 3 does this)
 ❌ Skip user interaction
@@ -47,7 +47,7 @@ Your job is NOT:
 
 **After writing config.json, creating the feature spec, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-**If you find yourself creating CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the feature spec.**
+**If you find yourself creating AGENTS.md, CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the feature spec.**
 
 ## Configuration Process
 
@@ -92,8 +92,9 @@ fi
 # Set skill_creator_available=true if any skill-creator tool is found.
 ```
 
-**1e. Check CLAUDE.md:**
-- If `CLAUDE.md` exists, read its content
+**1e. Check AGENTS.md / CLAUDE.md:**
+- If `AGENTS.md` exists, read its content
+- If `AGENTS.md` does not exist but `CLAUDE.md` exists with real content (not just `@AGENTS.md`), read it — this is a legacy setup that will be migrated to AGENTS.md during Phase 3
 
 **1f. Scan existing skills:**
 - Check `.claude/skills/` for existing project-specific skills
@@ -169,7 +170,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
 **2h. Review tool preference:**
 - "Which code review tool would you like to use?"
   - Options:
-    1. "Claude (built-in, no setup needed)" — always available
+    1. "Native (built-in agent review, no setup needed)" — always available, works with any AI coding tool
     2. "CodeRabbit CLI (requires installation)" — external tool
     3. "None (skip automated review)"
 - If user selects CodeRabbit and it was not detected in Step 1d:
@@ -207,14 +208,14 @@ The skill-creator plugin from the official Claude store helps generate higher-qu
   - If user selects "Install now": execute the install command, then set `tools.skillCreator.available = true` in the config
   - If user selects "Skip": `tools.skillCreator.available` remains `false`
 
-**2k. Confirm CLAUDE.md generation:**
-- "Generate/update CLAUDE.md? This will analyze your codebase to document structure and conventions."
+**2k. Confirm AGENTS.md generation:**
+- "Generate/update AGENTS.md? This will analyze your codebase to document structure and conventions. (A CLAUDE.md shim will also be created for Claude Code compatibility.)"
   - Options: "Yes (recommended)", "Skip"
 
 **2k2. Confirm rules generation:**
-- "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when Claude works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
+- "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when the agent works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
   - Options: "Yes (recommended)", "Skip"
-- Note: Rules complement CLAUDE.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
+- Note: Rules complement AGENTS.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
 
 **2l. Review detected patterns for skill generation:**
 
@@ -307,7 +308,7 @@ Write `.5/features/CONFIGURE/feature.md` containing all gathered data:
 # Feature: Project Configuration
 
 ## Summary
-Generates CLAUDE.md, a rebuildable codebase index, and project-specific skills. (config.json already written.)
+Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-specific skills. (config.json already written.)
 
 ## Requirements
 
@@ -328,7 +329,7 @@ Analyze the codebase and generate focused documentation capturing only non-deriv
 - Skip empty categories; do not create placeholder index files
 - Re-running the script should fully refresh the index in place
 
-**Create CLAUDE.md:**
+**Create AGENTS.md** (provider-agnostic instructions file):
 - Project overview and build commands
 - Links to whichever `.5/` documentation files were created
 - Links to `.5/index/README.md`, the generated index files, and `.5/index/rebuild-index.sh`
@@ -348,8 +349,12 @@ Analyze the codebase and generate focused documentation capturing only non-deriv
   5. Respect SRP and DRY
   6. Make code maintainable and modular
 
-**Preserve existing content:**
-- If CLAUDE.md already exists, preserve user-written custom sections
+**Create CLAUDE.md shim:**
+- Contains only `@AGENTS.md` (Claude Code include syntax)
+
+**Migrate and preserve existing content:**
+- If AGENTS.md already exists, preserve user-written custom sections
+- If CLAUDE.md exists with real content (not just `@AGENTS.md`), migrate content to AGENTS.md and replace CLAUDE.md with the shim
 
 ### Requirement 2: Generate Project-Specific Skills
 Handled by: `configure-skills`
@@ -388,13 +393,14 @@ Only generate rules for patterns that were actually detected:
 - [ ] `.5/index/README.md` exists and documents the generated index files
 - [ ] Multiple focused `.5/index/*.md` files are generated for applicable codebase concerns
 - [ ] Empty sections omitted (no "Not detected" / "None found" placeholders)
-- [ ] `CLAUDE.md` exists with references to created `.5/` files
-- [ ] `CLAUDE.md` links to the codebase index and rebuild script
-- [ ] `CLAUDE.md` says to regenerate the index if it is older than one day
-- [ ] CLAUDE.md contains 6 coding guidelines
+- [ ] `AGENTS.md` exists with references to created `.5/` files
+- [ ] `AGENTS.md` links to the codebase index and rebuild script
+- [ ] `AGENTS.md` says to regenerate the index if it is older than one day
+- [ ] `AGENTS.md` contains 6 coding guidelines
+- [ ] `CLAUDE.md` exists and contains only `@AGENTS.md`
 - [ ] All specified project-specific skills are generated in `.claude/skills/`
 - [ ] Generated skills reference actual project conventions
-- [ ] If CLAUDE.md existed before, user-written sections are preserved
+- [ ] If AGENTS.md or CLAUDE.md existed before, user-written sections are preserved in AGENTS.md
 - [ ] `.claude/rules/` directory exists with scoped rule files (if rules generation selected)
 - [ ] Generated rules use `paths:` frontmatter for scoping where applicable
 - [ ] Rules contain concise directives, not documentation

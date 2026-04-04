@@ -1,6 +1,6 @@
 ---
 name: 5:review-code
-description: Reviews code changes using Claude (built-in) or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings.
+description: Reviews code changes using native agent review or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Task, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
@@ -21,8 +21,8 @@ After saving the findings file, you are DONE.
 
 Two review tools are supported (configured in `.5/config.json` field `reviewTool`):
 
-- **Claude** (default) — Built-in, zero setup. A fresh-context agent reviews code blind.
-- **CodeRabbit** — External CLI. Requires `coderabbit` installed and authenticated.
+- **native** (default) — Built-in, zero setup. A fresh-context agent reviews code blind. Works with any AI coding tool (Claude Code, Codex, etc.).
+- **coderabbit** — External CLI. Requires `coderabbit` installed and authenticated.
 
 Both produce the same structured output format.
 
@@ -32,7 +32,7 @@ Both produce the same structured output format.
 
 Read `.5/config.json` and check the `reviewTool` field.
 
-- If not set or missing, default to `"claude"`
+- If not set, missing, or `"claude"` (legacy value), default to `"native"`
 - If `"none"`, inform user that automated review is disabled and STOP
 
 **If CodeRabbit:** Check prerequisites via Bash:
@@ -40,7 +40,7 @@ Read `.5/config.json` and check the `reviewTool` field.
 which coderabbit && coderabbit auth status
 ```
 If not installed or not authenticated, ask user via AskUserQuestion:
-- "Switch to Claude for this review? (Recommended)" / "I'll install CodeRabbit first"
+- "Switch to native review for this review? (Recommended)" / "I'll install CodeRabbit first"
 - If they choose CodeRabbit setup, provide install instructions and STOP
 
 ### Step 2: Determine What to Review
@@ -102,13 +102,13 @@ Task tool call:
     - Include ALL findings
 ```
 
-#### 3B: Claude Review Agent
+#### 3B: Native Review Agent
 
 ```
 Task tool call:
   subagent_type: general-purpose
   model: sonnet
-  description: "Run Claude code review"
+  description: "Run native code review"
   prompt: |
     You are a code reviewer. You have NO prior knowledge of what was built or why.
     Review this code blind, purely on its merits.

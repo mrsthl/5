@@ -163,7 +163,8 @@ Before executing step N (where N > 1), verify that prior steps' outputs exist on
    - Log: `"⚠ Pre-step check: {file} from step {M} component {name} not found on disk"`
    - Move the component back from `completedComponents` to `pendingComponents`
    - STOP execution for this step. Report to user: `"Step {N} blocked: prior step output missing. Re-run step {M} or fix manually."`
-3. If all files verified, proceed to 3a
+3. **Depends On check:** For each component in step N that has a `Depends On` value (not `—`), verify the named dependency component is in `completedComponents`. If a dependency is in `failedAttempts`, STOP and report: `"Step {N} component {name} blocked: dependency {dep} failed."`
+4. If all files and dependencies verified, proceed to 3a
 
 This prevents cascading failures where step N assumes step N-1's outputs exist but they don't.
 
@@ -202,11 +203,17 @@ Task tool call:
     ## Read First
     {Pattern File value(s) from plan table — executor MUST read these before writing any code}
 
+    ## Dependencies
+    {If Depends On is not "—": "This component depends on {dep-name} ({dep-file}). Read that file first to understand the exports/types you need to use."}
+    {If Depends On is "—": omit this section entirely}
+
     ## Verify
     {Verify command(s) from plan table — executor runs these after implementation}
 
     ## Implementation Notes
-    {relevant notes from plan}
+    {ONLY notes relevant to this step/component — filter by [Step N] or [component-name] prefix.
+     Include untagged notes only if they are globally relevant (e.g., "all services use dependency injection").
+     Do NOT send all notes to every agent — this wastes context.}
 ```
 
 The agent file defines the implementation process, output format, and deviation rules. If the agent file is not found (local install), fall back to `.claude/agents/component-executor.md` relative to the project root.
@@ -238,9 +245,16 @@ Mark the current step's TaskCreate task as `completed`. Mark the next step's tas
 
 For each component that returned `STATUS: failed`:
 
-1. **Assess the error:**
-   - **Small fix** (missing import, wrong path, syntax error): Fix with Edit tool directly in main context. Mark as completed. This counts as retry 1.
-   - **Large fix** (logic error, wrong pattern, missing context): Re-spawn the component-executor agent with the same prompt plus an `## Error Context` block describing the previous failure. This counts as retry 1.
+1. **Always re-spawn an agent** — NEVER fix code directly in the orchestrator context, not even for small fixes like missing imports or wrong paths. The orchestrator stays slim and delegates ALL code work.
+
+   Re-spawn the component-executor agent with the same prompt plus an `## Error Context` block describing the previous failure.
+
+   **Model upgrade on retry:** Bump the model one tier up from the original complexity:
+   - `simple` (haiku) → retry with `sonnet`
+   - `moderate` (haiku/sonnet) → retry with `sonnet`
+   - `complex` (sonnet) → retry with `sonnet` (already max)
+
+   This gives the retry agent better reasoning to solve what the first attempt couldn't.
 
 2. If the retry also fails:
    - Update `retryCount: 2` in the component's `failedAttempts` entry

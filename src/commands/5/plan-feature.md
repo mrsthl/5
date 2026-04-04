@@ -242,7 +242,8 @@ After writing feature.md, output ONLY this message — no additional text, no su
 ✓ Feature spec created at `.5/features/{name}/feature.md`
 
 To review or refine: /5:discuss-feature {name}
-To proceed: /clear → /5:plan-implementation {name}
+To proceed: /5:plan-implementation {name}
+  (optional: /clear first to free context — plan-implementation adapts either way)
 ```
 
 **YOU ARE NOW FINISHED.** This is a hard stop. Do not:

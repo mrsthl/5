@@ -75,7 +75,7 @@ Examples:
 
 **DO NOT include:**
 
-- General patterns covered in CLAUDE.md
+- General patterns covered in AGENTS.md
 - Obvious patterns like "use builders for construction"
 - Implementation details
 
@@ -95,8 +95,8 @@ Examples:
 
 **Don't include:**
 
-- Links to CLAUDE.md sections relevant to this module
-- Don't repeat things and patterns already documented in CLAUDE.md
+- Links to AGENTS.md sections relevant to this module
+- Don't repeat things and patterns already documented in AGENTS.md
 
 **Include for:**
 
@@ -112,7 +112,7 @@ Examples:
 
 1. List every validator, query, or handler class individually
 2. Document implementation details
-3. Copy content from CLAUDE.md
+3. Copy content from AGENTS.md
 4. Include exhaustive method signatures
 5. Create walls of text
 6. Document every package
@@ -122,7 +122,7 @@ Examples:
 
 1. Focus on top-level overview
 2. List 3-5 key components only
-3. Reference CLAUDE.md for patterns
+3. Reference AGENTS.md for patterns
 4. Keep it under 100 lines
 5. Use examples sparingly
 6. Use package references for groups

@@ -100,7 +100,7 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
       "available": false
     }
   },
-  "reviewTool": "claude",
+  "reviewTool": "native",
   "git": {
     "autoCommit": false,
     "commitMessage": {

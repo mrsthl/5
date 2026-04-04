@@ -141,7 +141,7 @@ bin/
    - Categorizes findings
    - Applies approved fixes
 
-**Context Management:** It's recommended to run `/clear` between each phase to reset context. This keeps conversations focused, prevents context pollution, and improves efficiency. Each phase is designed to be self-contained and will read the necessary artifacts from previous phases.
+**Context Management:** Running `/clear` between phases is optional. Phase 1→2 benefits from keeping context (plan-implementation detects live context and skips redundant steps). For Phase 2→3 and later, `/clear` is recommended to free context for implementation agents. Each phase is designed to work both with and without prior context.
 
 ### Key Design Patterns
 
@@ -162,15 +162,15 @@ Add emergency schedule tracking.
 
 ## Components
 
-| Step | Component | Action | File | Description | Complexity |
-|------|-----------|--------|------|-------------|------------|
-| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | simple |
-| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | moderate |
+| Step | Component | Action | File | Description | Pattern File | Verify | Complexity | Depends On |
+|------|-----------|--------|------|-------------|-------------|--------|------------|------------|
+| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | src/models/User.ts | `grep -q 'class Schedule' src/models/Schedule.ts` | simple | — |
+| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | src/services/UserService.ts | `npm test -- Schedule` | moderate | Schedule model |
 
 ## Implementation Notes
 
-- Follow pattern from src/services/UserService.ts
-- Date validation: endDate > startDate
+- [global] Follow pattern from src/services/UserService.ts
+- [schedule-service] Date validation: endDate > startDate
 
 ## Verification
 

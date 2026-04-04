@@ -280,8 +280,7 @@ const LEGACY_REMOVED_FILES = [
   'templates/STACK.md',
   'templates/STRUCTURE.md',
   'templates/CONVENTIONS.md',
-  'templates/INTEGRATIONS.md',
-  'skills/configure-project'
+  'templates/INTEGRATIONS.md'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -298,6 +297,7 @@ function getWorkflowManagedFiles() {
     // Skills: specific skill directories
     skills: [
       'configure-docs-index',
+      'configure-project',
       'configure-skills',
       'generate-readme'
     ],
@@ -651,7 +651,12 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
     for (const entry of LEGACY_REMOVED_FILES) {
       const fullPath = path.join(targetPath, entry);
       if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          removeDir(fullPath);
+        } else {
+          fs.unlinkSync(fullPath);
+        }
         log.info(`Removed legacy orphan: ${entry}`);
       }
     }
@@ -1270,7 +1275,12 @@ function uninstall() {
   for (const entry of LEGACY_REMOVED_FILES) {
     const fullPath = path.join(targetPath, entry);
     if (fs.existsSync(fullPath)) {
-      fs.unlinkSync(fullPath);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        removeDir(fullPath);
+      } else {
+        fs.unlinkSync(fullPath);
+      }
       log.info(`Removed legacy orphan: ${entry}`);
     }
   }

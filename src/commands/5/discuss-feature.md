@@ -92,7 +92,7 @@ Extract current state:
 - Business rules
 - Acceptance criteria
 - Alternatives considered
-- Questions & Answers
+- Decisions (with [DECIDED]/[FLEXIBLE]/[DEFERRED] labels)
 
 ### Step 3: Initial Discussion Prompt
 
@@ -162,7 +162,7 @@ When user indicates they're done discussing, update `.5/features/{feature-name}/
 7. **Business Rules** - If logic clarified
 8. **Acceptance Criteria** - Add/refine verification criteria
 9. **Alternatives Considered** - Document discussed alternatives
-10. **Questions & Answers** - Append new Q&A from this session
+10. **Decisions** - Append new decisions from this session, tagged [DECIDED], [FLEXIBLE], or [DEFERRED] using Context/Decision format
 
 **Preserve existing content** - Only update sections that changed during discussion.
 

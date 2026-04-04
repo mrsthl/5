@@ -219,7 +219,7 @@ For each applicable rule:
 1. **Derive `paths:` globs** from detected file locations (e.g., if tests are at `src/**/*.test.ts` and `tests/**/*.spec.ts`, use those patterns)
 2. **Convert analysis observations into imperative directives** — "Use X", "Always Y", "Never Z"
 3. **Keep each file 15-40 lines** — be concise and actionable
-4. **Do not repeat** the 6 mandatory coding guidelines from `CLAUDE.md`
+4. **Do not repeat** the 6 mandatory coding guidelines from `AGENTS.md`
 
 Write files to `.claude/rules/`:
 
@@ -311,4 +311,4 @@ Component D (Rules): SKIPPED - rules.generate is false in config
 - DO NOT hardcode conventions - always derive from actual project analysis
 - DO NOT generate empty or placeholder skill or rule files
 - DO NOT assume command syntax - always read from actual config files (package.json, Makefile, etc.)
-- DO NOT repeat the 6 mandatory coding guidelines from `CLAUDE.md` in rule files
+- DO NOT repeat the 6 mandatory coding guidelines from `AGENTS.md` in rule files

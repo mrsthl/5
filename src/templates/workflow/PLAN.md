@@ -10,7 +10,8 @@ created: {ISO-timestamp}
 - Description column: one action-oriented sentence per component
 - Pattern File column: path to an existing file the executor MUST read before implementing (establishes conventions)
 - Verify column: a concrete command or check the executor runs after implementing (grep pattern, test command, build check)
-- Implementation Notes: reference existing files as patterns, no code snippets
+- Depends On column: name of a component this one depends on (for cross-step data dependencies), or "—" if none
+- Implementation Notes: scoped with [global], [Step N], or [component-name] prefixes — the orchestrator filters per agent
 - Components table must cover all functional requirements from feature.md
 - Three test tiers: unit (always required for logic), integration (when framework detected + cross-module/DB/API), e2e (when framework detected + endpoints/UI flows)
 - Every "create" component with logic (services, controllers, repositories, utilities) must have a corresponding unit test component
@@ -24,16 +25,16 @@ created: {ISO-timestamp}
 
 ## Components
 
-| Step | Component | Action | File | Description | Pattern File | Verify | Complexity |
-|------|-----------|--------|------|-------------|-------------|--------|------------|
-| 1 | {name} | create | {path} | {what it does} | {existing file to read first} | {grep/test command} | simple |
-| 1 | {name} | create | {path} | {what it does} | {pattern} | {verify} | simple |
-| 2 | {name} | create | {path} | {what it does} | {pattern} | {verify} | moderate |
-| 2 | {name} | modify | {path} | {what to change} | {target file} | {verify} | moderate |
-| 3 | {name} | create | {path} | {what it does} | {pattern} | {verify} | complex |
-| 4 | {name} unit tests | create | {test-path} | Test {what it tests} | {existing test} | {test command} | moderate |
-| 4 | {name} integration tests | create | {test-path} | Test {cross-module interaction} | {existing test} | {test command} | moderate |
-| 4 | {name} e2e tests | create | {test-path} | Test {user-facing flow end-to-end} | {existing test} | {test command} | moderate |
+| Step | Component | Action | File | Description | Pattern File | Verify | Complexity | Depends On |
+|------|-----------|--------|------|-------------|-------------|--------|------------|------------|
+| 1 | {name} | create | {path} | {what it does} | {existing file to read first} | {grep/test command} | simple | — |
+| 1 | {name} | create | {path} | {what it does} | {pattern} | {verify} | simple | — |
+| 2 | {name} | create | {path} | {what it does} | {pattern} | {verify} | moderate | {step-1-component} |
+| 2 | {name} | modify | {path} | {what to change} | {target file} | {verify} | moderate | — |
+| 3 | {name} | create | {path} | {what it does} | {pattern} | {verify} | complex | {step-2-component} |
+| 4 | {name} unit tests | create | {test-path} | Test {what it tests} | {existing test} | {test command} | moderate | {tested-component} |
+| 4 | {name} integration tests | create | {test-path} | Test {cross-module interaction} | {existing test} | {test command} | moderate | {tested-component} |
+| 4 | {name} e2e tests | create | {test-path} | Test {user-facing flow end-to-end} | {existing test} | {test command} | moderate | {tested-component} |
 
 ## Testing Strategy
 
@@ -41,9 +42,9 @@ created: {ISO-timestamp}
 
 ## Implementation Notes
 
-- Follow the pattern from {existing-file} for {component-type}
-- {Key business rule to remember}
-- {Integration point to wire up}
+- [global] Follow the pattern from {existing-file} for {component-type}
+- [Step N] {Convention or context relevant to all components in step N}
+- [{component-name}] {Key business rule or integration point specific to this component}
 
 ## Verification
 

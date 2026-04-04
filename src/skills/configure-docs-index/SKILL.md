@@ -158,19 +158,9 @@ AGENTS.md structure:
 - **Codebase Index:** Add a section linking `.5/index/README.md`, the generated index files, and the rebuild script
 - **Index Freshness Rule:** State clearly that if the index files are more than one day old, the agent should regenerate them by running `.5/index/rebuild-index.sh` before relying on them
 
-### A4b. Create CLAUDE.md shim (Claude Code only)
-
-After writing `AGENTS.md`, create a `CLAUDE.md` file that contains only:
-
-```
-@AGENTS.md
-```
-
-This single line uses Claude Code's include syntax to pull in the full AGENTS.md content. This way Claude Code users get the instructions automatically, while other AI tools (Codex, etc.) read AGENTS.md directly.
-
-**If `CLAUDE.md` already exists and contains more than just `@AGENTS.md`:** This is a pre-existing CLAUDE.md that needs migration. Handle it in A5 below.
-
 ### A5. Migrate and Preserve Existing Content
+
+**Run this step BEFORE writing the CLAUDE.md shim** to avoid data loss.
 
 **If `AGENTS.md` already exists:**
 - Read current content
@@ -182,7 +172,16 @@ This single line uses Claude Code's include syntax to pull in the full AGENTS.md
 - Read current CLAUDE.md content
 - Identify user-written custom sections (not matching template structure)
 - Migrate all content into the new AGENTS.md (preserve under "Custom Documentation" section)
-- Overwrite CLAUDE.md with just `@AGENTS.md`
+
+### A6. Create CLAUDE.md shim (Claude Code only)
+
+After migration is complete (A5), create or overwrite `CLAUDE.md` with only:
+
+```
+@AGENTS.md
+```
+
+This single line uses Claude Code's include syntax to pull in the full AGENTS.md content. This way Claude Code users get the instructions automatically, while other AI tools (Codex, etc.) read AGENTS.md directly.
 
 ---
 

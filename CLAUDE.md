@@ -162,10 +162,10 @@ Add emergency schedule tracking.
 
 ## Components
 
-| Step | Component | Action | File | Description | Complexity | Depends On |
-|------|-----------|--------|------|-------------|------------|------------|
-| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | simple | — |
-| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | moderate | Schedule model |
+| Step | Component | Action | File | Description | Pattern File | Verify | Complexity | Depends On |
+|------|-----------|--------|------|-------------|-------------|--------|------------|------------|
+| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | src/models/User.ts | `grep -q 'class Schedule' src/models/Schedule.ts` | simple | — |
+| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | src/services/UserService.ts | `npm test -- Schedule` | moderate | Schedule model |
 
 ## Implementation Notes
 

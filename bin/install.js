@@ -38,13 +38,17 @@ function compareVersions(v1, v2) {
 }
 
 // Get installed version from .5/version.json
+// Reads per-runtime version when available (runtimes[activeRuntime].packageVersion),
+// falling back to top-level packageVersion for backward compatibility.
 function getInstalledVersion(isGlobal) {
   const versionFile = path.join(getDataPath(isGlobal), 'version.json');
   if (!fs.existsSync(versionFile)) return null;
 
   try {
     const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-    return data.packageVersion;
+    return (data.runtimes && data.runtimes[activeRuntime] && data.runtimes[activeRuntime].packageVersion)
+      || data.packageVersion
+      || null;
   } catch (e) {
     return null; // Corrupted file, treat as missing
   }
@@ -624,7 +628,10 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
   if (fs.existsSync(versionFile)) {
     try {
       const data = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-      oldManifest = data.manifest || null;
+      // Prefer per-runtime manifest to avoid cross-runtime orphan cleanup
+      oldManifest = (data.runtimes && data.runtimes[activeRuntime] && data.runtimes[activeRuntime].manifest)
+        || data.manifest
+        || null;
     } catch (e) {
       // Corrupted file, treat as no manifest
     }
@@ -677,27 +684,73 @@ function ensureDotFiveGitignore(dataDir) {
   }
 }
 
+// Write (or update) version.json, preserving per-runtime state for other runtimes.
+// - Reads existing file to preserve the other runtime's runtimes[] entry.
+// - Writes runtimes[activeRuntime] with current version + manifest.
+// - Top-level packageVersion = minimum across all runtime versions (so hooks
+//   detect an update if ANY runtime is behind).
+function writeVersionJson(dataDir, isGlobal, version) {
+  const versionFile = path.join(dataDir, 'version.json');
+  const now = new Date().toISOString();
+
+  let existing = {};
+  if (fs.existsSync(versionFile)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+    } catch (e) {
+      existing = {};
+    }
+  }
+
+  const runtimes = existing.runtimes || {};
+  runtimes[activeRuntime] = {
+    packageVersion: version,
+    lastUpdated: now,
+    manifest: getFileManifest()
+  };
+
+  // Top-level packageVersion = min across all runtime versions
+  const runtimeVersions = Object.values(runtimes).map(r => r.packageVersion).filter(Boolean);
+  const minVersion = runtimeVersions.reduce((min, v) => compareVersions(v, min) < 0 ? v : min, version);
+
+  const versionData = {
+    packageVersion: minVersion,
+    installedAt: existing.installedAt || now,
+    lastUpdated: now,
+    installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
+    manifest: runtimes[activeRuntime].manifest,
+    runtimes
+  };
+
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+}
+
+// Detect which runtimes are actually installed by probing marker files.
+function getInstalledRuntimes(isGlobal) {
+  const installed = [];
+  const saved = activeRuntime;
+  for (const rt of ['claude', 'codex']) {
+    activeRuntime = rt;
+    const tp = getTargetPath(isGlobal);
+    if (checkExistingInstallation(tp)) installed.push(rt);
+  }
+  activeRuntime = saved;
+  return installed;
+}
+
 // Initialize version.json after successful install
 function initializeVersionJson(isGlobal) {
   const dataDir = getDataPath(isGlobal);
-  const versionFile = path.join(dataDir, 'version.json');
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
   const version = getPackageVersion();
-  const now = new Date().toISOString();
-
-  const versionData = {
-    packageVersion: version,
-    installedAt: now,
-    lastUpdated: now,
-    installationType: isGlobal ? 'global' : 'local',
-    manifest: getFileManifest()
-  };
-
-  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  writeVersionJson(dataDir, isGlobal, version);
   ensureDotFiveGitignore(dataDir);
   log.success('Initialized version tracking');
 }
@@ -868,25 +921,8 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   // Merge settings (deep merge preserves user customizations)
   mergeSettings(targetPath, sourcePath);
 
-  // Update version.json
-  const versionFile = path.join(dataDir, 'version.json');
-  const now = new Date().toISOString();
-
-  const existing = fs.existsSync(versionFile)
-    ? JSON.parse(fs.readFileSync(versionFile, 'utf8'))
-    : {};
-  const versionData = {
-    packageVersion: versionInfo.available,
-    installedAt: existing.installedAt || now,
-    lastUpdated: now,
-    installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
-    manifest: getFileManifest()
-  };
-
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  // Update version.json (per-runtime, preserving other runtime's state)
+  writeVersionJson(dataDir, isGlobal, versionInfo.available);
   ensureDotFiveGitignore(dataDir);
 
   // Create features directory if it doesn't exist
@@ -1092,24 +1128,8 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   const dataDir = getDataPath(isGlobal);
   cleanupOrphanedFiles(targetPath, dataDir);
 
-  // Update version.json
-  const versionFile = path.join(dataDir, 'version.json');
-  const now = new Date().toISOString();
-  const existing = fs.existsSync(versionFile)
-    ? JSON.parse(fs.readFileSync(versionFile, 'utf8'))
-    : {};
-  const versionData = {
-    packageVersion: versionInfo.available,
-    installedAt: existing.installedAt || now,
-    lastUpdated: now,
-    installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
-    manifest: getFileManifest()
-  };
-
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+  // Update version.json (per-runtime, preserving other runtime's state)
+  writeVersionJson(dataDir, isGlobal, versionInfo.available);
   ensureDotFiveGitignore(dataDir);
 
   const featuresDir = path.join(dataDir, 'features');
@@ -1216,6 +1236,7 @@ function install(isGlobal, forceUpgrade = false) {
       log.warn('Detected legacy installation (no version tracking)');
       log.info(`Upgrading from legacy install to ${versionInfo.available}`);
       update(targetPath, sourcePath, isGlobal, versionInfo);
+      updateOtherRuntime(isGlobal);
       return;
     } else if (versionInfo.needsUpdate) {
       log.info(`Installed: ${versionInfo.installed}`);
@@ -1235,11 +1256,13 @@ function install(isGlobal, forceUpgrade = false) {
             return;
           }
           update(targetPath, sourcePath, isGlobal, versionInfo);
+          updateOtherRuntime(isGlobal);
         });
         return; // Wait for user input
       }
       // Force upgrade, no prompt
       update(targetPath, sourcePath, isGlobal, versionInfo);
+      updateOtherRuntime(isGlobal);
       return;
     } else {
       // Same version
@@ -1250,6 +1273,31 @@ function install(isGlobal, forceUpgrade = false) {
 
   // Fresh install (no existing installation)
   freshInstall(targetPath, sourcePath, isGlobal);
+}
+
+// After updating the active runtime, check if the other runtime is also installed
+// and needs an update. Updates it silently if so.
+function updateOtherRuntime(isGlobal) {
+  const primaryRuntime = activeRuntime;
+  const installed = getInstalledRuntimes(isGlobal);
+
+  for (const rt of installed) {
+    if (rt === primaryRuntime) continue;
+
+    activeRuntime = rt;
+    const tp = getTargetPath(isGlobal);
+    const sp = getSourcePath();
+    const vi = getVersionInfo(tp, isGlobal);
+
+    if (vi.exists && (vi.needsUpdate || vi.legacy)) {
+      const updateFn = rt === 'codex' ? performCodexUpdate : performUpdate;
+      updateFn(tp, sp, isGlobal, vi);
+    } else if (vi.exists) {
+      log.success(`${rt}: already at version ${vi.installed}`);
+    }
+  }
+
+  activeRuntime = primaryRuntime;
 }
 
 // Perform uninstallation
@@ -1369,25 +1417,48 @@ function main() {
   }
 
   if (options.check) {
-    const targetPath = getTargetPath(options.global);
     migrateDataDir(options.global);
-    const versionInfo = getVersionInfo(targetPath, options.global);
 
-    if (!versionInfo.exists) {
-      log.info(`Not installed (${activeRuntime})`);
+    // When --codex is explicitly passed, check only Codex. Otherwise check all installed runtimes.
+    const runtimesToCheck = options.runtime === 'codex'
+      ? ['codex']
+      : getInstalledRuntimes(options.global);
+
+    if (runtimesToCheck.length === 0) {
+      log.info('Not installed');
       return;
     }
 
-    log.info(`Runtime: ${activeRuntime}`);
-    log.info(`Installed: ${versionInfo.installed || 'legacy (no version)'}`);
-    log.info(`Available: ${versionInfo.available}`);
+    const primaryRuntime = activeRuntime;
+    let anyUpdateAvailable = false;
 
-    if (versionInfo.needsUpdate) {
-      log.warn('Update available');
-      log.info(`Run: npx 5-phase-workflow${activeRuntime === 'codex' ? ' --codex' : ''} --upgrade`);
-    } else {
-      log.success('Up to date');
+    for (const rt of runtimesToCheck) {
+      activeRuntime = rt;
+      const tp = getTargetPath(options.global);
+      const vi = getVersionInfo(tp, options.global);
+
+      if (!vi.exists) {
+        log.info(`${rt}: not installed`);
+        continue;
+      }
+
+      log.info(`Runtime: ${rt}`);
+      log.info(`Installed: ${vi.installed || 'legacy (no version)'}`);
+      log.info(`Available: ${vi.available}`);
+
+      if (vi.needsUpdate) {
+        log.warn(`${rt}: update available`);
+        anyUpdateAvailable = true;
+      } else {
+        log.success(`${rt}: up to date`);
+      }
     }
+
+    if (anyUpdateAvailable) {
+      log.info('Run: npx 5-phase-workflow --upgrade');
+    }
+
+    activeRuntime = primaryRuntime;
     return;
   }
 

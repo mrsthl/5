@@ -169,7 +169,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
 **2h. Review tool preference:**
 - "Which code review tool would you like to use?"
   - Options:
-    1. "Claude (built-in, no setup needed)" — always available
+    1. "Native (built-in agent review, no setup needed)" — always available, works with any AI coding tool
     2. "CodeRabbit CLI (requires installation)" — external tool
     3. "None (skip automated review)"
 - If user selects CodeRabbit and it was not detected in Step 1d:

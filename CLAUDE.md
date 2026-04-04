@@ -141,7 +141,7 @@ bin/
    - Categorizes findings
    - Applies approved fixes
 
-**Context Management:** It's recommended to run `/clear` between each phase to reset context. This keeps conversations focused, prevents context pollution, and improves efficiency. Each phase is designed to be self-contained and will read the necessary artifacts from previous phases.
+**Context Management:** Running `/clear` between phases is optional. Phase 1→2 benefits from keeping context (plan-implementation detects live context and skips redundant steps). For Phase 2→3 and later, `/clear` is recommended to free context for implementation agents. Each phase is designed to work both with and without prior context.
 
 ### Key Design Patterns
 

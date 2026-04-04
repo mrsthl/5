@@ -298,6 +298,7 @@ function getWorkflowManagedFiles() {
     // Skills: specific skill directories
     skills: [
       'configure-docs-index',
+      'configure-project',
       'configure-skills',
       'generate-readme'
     ],
@@ -651,7 +652,12 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
     for (const entry of LEGACY_REMOVED_FILES) {
       const fullPath = path.join(targetPath, entry);
       if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          removeDir(fullPath);
+        } else {
+          fs.unlinkSync(fullPath);
+        }
         log.info(`Removed legacy orphan: ${entry}`);
       }
     }

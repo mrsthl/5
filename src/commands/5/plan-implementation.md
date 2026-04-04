@@ -22,7 +22,7 @@ HARD CONSTRAINTS — violations get blocked by plan-guard:
 - NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
 - NEVER continue past the completion message — when you output "Plan created at...", you are DONE
 - The plan describes WHAT to build and WHERE. Agents figure out HOW by reading existing code.
-- Each component in the table gets: name, action, file path, one-sentence description, pattern file, verify command, complexity
+- Each component in the table gets: name, action, file path, one-sentence description, pattern file, verify command, complexity, depends on
 - **Pattern File** (required for "create" actions): Path to an existing file the executor reads before implementing. For "modify" actions, this is the target file itself. Helps executor match conventions exactly.
 - **Verify** (required): A concrete command or grep check the executor runs after implementing. Examples: `grep -q 'export class UserService' src/services/user.service.ts`, `npm test -- --testPathPattern=user`, `npx tsc --noEmit`. Never use vague checks like "works correctly".
 - If a component needs more than one sentence to describe, split it into multiple components
@@ -244,6 +244,8 @@ If no e2e or integration framework was detected, do NOT plan components for them
 
 Not every feature needs all non-test steps. Use what makes sense. But testable components always need unit tests, and features touching endpoints or cross-module flows should include integration/e2e tests when the infrastructure exists.
 
+**Depends On:** For each component, identify if it has a data dependency on a specific component from a prior step. Use the component name from the Depends On column (or `—` if none). This is for cross-step dependencies where a component needs a specific export, type, or interface from another component. File-level existence is already checked by the orchestrator — Depends On captures *semantic* dependencies (e.g., "auth-service depends on auth-types because it imports AuthToken").
+
 **Parallel execution:** Components in the same step run in parallel. Group independent components together, separate dependent ones into different steps.
 
 ### Step 5: Write the Plan
@@ -256,8 +258,21 @@ Include:
 - YAML frontmatter (ticket, feature, created)
 - One-sentence summary
 - Components table
-- Implementation Notes (references to existing pattern files + business rules)
+- Implementation Notes — **scoped by step or component** (see below)
 - Verification commands
+
+**Scoped Implementation Notes:**
+Each note MUST be prefixed with a scope tag so the orchestrator can filter notes per agent:
+- `[Step N]` — applies to all components in that step
+- `[component-name]` — applies to a specific component
+- `[global]` — applies to all components (use sparingly: project-wide conventions like DI patterns, naming schemes)
+
+Example:
+```
+- [global] All services use constructor-based dependency injection
+- [Step 1] Follow the pattern from src/models/User.ts for entity definitions
+- [schedule-service] endDate must be > startDate, throw ValidationError if not
+```
 
 **Verification section — prefer config.json values:**
 - Build: {build.command from config.json, or explore agent value, or "auto"}
@@ -267,7 +282,7 @@ Include:
 
 Read plan.md back and verify:
 
-1. **Format:** Every row in the Components table has all 8 columns filled (Step, Component, Action, File, Description, Pattern File, Verify, Complexity)
+1. **Format:** Every row in the Components table has all 9 columns filled (Step, Component, Action, File, Description, Pattern File, Verify, Complexity, Depends On)
 2. **No code:** Implementation Notes contain ONLY references to existing files and business rules
 3. **Scope:** Every component traces back to a requirement in feature.md — if not, remove it
 4. **Completeness:** Every functional requirement from feature.md has at least one component

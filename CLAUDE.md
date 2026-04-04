@@ -162,15 +162,15 @@ Add emergency schedule tracking.
 
 ## Components
 
-| Step | Component | Action | File | Description | Complexity |
-|------|-----------|--------|------|-------------|------------|
-| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | simple |
-| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | moderate |
+| Step | Component | Action | File | Description | Complexity | Depends On |
+|------|-----------|--------|------|-------------|------------|------------|
+| 1 | Schedule model | create | src/models/Schedule.ts | Schedule entity | simple | — |
+| 2 | Schedule service | create | src/services/ScheduleService.ts | CRUD + validation | moderate | Schedule model |
 
 ## Implementation Notes
 
-- Follow pattern from src/services/UserService.ts
-- Date validation: endDate > startDate
+- [global] Follow pattern from src/services/UserService.ts
+- [schedule-service] Date validation: endDate > startDate
 
 ## Verification
 

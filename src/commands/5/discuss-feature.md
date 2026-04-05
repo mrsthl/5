@@ -117,6 +117,8 @@ Use `multiSelect: false` to get single focus area initially.
 
 Based on the user's focus area, explore the codebase if needed:
 
+**Index shortcut:** Before spawning Explore agents or running Glob/Grep, check if `.5/index/` exists. If it does, read `.5/index/README.md` first for the generation timestamp — if fresh (under 1 day old), read the relevant index files (e.g., modules.md for scope changes, routes.md for API discussions, models.md for data model questions) to quickly gather context and skip broad scanning. If outdated, inform the user they can run `.5/index/rebuild-index.sh` to refresh it. If `.5/index/` does not exist, inform the user they can run `/5:reconfigure` to generate it. In both missing/outdated cases, fall back to Glob/Grep or Explore agents for exploration.
+
 **For technical constraint discussions:**
 - Search for similar implementations
 - Check existing patterns

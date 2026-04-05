@@ -91,7 +91,7 @@ Check if `.5/features/${feature_name}/state.json` already exists:
 
 ### Step 4: Analyze and Scope Check
 
-1. **Identify affected files** using Glob and Grep
+1. **Identify affected files:** If `.5/index/` exists, read `.5/index/README.md` first for the generation timestamp — if fresh (under 1 day old), read the relevant index files (modules.md, routes.md, models.md) to quickly locate affected areas, then confirm with targeted Glob/Grep. If the index is outdated, note that the user can run `.5/index/rebuild-index.sh` to refresh it. If no index exists, note that the user can run `/5:reconfigure` to generate it. In both cases, fall back to Glob and Grep directly.
 2. **Determine skills needed** based on task type
 3. **List components** (max 5 for quick mode)
 
@@ -261,6 +261,7 @@ Task tool call:
     For each component:
 
     **If creating a new file:**
+    0. If `.5/index/` exists, check modules.md or libraries.md to find where similar components live — this narrows your Glob search.
     1. Find a similar file using Glob (e.g., *Service.ts for services)
     2. Read it to understand the pattern (imports, structure, exports)
     3. Create the new file following that pattern

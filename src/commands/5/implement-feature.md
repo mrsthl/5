@@ -207,6 +207,9 @@ Task tool call:
     {If Depends On is not "—": "This component depends on {dep-name} ({dep-file}). Read that file first to understand the exports/types you need to use."}
     {If Depends On is "—": omit this section entirely}
 
+    ## Codebase Context (optional)
+    If you need to understand how this component relates to other modules (imports, service boundaries, data flow), check `.5/index/` for quick reference — especially modules.md and libraries.md. Only if these files exist.
+
     ## Verify
     {Verify command(s) from plan table — executor runs these after implementation}
 

@@ -129,12 +129,13 @@ Analyze the codebase for a feature specification session.
 **Feature Description:** {paste the user's feature description}
 
 **Your Task:**
-1. Explore project structure to identify modules/components
-2. Find existing implementations similar to this feature
-3. Identify coding patterns and conventions
-4. Find reusable components or patterns
-5. Identify affected files/modules
-6. Run `git branch --show-current` to get the current branch name
+1. Check if `.5/index/` exists. If it does, read `.5/index/README.md` first — it includes a generation timestamp. If the index is fresh (under 1 day old), read the relevant index files (e.g., modules.md, routes.md, models.md) as your structural overview and skip broad Glob scans for information already covered. If the index is outdated (over 1 day old), note in your report that the user should run `.5/index/rebuild-index.sh` to refresh it, then use it anyway (stale is better than nothing). If `.5/index/` does not exist at all, note in your report that the user can run `/5:reconfigure` to generate it, then proceed with Glob/Grep exploration as below.
+2. Explore project structure to identify modules/components
+3. Find existing implementations similar to this feature
+4. Identify coding patterns and conventions
+5. Find reusable components or patterns
+6. Identify affected files/modules
+7. Run `git branch --show-current` to get the current branch name
 
 **Report Format:**
 - Current git branch name

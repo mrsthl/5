@@ -160,13 +160,14 @@ Quick codebase scan for implementation planning.
 Focus scan on {projectType}-relevant directories and patterns.
 
 **Your Task:**
-1. Find source directories and understand project structure
-2. Identify where similar components live (models, services, controllers, tests)
-3. Note naming conventions from existing files
-4. Find example files that can serve as patterns for new components
-5. Identify the project's test framework, test file conventions, and test directory structure (e.g., __tests__/, tests/, *.test.ts, *.spec.ts, test_*.py)
-6. Detect e2e test framework and config (Cypress, Playwright, Selenium, Supertest, etc.) — look for config files like playwright.config.ts, cypress.config.js, e2e/ directories
-7. Detect integration test patterns (test containers, in-memory DBs, API test helpers, fixtures) — look for setup files, docker-compose.test.yml, test utilities
+1. Check if `.5/index/` exists. If it does, read `.5/index/README.md` first — it includes a generation timestamp. If the index is fresh (under 1 day old), read the relevant index files (modules.md, models.md, libraries.md, etc.) for project structure and component locations, then focus Glob/Grep on naming conventions, pattern files, and test framework details not covered by the index. If the index is outdated (over 1 day old), note in your report that the user should run `.5/index/rebuild-index.sh` to refresh it, then use it anyway. If `.5/index/` does not exist at all, note in your report that the user can run `/5:reconfigure` to generate it, then scan from scratch as below.
+2. Find source directories and understand project structure
+3. Identify where similar components live (models, services, controllers, tests)
+4. Note naming conventions from existing files
+5. Find example files that can serve as patterns for new components
+6. Identify the project's test framework, test file conventions, and test directory structure (e.g., __tests__/, tests/, *.test.ts, *.spec.ts, test_*.py)
+7. Detect e2e test framework and config (Cypress, Playwright, Selenium, Supertest, etc.) — look for config files like playwright.config.ts, cypress.config.js, e2e/ directories
+8. Detect integration test patterns (test containers, in-memory DBs, API test helpers, fixtures) — look for setup files, docker-compose.test.yml, test utilities
 
 **Report Format:**
 - Project structure (key directories)

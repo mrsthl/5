@@ -1,6 +1,29 @@
 # Release Notes
 
 
+## v1.9.1
+
+**Release Date:** 2026-04-06
+
+### Index-Aware Explore Agents and Per-Runtime Version Tracking
+
+Reduces redundant codebase scanning by having explore agents consult `.5/index/` first, and improves multi-runtime installs with per-runtime version and manifest tracking.
+
+**Improvements**
+- **Index-aware explore agents**: `plan-feature`, `plan-implementation`, `implement-feature`, `discuss-feature`, and `quick-implement` now check `.5/index/` files for structural overview before falling back to broad Glob/Grep scans. Agents report when the index is missing or outdated so users know to run `rebuild-index.sh` or `/5:reconfigure`
+- **Per-runtime version tracking**: `install.js` now tracks versions and manifests separately per runtime (Claude Code, Codex, etc.), preserving state across multiple runtimes in `version.json`. Adds `updateOtherRuntime` for silent secondary-runtime updates and improves runtime detection logic
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/commands/5/implement-feature.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `bin/install.js` (modified)
+
+---
+
+
 ## v1.9.0
 
 **Release Date:** 2026-04-05

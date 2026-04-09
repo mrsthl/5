@@ -1,135 +1,100 @@
 <!-- TEMPLATE RULES:
-- Requirements use natural language, not code
-- Affected Components lists module/domain names, not file paths
-- Entity definitions describe data concepts, not schemas or interfaces
-- Acceptance criteria describe observable behavior, not test assertions
-- NO code, pseudo-code, or implementation details anywhere in this document
-- Visual Overview section is OPTIONAL — delete it if the feature doesn't benefit from diagrams
-- Mermaid diagrams describe WHAT happens, not HOW it is implemented
+- Write naturally
+- Reference existing classes, modules, and patterns by name for precision
+- Entity definitions include field names and domain types
+- Acceptance criteria describe observable behavior
+- No code blocks, no pseudo-code, no class hierarchy designs
+- Delete any OPTIONAL section that doesn't add value for this feature
 -->
 
 # Feature: {TICKET-ID} - {Title}
 
-## Ticket ID
-{TICKET-ID}
+**Ticket:** {TICKET-ID}
 
-## Summary
-{1-2 sentence overview: what capability is being added and who benefits}
+## Overview
 
-## Problem Statement
-{Describe the current pain point or gap. Who experiences it and what is the impact?}
+{What is the problem or gap, and what capability is being added? Write this as a short narrative
+that covers who is affected, why the change matters, and what the end result looks like.}
 
-## Visual Overview
-<!-- OPTIONAL: Include mermaid diagrams only when they add clarity to the feature.
-     Delete this entire section if the feature is simple enough to understand without diagrams.
-     Use whichever diagram types are relevant — you don't need all of them. -->
+<!-- OPTIONAL: Include mermaid diagrams only when they add clarity.
+     Delete this section for simple features. Use whichever diagram type fits. -->
 
-<!-- Process Flow — use when the feature involves a multi-step process or state transitions -->
 ```mermaid
 flowchart TD
-    A[Start state] --> B[Step 1]
-    B --> C{Decision point}
-    C -->|Yes| D[Outcome 1]
-    C -->|No| E[Outcome 2]
+    A[Current state] --> B[Change]
+    B --> C[New capability]
 ```
 
-<!-- Entity Relationships — use when new data concepts relate to existing ones -->
-```mermaid
-erDiagram
-    ENTITY-A ||--o{ ENTITY-B : "relationship"
-    ENTITY-B }|--|| ENTITY-C : "relationship"
-```
+## What Changes
 
-<!-- Component Interactions — use when multiple modules or services communicate -->
-```mermaid
-sequenceDiagram
-    actor User
-    participant ComponentA
-    participant ComponentB
-    User->>ComponentA: action
-    ComponentA->>ComponentB: interaction
-    ComponentB-->>User: result
-```
+{Describe what the feature does in natural, flowing prose. Name existing classes, modules, and patterns
+where relevant. Group by logical concern, not by module layer. Each subsection should tell the reader
+what happens and which parts of the codebase are involved.}
 
-## Requirements
+### {Logical concern 1, e.g., "New data model"}
 
-### Functional Requirements
-- {The system shall... [describe observable behavior]}
-- ...
+{Describe the change. Name affected modules and classes. If a new entity is introduced, describe its
+fields and types in a table:}
 
-### Non-Functional Requirements
-- {Performance, reliability, scalability, or compatibility expectations}
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| ... | ... | ... | ... |
+
+### {Logical concern 2, e.g., "CRUD operations"}
+
+{Describe the behavior. Reference existing patterns to follow, e.g.,
+"Follow the same approach as the UserService update flow."}
+
+### {Logical concern 3, e.g., "API exposure"}
+
+{Describe what gets exposed and how.}
+
+### Business Rules
+
+- {Rule 1}
+- {Rule 2}
+
+## Existing Patterns to Follow
+
+{List concrete patterns from the codebase that the implementation should mirror.
+These are high-value pointers for Phase 2 -- be specific.}
+
+- **{Pattern name}** -- {where it lives and what to reuse from it}
 - ...
 
 ## Constraints
+
 - {Business rules that limit the solution space}
 - {Technical boundaries from existing architecture}
-- {Timeline or resource limitations}
 
-## Affected Components
-- **{component/module-1}** - {What changes here}
-- **{component/module-2}** - {What changes here}
-- **{component/module-3}** - {What changes here}
-- ...
+## Scope
 
-## Entity/Component Definitions
+**In scope:**
+- {What is included}
 
-### {EntityName} (if applicable)
-<!-- Describe the data CONCEPT, not the implementation. No TypeScript, no SQL. -->
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| id | {Entity}Id | Yes | Unique identifier |
-| name | String | Yes | Entity name |
-| ... | ... | ... | ... |
-
-### Business Rules
-- {Rule 1}
-- {Rule 2}
-- ...
+**Out of scope:**
+- {What is explicitly excluded and why}
 
 ## Acceptance Criteria
-- [ ] {Observable behavior that proves this requirement is met}
-- [ ] {Observable behavior that proves this requirement is met}
-- [ ] {Observable behavior that proves this requirement is met}
-- ...
 
-## Alternatives Considered
-
-### Option 1: {Alternative approach}
-**Pros:** {Benefits}
-**Cons:** {Drawbacks}
-**Decision:** Rejected because {reason}
-
-### Option 2: {Another alternative}
-**Pros:** {Benefits}
-**Cons:** {Drawbacks}
-**Decision:** Rejected because {reason}
-
-### Chosen Approach: {Selected approach}
-**Rationale:** {Why this approach was chosen}
+- [ ] {Observable behavior that proves a requirement is met}
+- [ ] ...
 
 ## Decisions
 
-<!-- Record key decisions from the spec discussion.
-     Tag each with exactly one of: [DECIDED], [FLEXIBLE], [DEFERRED]
-     - [DECIDED]: Locked — Phase 2 planner and Phase 3 agents MUST honor exactly
-     - [FLEXIBLE]: Claude's discretion — planner chooses the best approach
-     - [DEFERRED]: Out of scope — planner MUST NOT include in the plan
--->
+<!-- Tag each: [DECIDED] = locked, [FLEXIBLE] = planner chooses, [DEFERRED] = not in this iteration -->
 
-### {Topic: brief description of what was decided}
-**Context:** {Why this decision came up}
-**Decision:** {What was decided} **[DECIDED]**
+- **{Topic}:** {What was decided and why} **[DECIDED]**
+- **{Topic}:** {General direction, planner chooses specifics} **[FLEXIBLE]**
+- **{Topic}:** {Not addressing now -- reason} **[DEFERRED]**
 
-### {Topic: area left to implementer's discretion}
-**Context:** {What was discussed}
-**Decision:** {General direction, implementer chooses specifics} **[FLEXIBLE]**
+<!-- OPTIONAL: Only include if alternatives were genuinely discussed and the reasoning matters -->
+## Alternatives Considered
 
-### {Topic: explicitly deferred item}
-**Context:** {Why it was raised}
-**Decision:** {Not addressing now — reason} **[DEFERRED]**
+- **{Alternative}:** Rejected because {reason}
+- **{Chosen approach}:** Selected because {reason}
 
 ## Next Steps
-After approval:
-1. Run `/clear` to reset context
+
+1. Run `/clear` to reset context (optional)
 2. Run `/5:plan-implementation {TICKET-ID}-{description}`

@@ -14,20 +14,22 @@ After creating the spec, you are FINISHED. You do not continue. You do not offer
 </role>
 
 <constraints>
-HARD CONSTRAINTS — violations waste tokens and get blocked by plan-guard:
-- NEVER write code, pseudo-code, or implementation snippets in any output
-- NEVER describe HOW something will be implemented (file contents, signatures, class structures)
-- NEVER create an implementation plan, file list, component breakdown, or step-by-step build guide — that is Phase 2's job
-- NEVER suggest "shall I continue with implementation planning?" or "let me create the plan" — you are DONE after feature.md
-- NEVER offer to proceed to the next phase — the user will invoke `/5:plan-implementation` themselves
-- NEVER spawn Task agents with subagent_type other than Explore
-- NEVER write to any file except .5/.planning-active, .5/features/{name}/codebase-scan.md, and .5/features/{name}/feature.md
-- NEVER call EnterPlanMode — the workflow has its own planning process
-- NEVER use Bash to create, write, or modify files — this bypasses the plan-guard and is a constraint violation
-- NEVER continue past the completion message — when you output "Feature spec created at...", you are FINISHED
-- The feature spec describes WHAT and WHY, never HOW
-- If you feel the urge to plan implementation or write code, STOP — ask a clarifying question instead
-- Your output is a SPECIFICATION, not a design document. No code. No file layouts. No API shapes. No implementation plans.
+HARD CONSTRAINTS:
+- Do NOT write code or pseudo-code — describe behavior and data shapes in natural language or tables
+- Do NOT create implementation plans, file lists, or step-by-step build guides — that is Phase 2's job
+- Do NOT offer to proceed to the next phase — the user will invoke `/5:plan-implementation` themselves
+- Do NOT spawn Task agents with subagent_type other than Explore
+- Do NOT write to any file except .5/.planning-active, .5/features/{name}/codebase-scan.md, and .5/features/{name}/feature.md
+- Do NOT call EnterPlanMode — the workflow has its own planning process
+- Do NOT use Bash to create, write, or modify files — this bypasses the plan-guard
+- Do NOT continue past the completion message — when you output "Feature spec created at...", you are FINISHED
+
+WHAT IS ALLOWED:
+- Name existing classes, modules, services, and patterns
+- Describe entity fields with domain types
+- Reference existing patterns as models
+- Mention affected methods or APIs by name
+- Include data shape tables with field names and types — these are part of the requirement
 </constraints>
 
 <write-rules>
@@ -42,11 +44,10 @@ Any other Write target WILL be blocked by the plan-guard hook. Do not attempt it
 Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
 
 **Content rules for feature.md:**
-- Requirements use natural language ("The system shall..."), NOT code
-- Affected Components lists module/domain names, NOT file paths
-- NO code snippets, NO pseudo-code, NO type definitions
-- Entity definitions describe data CONCEPTS, not DB schemas or TypeScript interfaces
-- Acceptance criteria describe observable behavior, NOT test code
+- Write naturally — reference existing classes, modules, and patterns by name for precision
+- Entity definitions include field names and domain types — these define the requirement
+- Acceptance criteria describe observable behavior
+- No code blocks, no pseudo-code, no class hierarchy designs
 </output-format>
 
 <collaboration-strategy>
@@ -193,7 +194,7 @@ Targeted exploration for feature planning.
 
 ### Step 4: Create Feature Specification
 
-> **ROLE CHECK:** You are writing a SPECIFICATION (WHAT/WHY), not a design document (HOW). Zero code, zero file paths to create, zero signatures. After writing feature.md you are DONE — do NOT proceed to implementation planning or coding.
+> **ROLE CHECK:** You are writing a FEATURE SPECIFICATION. After writing feature.md you are DONE — do NOT proceed to implementation planning or coding.
 
 **Extract ticket ID from git branch:**
 - The Explore agent from Step 2 already ran `git branch --show-current` — find the branch name in its results
@@ -209,25 +210,14 @@ Write to `.5/features/{name}/feature.md` using Write tool, where `{name}` is eit
 
 Use the template structure from `.claude/templates/workflow/FEATURE-SPEC.md`.
 
-Populate all sections:
-- Ticket ID & Summary
-- Problem Statement
-- Visual Overview (optional mermaid diagrams — see below)
-- Requirements (functional and non-functional)
-- Constraints
-- Affected Components (from exploration)
-- Acceptance Criteria
-- Alternatives Considered
-- Decisions (from the conversation) — label each with **[DECIDED]**, **[FLEXIBLE]**, or **[DEFERRED]**
-
-**Visual Overview (optional mermaid diagrams):**
-Include mermaid diagrams in the spec when they add clarity. Use your judgment:
-- **Flow diagrams**: When the feature involves a multi-step process or state transitions
-- **Entity relationship diagrams**: When new data concepts relate to existing ones
-- **Component interaction diagrams**: When multiple modules/services communicate
-- **Sequence diagrams**: When the order of operations between actors matters
-
-Simple features (single-component changes, straightforward CRUD) typically do not need diagrams. Do not add diagrams for the sake of having them. Diagrams describe WHAT happens, not HOW it is implemented. No class diagrams, no file-level architecture diagrams, no code-level sequence diagrams.
+Populate the sections from the template. Key guidance:
+- **Overview**: Write a short narrative (3-5 sentences) merging the problem and the solution
+- **What Changes**: Group by logical concern, not by module layer. Name existing classes and patterns. Use entity tables where new data models are introduced
+- **Existing Patterns to Follow**: Be specific — these are the highest-value pointers for Phase 2
+- **Scope**: Be explicit about what's in and what's out
+- **Decisions**: Label each from the conversation
+- **Diagrams**: Include only when they add clarity. Simple features don't need them
+- **Alternatives**: Only include if genuinely discussed and the reasoning matters. Delete if empty
 
 **Decision labeling rules:**
 - **[DECIDED]**: The user gave a clear, specific answer → Phase 2 planner and Phase 3 agents MUST honor exactly

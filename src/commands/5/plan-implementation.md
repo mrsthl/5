@@ -110,11 +110,11 @@ This activates (or refreshes) the plan-guard hook which prevents accidental sour
 
 ### Step 1: Load Feature Spec *(skip if live context)*
 
-**If live context:** You already have the feature spec discussion in your conversation history. Extract ticket ID, requirements, acceptance criteria, affected components, and decisions from what was discussed. Output `✓ Step 1 skipped (live context)` and proceed to Step 1b.
+**If live context:** You already have the feature spec discussion in your conversation history. Extract ticket ID, what changes (by logical concern), acceptance criteria, existing patterns to follow, scope, and decisions from what was discussed. Output `✓ Step 1 skipped (live context)` and proceed to Step 1b.
 
 **If no live context:** Read `.5/features/{feature-name}/feature.md` (where `{feature-name}` is the argument provided).
 
-Extract: Ticket ID, requirements (functional and non-functional), acceptance criteria, affected components, and **decisions**.
+Extract: Ticket ID, overview, what changes (each logical concern), existing patterns to follow, constraints, scope, acceptance criteria, and **decisions**.
 
 **Decision labels from feature spec:**
 - **[DECIDED]** items are locked — your plan MUST honor them exactly. Do not override or reinterpret.

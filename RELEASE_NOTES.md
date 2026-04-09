@@ -1,6 +1,34 @@
 # Release Notes
 
 
+## v1.9.2
+
+**Release Date:** 2026-04-09
+
+### New Commands for Codebase Analysis and Agent Synchronization
+
+Adds two new commands — `/5:analyze-feature` for generating structured codebase documentation and `/5:synchronize-agents` for bidirectional sync between Claude Code and Codex runtimes — along with a more flexible feature spec format.
+
+**What's New**
+- **`/5:analyze-feature`**: New command that spawns Explore agents to read the codebase and produces a comprehensive analysis document (with mermaid diagrams) for any feature, dataflow, or domain concept. Output saved to `.5/analysis/`
+- **`/5:synchronize-agents`**: New command backed by `bin/sync-agents.js` that synchronizes user-generated content (skills, commands, agents, rules) between Claude Code and Codex runtimes with appropriate format conversion
+
+**Improvements**
+- **Narrative feature spec format**: Feature spec template replaces rigid `Requirements / Problem Statement / Affected Components` sections with a more natural `Overview / What Changes (by logical concern)` structure. Existing classes, entity field tables, and pattern references are now allowed while code and pseudo-code remain prohibited
+
+**Affected files:**
+- `src/commands/5/analyze-feature.md` (new)
+- `src/commands/5/synchronize-agents.md` (new)
+- `bin/sync-agents.js` (new)
+- `bin/install.js` (modified)
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/plan-implementation.md` (modified)
+- `src/templates/workflow/FEATURE-SPEC.md` (modified)
+- `README.md` (modified)
+
+---
+
+
 ## v1.9.1
 
 **Release Date:** 2026-04-06

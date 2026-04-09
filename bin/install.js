@@ -847,6 +847,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
     log.info('  $5-unlock                    - Remove planning guard lock');
+    log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
     log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
@@ -859,6 +860,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');
     log.info('  /5:unlock                    - Remove planning guard lock');
+    log.info('  /5:synchronize-agents        - Sync user content between runtimes');
   }
   log.info('');
   log.info(`Config file: ${path.join(getDataPath(isGlobal), 'config.json')}`);

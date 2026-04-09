@@ -141,6 +141,7 @@ Claude Code exposes the workflow under the `/5:` namespace. Codex exposes the sa
 | `/5:quick-implement` or `$5-quick-implement` | Fast | Streamlined workflow for small tasks |
 | `/5:eject` or `$5-eject` | Utility | Permanently remove update infrastructure |
 | `/5:unlock` or `$5-unlock` | Utility | Remove planning guard lock |
+| `/5:synchronize-agents` or `$5-synchronize-agents` | Utility | Sync user content between Claude Code and Codex runtimes |
 
 ## Configuration
 
@@ -278,7 +279,8 @@ After installation, your `.claude/` directory will contain:
 │   ├── quick-implement.md
 │   ├── configure.md
 │   ├── eject.md
-│   └── unlock.md
+│   ├── unlock.md
+│   └── synchronize-agents.md
 ├── skills/                   # Atomic operations
 │   ├── build-project/
 │   ├── run-tests/
@@ -397,6 +399,26 @@ This permanently removes the update infrastructure:
 - For Codex, removes the converted update/eject skills from `.codex/skills/`
 
 All other workflow files remain untouched. **This is irreversible.** To restore update functionality, reinstall with `npx 5-phase-workflow`.
+
+### Synchronizing Runtimes
+
+If you have both Claude Code and Codex installed, user-generated content (project-specific skills, custom commands, rules) only exists in the runtime where it was created. To sync this content bidirectionally:
+
+```bash
+# Claude Code
+/5:synchronize-agents
+
+# Codex
+$5-synchronize-agents
+```
+
+This will:
+- Sync project-specific skills (e.g., `create-controller`, `run-tests`) between `.claude/skills/` and `.codex/skills/` with appropriate format conversion
+- Convert custom Claude commands to Codex skills
+- Append `.claude/rules/` content to `.codex/instructions.md`
+- Sync Codex-only skills back to Claude
+
+Workflow-managed files and shared data (`.5/`) are not affected — those are handled by the installer.
 
 ## Development
 

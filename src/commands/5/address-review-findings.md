@@ -163,44 +163,92 @@ Task tool call:
 
     For duplicates, note which local finding covers it.
 
+    For every actionable_fix and manual comment, also provide:
+    - **recommendation**: one of `address`, `defer`, `decline`, or `discuss`
+      - `address` — should be fixed now, clear and reasonable
+      - `defer` — valid concern but low urgency, can wait
+      - `decline` — out of scope or disagree with the suggestion
+      - `discuss` — needs more context before deciding
+    - **reasoning**: one plain-English sentence explaining the recommendation
+
     ## Output Format
     Return a structured list:
 
     ---PR-COMMENTS---
-    {id} | {file}:{line} | {category} | {description} | {duplicate_of or "none"}
+    {id} | {file}:{line} | {category} | {description} | {duplicate_of or "none"} | {recommendation or "n/a"} | {one-sentence reasoning or "n/a"}
     ---END-PR-COMMENTS---
 
     Rules:
     - DO NOT apply fixes
     - DO NOT interact with user
     - Include every comment in the output
+    - recommendation and reasoning are required for actionable_fix and manual; use "n/a" for skip and duplicate
 ```
 
-Parse the `---PR-COMMENTS---` block. Collect:
-- `pr_to_fix` — actionable_fix items
-- `pr_duplicates` — duplicate items
-- `pr_manual` — manual items
+Parse the `---PR-COMMENTS---` block. For each line extract all seven fields. Build:
+- `pr_actionable` — actionable_fix items (with recommendation + reasoning)
+- `pr_manual` — manual items (with recommendation + reasoning)
+- `pr_duplicates` — duplicate items (auto-assign `decision: wont_fix`, no Q&A)
+- `pr_skip` — skip items (auto-assign `decision: wont_fix`, no Q&A)
 
-**Present PR comment summary to user:**
+Initialize `pr_decisions` as an empty list. Append all `pr_duplicates` and `pr_skip` entries with `decision: wont_fix` and `user_note: ""`.
+
+**Display count summary:**
 ```
-PR Review Comments:
-- Actionable (new): {N}
-- Duplicates (covered by local findings): {N}
-- Manual/Discussion: {N}
-- Skipped (bot/resolved): {N}
+PR Review Comments found:
+- Actionable (new):              {N}
+- Manual/Discussion:             {N}
+- Duplicates (covered by local): {N}
+- Skipped (bot/resolved):        {N}
 
-Actionable PR comments:
-{#} {file}:{line} — {description}
-
-Manual PR comments:
-{#} {file}:{line} — {description}
+You will now be asked to decide on each actionable and manual comment individually.
 ```
 
-Ask via AskUserQuestion for each actionable PR comment batch:
-- "Apply actionable PR fixes?" Options: "All" / "None" / "Let me choose"
-- If "Let me choose": present each one and ask Fix / Skip per item.
+If there are no `pr_actionable` and no `pr_manual` items, display `"No actionable or manual PR comments to review."` and skip the loop below.
 
-Collect final `pr_approved_fixes` list.
+**Per-comment decision loop** — iterate over all items in `pr_actionable + pr_manual` in order, using a counter `i` from 1 to total:
+
+For each comment:
+
+1. Display:
+   ```
+   ── PR Comment {i} of {total} ──────────────────────────
+   Category:       {category}
+   File:           {file}:{line}
+   Comment:        {description}
+
+   Recommendation: {recommendation} — {reasoning}
+   ──────────────────────────────────────────────────────
+   ```
+
+2. Ask via AskUserQuestion:
+   - Question: `"[{i}/{total}] {file}:{line} — How do you want to handle this comment?"`
+   - Options: `"fix — apply the suggested change"` / `"won't fix — decline"` / `"wait — defer for later"`
+
+3. Record the decision (map to internal values: `fix`, `wont_fix`, `wait`).
+
+4. Ask via AskUserQuestion:
+   - Question: `"Add a note for this comment? (shown in PR reply and summary report)"`
+   - Options: `"No note"` / `"Add a note"`
+   - If "Add a note": ask via AskUserQuestion with free-text input (no fixed options):
+     - Question: `"Enter your note for: {file}:{line}"`
+
+5. Append to `pr_decisions`:
+   ```
+   { comment_id, file_line, category, description, decision, user_note (or ""), recommendation, reasoning }
+   ```
+
+After the loop, display:
+```
+Decision summary:
+- fix:       {N} comments
+- won't fix: {N} comments
+- wait:      {N} comments
+
+Proceeding to apply fixes...
+```
+
+Derive `pr_approved_fixes` as the subset of `pr_decisions` where `decision == fix`. This list is used by Step 5.
 
 ### Step 5: Apply Fixes
 
@@ -265,9 +313,7 @@ For each `[MANUAL]` item with custom instructions:
 
 ### Step 6: Reply to GitHub PR Comments
 
-For each PR comment that was processed (from `pr_approved_fixes`, `pr_duplicates`, and `pr_manual`):
-
-Post a reply using the GitHub API:
+Iterate over every entry in `pr_decisions` (excluding entries with category `skip` — do not reply to those). For each entry, post a reply using the GitHub API.
 
 **For review comments (inline):**
 ```bash
@@ -283,12 +329,15 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
   --field body="{reply text}"
 ```
 
-Reply templates:
-- **Fixed:** `Applied fix: {description}. Will be included in the next push.`
-- **Skipped:** `Reviewed — not addressing: {reason if known, else "will handle separately"}`
-- **Duplicate (applied):** `Covered by local review findings — fix applied.`
-- **Duplicate (skipped):** `Covered by local review findings — marked as skip.`
-- **Manual/Discussion:** `Noted. This requires manual review: {description}`
+**Reply templates by decision:**
+
+- **`fix` (with user note):** `Applied fix: {description}. Will be included in the next push. Note: {user_note}`
+- **`fix` (no note):** `Applied fix: {description}. Will be included in the next push.`
+- **`wont_fix` (with user note):** `Reviewed — not addressing: {user_note}`
+- **`wont_fix` (no note):** `Reviewed — not addressing: will handle separately`
+- **`wait` (with user note):** `Noted for later: {user_note}`
+- **`wait` (no note):** `Noted for later: deferring for now`
+- **`wont_fix` (auto, duplicate):** `Covered by local review findings — fix applied.`
 
 If `gh api` is unavailable or fails, log the failure and continue. Do NOT abort for reply failures.
 
@@ -317,15 +366,16 @@ Use the template structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`. 
 
 **Reviewed:** {feature} — findings from {findings-filename}
 **Timestamp:** {ISO-timestamp}
-**User Decisions:** Applied {N} fixes, skipped {N}, {N} manual
+**User Decisions:** Applied {N} fixes, declined {N}, deferred {N} (wait), {N} manual
 
 ## Summary
 
 - **Local Fixes Applied:** {N}
 - **Local Fixes Skipped:** {N}
 - **Manual Items Applied:** {N}
-- **PR Comments Fixed:** {N}
-- **PR Comments Skipped:** {N}
+- **PR Comments Fixed:**    {N}  (decision = fix)
+- **PR Comments Deferred:** {N}  (decision = wait)
+- **PR Comments Declined:** {N}  (decision = won't fix, excluding auto)
 - **Build:** {passed/failed}
 - **Tests:** {passed/failed}
 
@@ -337,6 +387,12 @@ Use the template structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`. 
 
 ## Manual Items
 ...
+
+## PR Comment Decisions
+
+| # | File:Line | Description | Decision | Note |
+|---|-----------|-------------|----------|------|
+| {i} | {file}:{line} | {description} | {fix/won't fix/wait} | {user_note or "—"} |
 
 ## PR Comment Replies
 ...

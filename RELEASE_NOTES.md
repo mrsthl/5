@@ -1,6 +1,25 @@
 # Release Notes
 
 
+## v1.9.3
+
+**Release Date:** 2026-04-17
+
+### Improved PR Review Comment Handling in address-review-findings
+
+Overhauls the per-comment decision flow in `/5:address-review-findings` for clearer, more accurate reply generation and summary reporting.
+
+**Improvements**
+- **Per-comment decision flow**: Each PR comment is now presented individually with an AI recommendation (address/defer/decline/discuss). The user decides fix/won't fix/wait per comment with an optional note before any actions are taken
+- **Accurate reply templates**: Step 6 now uses explicit template selection logic so implementers know when to use the auto-duplicate template vs the user-chosen won't-fix template. Reply text reflects the actual local action taken (`[FIX]`/`[SKIP]`/`[MANUAL]`) instead of always claiming "fix applied"
+- **Cleaner decisions summary**: Removed the ambiguous "{N} manual" count from the User Decisions header; the per-decision breakdown already covers all categories
+
+**Affected files:**
+- `src/commands/5/address-review-findings.md` (modified)
+
+---
+
+
 ## v1.9.2
 
 **Release Date:** 2026-04-09

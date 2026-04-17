@@ -329,7 +329,14 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
   --field body="{reply text}"
 ```
 
-**Reply templates by decision:**
+**Template selection logic:**
+
+1. If `category == "duplicate"`: use the auto-duplicate template below
+2. Else if `decision == "fix"`: use fix template, with or without note based on `user_note` presence
+3. Else if `decision == "wont_fix"`: use wont_fix template, with or without note based on `user_note` presence
+4. Else if `decision == "wait"`: use wait template, with or without note based on `user_note` presence
+
+**Templates:**
 
 - **`fix` (with user note):** `Applied fix: {description}. Will be included in the next push. Note: {user_note}`
 - **`fix` (no note):** `Applied fix: {description}. Will be included in the next push.`
@@ -337,7 +344,7 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
 - **`wont_fix` (no note):** `Reviewed — not addressing: will handle separately`
 - **`wait` (with user note):** `Noted for later: {user_note}`
 - **`wait` (no note):** `Noted for later: deferring for now`
-- **`wont_fix` (auto, duplicate):** `Covered by local review findings — fix applied.`
+- **`wont_fix` (auto, duplicate):** `Covered by local review findings — {local_decision}` where `{local_decision}` is `"fix applied"` if the matched local finding has action `[FIX]`, otherwise `"marked as skipped"` or `"flagged for manual review"` accordingly
 
 If `gh api` is unavailable or fails, log the failure and continue. Do NOT abort for reply failures.
 
@@ -366,7 +373,7 @@ Use the template structure from `.claude/templates/workflow/REVIEW-SUMMARY.md`. 
 
 **Reviewed:** {feature} — findings from {findings-filename}
 **Timestamp:** {ISO-timestamp}
-**User Decisions:** Applied {N} fixes, declined {N}, deferred {N} (wait), {N} manual
+**User Decisions:** Applied {N} fixes, declined {N}, deferred {N}
 
 ## Summary
 

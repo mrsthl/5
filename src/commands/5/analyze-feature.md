@@ -1,7 +1,7 @@
 ---
 name: 5:analyze-feature
 description: Analyze any feature, dataflow, or domain concept in the codebase and generate comprehensive documentation with mermaid diagrams. Use when you need to understand how a feature works end-to-end, trace a dataflow, or document a domain area.
-allowed-tools: Read, Write, Glob, Grep, Task, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 ---
 

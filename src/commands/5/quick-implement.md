@@ -1,7 +1,7 @@
 ---
 name: 5:quick-implement
 description: Execute small, focused implementations quickly with state tracking and atomic commits. Skips extensive planning phases and verification agents - use for tasks where you know exactly what to do.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, TaskCreate, TaskUpdate, TaskList, mcp__jetbrains__*
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, Skill, TaskCreate, TaskUpdate, TaskList, mcp__jetbrains__*
 user-invocable: true
 ---
 
@@ -244,7 +244,7 @@ Determine the model based on the highest complexity in the plan's components:
 Spawn an agent with inline instructions:
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: {haiku or sonnet based on complexity above}
   description: "Execute quick implementation for ${feature_name}"

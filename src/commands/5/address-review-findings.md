@@ -1,7 +1,7 @@
 ---
 name: 5:address-review-findings
 description: Applies annotated review findings and/or addresses GitHub PR review comments. Use --github to process PR comments only.
-allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Task, Skill, mcp__jetbrains__*
+allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
 context: fork
@@ -138,7 +138,7 @@ gh repo view --json owner,name
 Spawn a sonnet agent to analyze PR comments:
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: sonnet
   description: "Analyze PR review comments"
@@ -272,7 +272,7 @@ Apply from highest line number to lowest within each file to avoid line offset s
 #### Agent Application (4+ fixes per file)
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: {haiku for simple | sonnet for complex}
   description: "Apply fixes to {file-path}"

@@ -1,7 +1,7 @@
 ---
 name: 5:implement-feature
 description: Executes an implementation plan by delegating to agents. Phase 3 of the 5-phase workflow.
-allowed-tools: Task, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
+allowed-tools: Agent, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
 user-invocable: true
 model: opus
 context: fork
@@ -189,7 +189,7 @@ For steps with multiple independent components, spawn one agent per component in
 Agent prompt template (adapt per component):
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: {based on complexity}
   description: "{Action} {component-name} for {feature-name}"

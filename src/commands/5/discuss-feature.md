@@ -1,7 +1,7 @@
 ---
 name: 5:discuss-feature
 description: Discusses and refines an existing feature specification through iterative Q&A. Use after /plan-feature when requirements need clarification or changes. Updates the feature spec based on discussion.
-allowed-tools: Read, Write, Glob, Grep, Task, AskUserQuestion
+allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 model: opus
 context: inherit
@@ -129,7 +129,7 @@ Based on the user's focus area, explore the codebase if needed:
 - Check dependencies
 - Identify ripple effects
 
-Use Task tool with subagent_type=Explore for complex exploration.
+Use Agent tool with subagent_type=Explore for complex exploration.
 
 ### Step 5: Interactive Q&A
 

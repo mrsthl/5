@@ -28,7 +28,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "Task|Agent",
         "hooks": [
           {
             "type": "command",
@@ -38,7 +38,7 @@
         ]
       },
       {
-        "matcher": "Task|Write|Edit|EnterPlanMode|Bash",
+        "matcher": "Task|Agent|Write|Edit|EnterPlanMode|Bash",
         "hooks": [
           {
             "type": "command",

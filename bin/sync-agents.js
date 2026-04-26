@@ -81,8 +81,8 @@ This skill was authored for Claude Code. Map these tool references:
 | Claude Code | Codex Equivalent |
 |-------------|------------------|
 | \`AskUserQuestion\` | Ask the user directly in conversation |
-| \`Task(subagent_type="Explore")\` | Research the codebase yourself using available tools |
-| \`Task(prompt="...")\` | \`spawn_agent(message="...")\` |
+| \`Agent(subagent_type="Explore")\` | Research the codebase yourself using available tools |
+| \`Agent(prompt="...")\` | \`spawn_agent(message="...")\` |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |
 | \`Edit\` | \`patch\` |

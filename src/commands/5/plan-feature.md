@@ -18,7 +18,7 @@ HARD CONSTRAINTS:
 - Do NOT write code or pseudo-code — describe behavior and data shapes in natural language or tables
 - Do NOT create implementation plans, file lists, or step-by-step build guides — that is Phase 2's job
 - Do NOT offer to proceed to the next phase — the user will invoke `/5:plan-implementation` themselves
-- Do NOT spawn Agent agents with subagent_type other than Explore
+- Do NOT use the Agent tool with subagent_type other than Explore
 - Do NOT write to any file except .5/.planning-active, .5/features/{name}/codebase-scan.md, and .5/features/{name}/feature.md
 - Do NOT call EnterPlanMode — the workflow has its own planning process
 - Do NOT use Bash to create, write, or modify files — this bypasses the plan-guard

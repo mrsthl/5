@@ -1,7 +1,7 @@
 ---
 name: 5:plan-implementation
 description: Creates an implementation plan from a feature spec. Phase 2 of the 5-phase workflow.
-allowed-tools: Read, Write, Task, AskUserQuestion
+allowed-tools: Read, Write, Agent, AskUserQuestion
 user-invocable: true
 model: opus
 ---
@@ -144,7 +144,7 @@ Read `.5/features/{feature-name}/codebase-scan.md`. If it exists and is non-empt
 
 **If `codebase-scan.md` does NOT exist** (e.g., user skipped Phase 1 or ran an older version), spawn a fresh Explore agent:
 
-Spawn a Task with `subagent_type=Explore`:
+Spawn an Agent with `subagent_type=Explore`:
 
 ```
 Quick codebase scan for implementation planning.

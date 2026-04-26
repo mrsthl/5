@@ -2,7 +2,7 @@
 
 // Plan Guard - PreToolUse Hook
 // Prevents LLM breakout from planning phases by blocking:
-// - Task agents other than Explore (when not in implementation mode)
+// - Agent/Task agents other than Explore (when not in implementation mode)
 // - Write/Edit operations outside .5/ (when not in implementation mode)
 //
 // Planning mode is detected per-feature by checking if that specific feature's
@@ -20,8 +20,8 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const toolName = data.tool_name || '';
 
-    // Short-circuit: only check Task, Write, Edit, EnterPlanMode, and Bash tools
-    if (toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit' && toolName !== 'EnterPlanMode' && toolName !== 'Bash') {
+    // Short-circuit: only check Agent, Task, Write, Edit, EnterPlanMode, and Bash tools
+    if (toolName !== 'Agent' && toolName !== 'Task' && toolName !== 'Write' && toolName !== 'Edit' && toolName !== 'EnterPlanMode' && toolName !== 'Bash') {
       process.exit(0);
     }
 
@@ -57,7 +57,7 @@ process.stdin.on('end', () => {
       process.exit(2);
     }
 
-    if (toolName === 'Task') {
+    if (toolName === 'Agent' || toolName === 'Task') {
       const agentType = toolInput.subagent_type || '';
       if (agentType && agentType !== 'Explore') {
         const blockCount = incrementBlockCount(workspaceDir);
@@ -189,7 +189,7 @@ function getTargetFeature(toolName, toolInput, workspaceDir) {
     }
   }
 
-  if (toolName === 'Task') {
+  if (toolName === 'Agent' || toolName === 'Task') {
     // Check the task prompt for feature name references
     const prompt = toolInput.prompt || '';
     const desc = toolInput.description || '';

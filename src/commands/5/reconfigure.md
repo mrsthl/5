@@ -1,7 +1,7 @@
 ---
 name: 5:reconfigure
 description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates AGENTS.md, and refreshes all skills.
-allowed-tools: Read, Write, Bash, Glob, Grep, Task, AskUserQuestion
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 context: fork
 ---
@@ -134,7 +134,7 @@ New skills will be created and stale skills removed based on the user's choices.
 
 ### Step 5: Regenerate
 
-Invoke the refresh skills in **refresh mode** via the Task tool:
+Invoke the refresh skills in **refresh mode** via the Agent tool:
 
 ```
 Task prompt 1: "Run configure-docs-index skill in REFRESH MODE.
@@ -163,7 +163,7 @@ Re-analyze the codebase and:
 6. Remove rule files the user chose to drop"
 ```
 
-Use `subagent_type: "general-purpose"` for the Task.
+Use `subagent_type: "general-purpose"` for the Agent.
 
 ### Step 6: Track
 

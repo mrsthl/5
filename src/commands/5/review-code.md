@@ -1,7 +1,7 @@
 ---
 name: 5:review-code
 description: Reviews code changes using native agent review or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings.
-allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Task, mcp__jetbrains__*
+allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
 context: fork
@@ -62,7 +62,7 @@ Spawn a single agent to execute the review. Do NOT run the review yourself.
 #### 3A: CodeRabbit Review Agent
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: sonnet
   description: "Run CodeRabbit review"
@@ -105,7 +105,7 @@ Task tool call:
 #### 3B: Native Review Agent
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: sonnet
   description: "Run native code review"

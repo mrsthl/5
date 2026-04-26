@@ -1,7 +1,7 @@
 ---
 name: 5:plan-feature
 description: Plans feature implementation by analyzing requirements, identifying affected modules, and creating a structured feature specification. Use at the start of any new feature to ensure systematic implementation. This is Phase 1 of the 5-phase workflow.
-allowed-tools: Read, Write, Task, AskUserQuestion
+allowed-tools: Read, Write, Agent, AskUserQuestion
 user-invocable: true
 model: opus
 ---
@@ -18,7 +18,7 @@ HARD CONSTRAINTS:
 - Do NOT write code or pseudo-code — describe behavior and data shapes in natural language or tables
 - Do NOT create implementation plans, file lists, or step-by-step build guides — that is Phase 2's job
 - Do NOT offer to proceed to the next phase — the user will invoke `/5:plan-implementation` themselves
-- Do NOT spawn Task agents with subagent_type other than Explore
+- Do NOT use the Agent tool with subagent_type other than Explore
 - Do NOT write to any file except .5/.planning-active, .5/features/{name}/codebase-scan.md, and .5/features/{name}/feature.md
 - Do NOT call EnterPlanMode — the workflow has its own planning process
 - Do NOT use Bash to create, write, or modify files — this bypasses the plan-guard
@@ -122,7 +122,7 @@ Ask the developer for the feature description using AskUserQuestion:
 
 > **ROLE CHECK:** You are a Feature Planner. Your ONLY output is feature.md. If you are tempted to write code or create files, STOP and return to the next question in Step 3.
 
-Spawn a Task with `subagent_type=Explore`:
+Spawn an Agent with `subagent_type=Explore`:
 
 ```
 Analyze the codebase for a feature specification session.

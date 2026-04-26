@@ -1,7 +1,7 @@
 ---
 name: 5:verify-implementation
 description: Verifies a feature implementation is complete and working with multi-layer checks. Phase 4 of the 5-phase workflow.
-allowed-tools: Read, Glob, Grep, Bash, Write, Task, AskUserQuestion
+allowed-tools: Read, Glob, Grep, Bash, Write, Agent, AskUserQuestion
 user-invocable: true
 model: sonnet
 context: fork
@@ -105,7 +105,7 @@ Record: SUCCESS / FAILED with details (which tests failed, error messages).
 Spawn a sonnet agent to cross-reference the implementation against the feature spec:
 
 ```
-Task tool call:
+Agent tool call:
   subagent_type: general-purpose
   model: sonnet
   description: "Verify feature completeness for {feature-name}"

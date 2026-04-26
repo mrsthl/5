@@ -22,6 +22,8 @@ When you add, rename, or remove ANY file in:
 
 You **MUST** update the `getWorkflowManagedFiles()` function in `bin/install.js` to include it in the selective update system.
 
+Always ensure the changes are compatible with **Claude and Codex**.
+
 ---
 
 ## Commands for Development

@@ -1,6 +1,30 @@
 # Release Notes
 
 
+## v1.9.4
+
+**Release Date:** 2026-04-26
+
+### Rename Task Tool to Agent
+
+Renames the `Task` tool to `Agent` across all commands, guards, hooks, and the Codex adapter to align with the updated Claude Code tool naming.
+
+**Changes**
+- All workflow commands (`plan-feature`, `plan-implementation`, `implement-feature`, `quick-implement`, `reconfigure`, `review-code`, `address-review-findings`, `verify-implementation`, `discuss-feature`) updated to reference `Agent` instead of `Task`
+- `plan-guard.js` updated to intercept `Agent` tool calls (was `Task`-only)
+- `settings.json` hook matchers updated to include `Agent` alongside `Task`
+- `sync-agents.js` Codex adapter mapping updated to use `Agent`
+- Fixed redundant phrasing "Agent agents" in `plan-feature.md`
+
+**Affected files:**
+- `src/commands/5/*.md` (modified)
+- `src/hooks/plan-guard.js` (modified)
+- `src/settings.json` (modified)
+- `bin/sync-agents.js` (modified)
+
+---
+
+
 ## v1.9.3
 
 **Release Date:** 2026-04-17

@@ -14,6 +14,8 @@ This command handles ONE task. When done, you are DONE.
 
 # Quick Implement
 
+Current branch: !`git branch --show-current`
+
 Fast path for small, well-understood tasks (1-5 files). Skips extensive planning phases but preserves state tracking and skill-based implementation.
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
@@ -57,9 +59,7 @@ Store as `$DESCRIPTION`.
 
 ### Step 2: Extract Ticket ID and Load Config
 
-```bash
-git branch --show-current
-```
+Use the branch name injected at the top of this command.
 
 Extract ticket ID using configurable pattern from config (e.g., `PROJ-\d+` or `\d+`). If not found, ask developer.
 

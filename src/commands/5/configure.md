@@ -16,6 +16,8 @@ After writing config.json and the feature spec, you are DONE. Exit immediately.
 
 # Configure (Phase 1 - Plan Feature for Project Configuration)
 
+Current commit: !`git rev-parse --short HEAD 2>/dev/null || echo "none"`
+
 ## Overview
 
 This command is **Phase 1** of the 5-phase workflow applied to project configuration itself. It analyzes the project, asks the user questions, and outputs a feature spec at `.5/features/CONFIGURE/feature.md`.
@@ -283,7 +285,7 @@ mkdir -p .5
 After writing config.json, update `.5/version.json` so the reconfigure reminder can track staleness:
 1. Read `.5/version.json` (if it exists)
 2. Set `configuredAt` to the current ISO timestamp (`new Date().toISOString()`)
-3. Set `configuredAtCommit` to the current short commit hash (run `git rev-parse --short HEAD`)
+3. Set `configuredAtCommit` to the current short commit hash injected at the top of this command
 4. Write back `.5/version.json` preserving all other fields
 
 **Apply `.gitignore` if selected:**

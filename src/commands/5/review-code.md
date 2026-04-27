@@ -17,6 +17,8 @@ After saving the findings file, you are DONE.
 
 # Review Code (Phase 5)
 
+CodeRabbit: !`which coderabbit 2>/dev/null && coderabbit auth status 2>/dev/null || echo "not installed"`
+
 ## Review Tools
 
 Two review tools are supported (configured in `.5/config.json` field `reviewTool`):
@@ -35,10 +37,7 @@ Read `.5/config.json` and check the `reviewTool` field.
 - If not set, missing, or `"claude"` (legacy value), default to `"native"`
 - If `"none"`, inform user that automated review is disabled and STOP
 
-**If CodeRabbit:** Check prerequisites via Bash:
-```bash
-which coderabbit && coderabbit auth status
-```
+**If CodeRabbit:** Check the CodeRabbit status injected at the top of this command.
 If not installed or not authenticated, ask user via AskUserQuestion:
 - "Switch to native review for this review? (Recommended)" / "I'll install CodeRabbit first"
 - If they choose CodeRabbit setup, provide install instructions and STOP

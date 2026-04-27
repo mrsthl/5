@@ -1,6 +1,30 @@
 # Release Notes
 
 
+## v1.9.5
+
+**Release Date:** 2026-04-27
+
+### Ticket Auto-Fetch and Shell Injection for Static Context
+
+Adds `--github` and `--jira` flags to `/5:plan-feature` for automatic ticket description fetching, and replaces mid-command Bash tool calls with shell injection (`!`) for static context values.
+
+**What's New**
+- **`/5:plan-feature --github`**: Detects the current branch name, extracts the issue number, and fetches the GitHub Issue description via `gh` CLI before the planning Q&A
+- **`/5:plan-feature --jira`**: Detects the current branch name, extracts the ticket ID, and fetches the Jira issue description via Atlassian MCP before the planning Q&A
+
+**Improvements**
+- **Shell injection for static context**: Replaces Bash tool calls for branch name, CodeRabbit status, and commit hash with `!` shell injection in `quick-implement`, `review-code`, and `configure`. Reduces tool call overhead for values known at command start
+
+**Affected files:**
+- `src/commands/5/plan-feature.md` (modified)
+- `src/commands/5/quick-implement.md` (modified)
+- `src/commands/5/review-code.md` (modified)
+- `src/commands/5/configure.md` (modified)
+
+---
+
+
 ## v1.9.4
 
 **Release Date:** 2026-04-26

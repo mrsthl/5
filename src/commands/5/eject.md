@@ -30,7 +30,7 @@ All other workflow files (commands, skills, hooks, templates) remain untouched.
 
 ## Step 1: Check Current State
 
-Read `.5/version.json`. If it doesn't exist, tell the user: "No 5-Phase Workflow installation found (or already ejected)." and stop.
+Read `.5/version.json`. If it doesn't exist, tell the user: "No 3-phase workflow installation found (or already ejected)." and stop.
 
 Note the `packageVersion` for the confirmation message.
 
@@ -38,7 +38,7 @@ Note the `packageVersion` for the confirmation message.
 
 Tell the user what ejecting means:
 
-> **Eject from 5-Phase Workflow updates?**
+> **Eject from 3-phase workflow updates?**
 >
 > This will permanently delete:
 > - `.5/version.json` (version tracking)

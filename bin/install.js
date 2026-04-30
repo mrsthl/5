@@ -280,11 +280,25 @@ const LEGACY_REMOVED_FILES = [
   'agents/integration-agent.md',
   'agents/step-fixer.md',
   'agents/step-verifier.md',
-  'agents/verification-agent.md',
   'templates/STACK.md',
   'templates/STRUCTURE.md',
   'templates/CONVENTIONS.md',
-  'templates/INTEGRATIONS.md'
+  'templates/INTEGRATIONS.md',
+  'commands/5/plan-feature.md',
+  'commands/5/plan-implementation.md',
+  'commands/5/implement-feature.md',
+  'commands/5/verify-implementation.md',
+  'commands/5/review-code.md',
+  'commands/5/quick-implement.md',
+  'agents/component-executor.md',
+  'templates/workflow/FEATURE-SPEC.md',
+  'skills/5-plan-feature',
+  'skills/5-plan-implementation',
+  'skills/5-implement-feature',
+  'skills/5-verify-implementation',
+  'skills/5-review-code',
+  'skills/5-quick-implement',
+  'skills/configure-project'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -295,13 +309,14 @@ function getWorkflowManagedFiles() {
 
     // Agents: separate agent files referenced by commands via agent: frontmatter
     agents: [
-      'component-executor.md'
+      'step-executor-agent.md',
+      'step-orchestrator-agent.md',
+      'verification-agent.md'
     ],
 
     // Skills: specific skill directories
     skills: [
       'configure-docs-index',
-      'configure-project',
       'configure-skills',
       'generate-readme'
     ],
@@ -327,7 +342,6 @@ function getWorkflowManagedFiles() {
       'CONCERNS.md',
       'TESTING.md',
       // Workflow output templates
-      'workflow/FEATURE-SPEC.md',
       'workflow/PLAN.md',
       'workflow/STATE.json',
       'workflow/VERIFICATION-REPORT.md',
@@ -365,7 +379,7 @@ function getFileManifest() {
     manifest.push(`hooks/${hook}`);
   }
 
-  // Templates are files (may include nested paths like workflow/FEATURE-SPEC.md)
+  // Templates are files (may include nested paths like workflow/PLAN.md)
   for (const template of managed.templates) {
     manifest.push(`templates/${template}`);
   }
@@ -435,9 +449,9 @@ This skill was authored for Claude Code. Map these tool references:
 | \`EnterPlanMode\` | Not available — use structured output instead |
 
 ## Guard Rules (replaces plan-guard hook)
-During planning phases (plan-feature, plan-implementation):
+During the planning phase ($5-plan):
 - Do NOT write to any file outside \`.5/\`
-- Do NOT write source code — only specifications and plans
+- Do NOT write source code — only the unified plan and scan cache
 - Do NOT spawn implementation agents — only Explore/research agents
 </codex_skill_adapter>`;
 }
@@ -590,7 +604,7 @@ function selectiveUpdate(targetPath, sourcePath) {
     const src = path.join(templatesSrc, template);
     const dest = path.join(templatesDest, template);
     if (fs.existsSync(src)) {
-      // Ensure parent directory exists for nested paths (e.g., workflow/FEATURE-SPEC.md)
+      // Ensure parent directory exists for nested paths (e.g., workflow/PLAN.md)
       const destDir = path.dirname(dest);
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
@@ -825,23 +839,24 @@ function mergeSettings(targetPath, sourcePath) {
 // Check if installation exists
 function checkExistingInstallation(targetPath) {
   if (activeRuntime === 'codex') {
-    // Codex: commands are installed as skills/5-plan-feature/SKILL.md
-    const markerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
-    return fs.existsSync(markerFile);
+    // Codex: commands are installed as skills/5-plan/SKILL.md
+    const markerFile = path.join(targetPath, 'skills', '5-plan', 'SKILL.md');
+    const legacyMarkerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
+    return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
   }
-  const markerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
-  return fs.existsSync(markerFile);
+  const markerFile = path.join(targetPath, 'commands', '5', 'plan.md');
+  const legacyMarkerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
+  return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
 }
 
 // Helper to show commands
 function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
-    log.info('  $5-plan-feature              - Start feature planning (Phase 1)');
-    log.info('  $5-plan-implementation       - Create implementation plan (Phase 2)');
-    log.info('  $5-implement-feature         - Execute implementation (Phase 3)');
-    log.info('  $5-verify-implementation     - Verify implementation (Phase 4)');
-    log.info('  $5-review-code               - Code review (Phase 5)');
+    log.info('  $5-plan                      - Create unified plan (Phase 1)');
+    log.info('  $5-implement                 - Execute implementation + verification (Phase 2)');
+    log.info('  $5-review                    - Code review (Phase 3)');
+    log.info('  $5-verify                    - Re-run verification helper');
     log.info('  $5-address-review-findings   - Apply review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
@@ -850,11 +865,10 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
-    log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
-    log.info('  /5:plan-implementation       - Create implementation plan (Phase 2)');
-    log.info('  /5:implement-feature         - Execute implementation (Phase 3)');
-    log.info('  /5:verify-implementation     - Verify implementation (Phase 4)');
-    log.info('  /5:review-code               - Code review (Phase 5)');
+    log.info('  /5:plan                      - Create unified plan (Phase 1)');
+    log.info('  /5:implement                 - Execute implementation + verification (Phase 2)');
+    log.info('  /5:review                    - Code review (Phase 3)');
+    log.info('  /5:verify                    - Re-run verification helper');
     log.info('  /5:address-review-findings   - Apply review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
@@ -944,34 +958,33 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
 // Generate instructions.md for Codex (replaces hooks + settings.json)
 function generateCodexInstructions(targetPath) {
-  const content = `# 5-Phase Workflow — Codex Instructions
+  const content = `# 3-Phase Workflow — Codex Instructions
 
-This file is managed by the 5-Phase Workflow installer. It provides Codex with
+This file is managed by the 3-Phase Workflow installer. It provides Codex with
 the context it needs to run the workflow skills correctly.
 
 ## Workflow Overview
 
-The 5-Phase Workflow provides structured feature development:
+The workflow provides structured feature development:
 
-1. **Plan Feature** (\`$5-plan-feature\`) — Requirements gathering & feature spec
-2. **Plan Implementation** (\`$5-plan-implementation\`) — Technical planning
-3. **Implement Feature** (\`$5-implement-feature\`) — Orchestrated implementation
-4. **Verify Implementation** (\`$5-verify-implementation\`) — Build & test verification
-5. **Review Code** (\`$5-review-code\`) — Code review
+1. **Plan** (\`$5-plan\`) — Requirements, discovery, and unified plan
+2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification
+3. **Review** (\`$5-review\`) — Code review
+
+Helper: **Verify** (\`$5-verify\`) re-runs verification.
 
 ## Data Directory
 
 All workflow state lives in \`.5/\` at the project root:
 - \`.5/config.json\` — Project configuration
-- \`.5/features/{name}/feature.md\` — Feature specifications
-- \`.5/features/{name}/plan.md\` — Implementation plans
+- \`.5/features/{name}/plan.md\` — Unified plan
 - \`.5/features/{name}/state.json\` — Implementation state
 
 ## Guard Rules
 
-During planning phases (plan-feature, plan-implementation):
+During the planning phase ($5-plan):
 - Do NOT write files outside \`.5/\`
-- Do NOT write source code — only specifications and plans
+- Do NOT write source code — only the unified plan and scan cache
 - The \`.5/.planning-active\` marker indicates planning is in progress
 
 ## Configuration

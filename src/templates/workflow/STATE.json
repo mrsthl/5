@@ -4,9 +4,33 @@
   "status": "in-progress",
   "currentStep": 1,
   "totalSteps": 0,
-  "pendingComponents": [],
+  "steps": [
+    {
+      "number": 1,
+      "name": "{step-name}",
+      "mode": "parallel",
+      "model": "haiku",
+      "components": []
+    }
+  ],
+  "pendingComponents": [
+    {
+      "name": "{component-name}",
+      "action": "create",
+      "step": 1,
+      "mode": "parallel",
+      "model": "haiku",
+      "file": "{target-path}",
+      "description": "{one-sentence intent}",
+      "dependsOn": [],
+      "patternFiles": [],
+      "verifyCommands": [],
+      "notes": []
+    }
+  ],
   "completedComponents": [],
   "failedAttempts": [],
+  "baseline": {},
   "verificationResults": {},
   "commitResults": [],
   "startedAt": "{ISO-timestamp}",

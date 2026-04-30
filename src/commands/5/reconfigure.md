@@ -3,7 +3,6 @@ name: 5:reconfigure
 description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates AGENTS.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
-context: fork
 ---
 
 <role>

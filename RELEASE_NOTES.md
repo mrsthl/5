@@ -1,5 +1,35 @@
 # Release Notes
 
+## v2.0.0
+
+**Release Date:** 2026-04-30
+
+### 3-Phase Workflow
+
+Hard-cut migration from the old five command flow to:
+
+```text
+/5:plan -> /5:implement -> /5:review
+```
+
+**Breaking changes**
+- Removed old commands: `plan-feature`, `plan-implementation`, `implement-feature`, `verify-implementation`, `review-code`, and `quick-implement`
+- Removed `feature.md`; the single planning artifact is now `plan.md`
+- Removed `component-executor.md`; execution now uses `step-executor-agent.md`
+- Removed `FEATURE-SPEC.md`
+- v1 in-progress features should be finished on v1.9.5 before upgrading
+
+**What's new**
+- `step-orchestrator-agent` derives `state.json` from a clean human `plan.md`
+- `verification-agent` is shared by inline `/5:implement` verification and `/5:verify`
+- `plan-guard.js` now allows only `.planning-active`, `codebase-scan.md`, and `plan.md` during planning
+- Installer and sync logic use the new command, agent, skill, and template names
+
+**Optimization**
+- Planning consumes fewer tokens because humans no longer fill mechanical columns such as model, step, pattern file, and verify command
+- Implementation is more reliable because those details are derived once into `state.json`
+
+---
 
 ## v1.9.5
 

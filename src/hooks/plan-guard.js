@@ -48,8 +48,8 @@ process.stdin.on('end', () => {
         ? ` CRITICAL: Block #${blockCount}. You have attempted to break out of planning ${blockCount} times. You MUST return to your current step in the Progress Checklist, complete your planning artifact, output the completion message, and STOP. Do NOT attempt any other action.`
         : '';
       process.stderr.write(
-        `BLOCKED: EnterPlanMode is not allowed during workflow planning phases. ` +
-        `The 5-phase workflow has its own planning process. ` +
+        `BLOCKED: EnterPlanMode is not allowed during workflow planning. ` +
+        `The 3-phase workflow has its own planning process. ` +
         `REDIRECT: You are in ${phase || 'a planning phase'}. Return to your Progress Checklist. ` +
         `Find the last "✓ Step N complete" you output, then continue with Step N+1. ` +
         `Write your output to .5/features/{name}/ and output the completion message when done.${escalation}`
@@ -63,12 +63,12 @@ process.stdin.on('end', () => {
         const blockCount = incrementBlockCount(workspaceDir);
         const phase = getPlanningPhase(workspaceDir);
         const escalation = blockCount >= 3
-          ? ` CRITICAL: Block #${blockCount}. You are a planner, NOT an implementer. You have attempted to spawn non-Explore agents ${blockCount} times. This is Phase 1 or 2 — implementation happens in Phase 3. Return to your Progress Checklist immediately, complete your planning artifact, and STOP.`
+          ? ` CRITICAL: Block #${blockCount}. You are a planner, NOT an implementer. You have attempted to spawn non-Explore agents ${blockCount} times. Implementation happens in /5:implement. Return to your Progress Checklist immediately, complete your planning artifact, and STOP.`
           : '';
         process.stderr.write(
-          `BLOCKED: Only Explore agents are allowed during planning phases. ` +
+          `BLOCKED: Only Explore agents are allowed during planning. ` +
           `Attempted: subagent_type="${agentType}". ` +
-          `You are in ${phase || 'a planning phase'}. Implementation agents are Phase 3 only. ` +
+          `You are in ${phase || 'the planning phase'}. Implementation agents are /5:implement only. ` +
           `REDIRECT: Return to your Progress Checklist. Find your last "✓ Step N complete" and continue with Step N+1. ` +
           `If you need codebase information, use subagent_type=Explore. ` +
           `If you are done planning, output the completion message and STOP.${escalation}`
@@ -88,8 +88,8 @@ process.stdin.on('end', () => {
           ? ` CRITICAL: Block #${blockCount}. You are repeatedly attempting to write files via Bash to bypass planning guards. STOP immediately.`
           : '';
         process.stderr.write(
-          `BLOCKED: File-writing Bash commands are not allowed during planning phases. ` +
-          `You are in ${phase || 'a planning phase'}. ` +
+          `BLOCKED: File-writing Bash commands are not allowed during planning. ` +
+          `You are in ${phase || 'the planning phase'}. ` +
           `REDIRECT: Return to your Progress Checklist. Planners do not create or modify source files. ` +
           `Complete your planning artifact and output the completion message.${escalation}`
         );
@@ -110,33 +110,32 @@ process.stdin.on('end', () => {
         const blockCount = incrementBlockCount(workspaceDir);
         const isSourceFile = !filePath.includes('.5/') && !filePath.includes('.claude/');
         const escalation = blockCount >= 3
-          ? ` CRITICAL: Block #${blockCount}. You have attempted to write source files ${blockCount} times. You are a PLANNER, not an implementer. Writing source code is Phase 3's job. Return to your Progress Checklist, finish your planning artifact, and STOP.`
+          ? ` CRITICAL: Block #${blockCount}. You have attempted to write source files ${blockCount} times. You are a PLANNER, not an implementer. Writing source code is /5:implement's job. Return to your Progress Checklist, finish your planning artifact, and STOP.`
           : '';
         const redirectMsg = isSourceFile
-          ? `REDIRECT: You are in ${phase || 'a planning phase'}. You may ONLY write to .5/features/. ` +
-            `Source file creation happens in Phase 3 (/5:implement-feature). ` +
+          ? `REDIRECT: You are in ${phase || 'the planning phase'}. You may ONLY write to .5/features/. ` +
+            `Source file creation happens in /5:implement. ` +
             `Return to your Progress Checklist — find your last "✓ Step N complete" and continue with Step N+1.`
           : `REDIRECT: The path "${filePath}" is outside the allowed .5/ directory. ` +
             `Check your file path — you should be writing to .5/features/{name}/.`;
         process.stderr.write(
-          `BLOCKED: ${toolName} outside .5/ is not allowed during planning phases. ` +
+          `BLOCKED: ${toolName} outside .5/ is not allowed during planning. ` +
           `Attempted: "${filePath}". ${redirectMsg}${escalation}`
         );
         process.exit(2);
       }
 
-      // Second check: during plan-feature, only allow specific files
-      if (phase === 'plan-feature' && !isAllowedPlanFeatureFile(filePath, workspaceDir)) {
+      // Second check: during plan, only allow specific files
+      if (normalizePlanningPhase(phase) === 'plan' && !isAllowedPlanFile(filePath, workspaceDir)) {
         const blockCount = incrementBlockCount(workspaceDir);
         const escalation = blockCount >= 3
-          ? ` CRITICAL: Block #${blockCount}. You are attempting to create implementation artifacts during Phase 1. Phase 1 ONLY produces feature.md. STOP and output your completion message.`
+          ? ` CRITICAL: Block #${blockCount}. You are attempting to create implementation artifacts during planning. Planning ONLY produces plan.md and codebase-scan.md. STOP and output your completion message.`
           : '';
         process.stderr.write(
-          `BLOCKED: During plan-feature (Phase 1), you may only write to .planning-active, codebase-scan.md, and feature.md. ` +
+          `BLOCKED: During plan, you may only write to .planning-active, codebase-scan.md, and plan.md. ` +
           `Attempted: "${filePath}". ` +
-          `You are creating implementation artifacts (e.g., plan.md) which belongs to Phase 2. ` +
-          `REDIRECT: If you have already written feature.md, output the completion message and STOP. ` +
-          `Do NOT create implementation plans, file lists, or any other artifacts.${escalation}`
+          `REDIRECT: If you have already written plan.md, output the completion message and STOP. ` +
+          `Do NOT create source files or state.json during planning.${escalation}`
         );
         process.exit(2);
       }
@@ -149,18 +148,18 @@ process.stdin.on('end', () => {
   }
 });
 
-function isAllowedPlanFeatureFile(filePath, workspaceDir) {
+function isAllowedPlanFile(filePath, workspaceDir) {
   const resolved = path.resolve(workspaceDir, filePath);
   const dotFiveDir = path.join(workspaceDir, '.5');
 
   // Allow .5/.planning-active
   if (resolved === path.join(dotFiveDir, '.planning-active')) return true;
 
-  // Allow .5/features/{name}/feature.md and .5/features/{name}/codebase-scan.md
+  // Allow .5/features/{name}/plan.md and .5/features/{name}/codebase-scan.md
   const featuresDir = path.join(dotFiveDir, 'features');
   if (resolved.startsWith(featuresDir + path.sep)) {
     const basename = path.basename(resolved);
-    if (basename === 'feature.md' || basename === 'codebase-scan.md') return true;
+    if (basename === 'plan.md' || basename === 'codebase-scan.md') return true;
   }
 
   return false;
@@ -254,8 +253,15 @@ function getPlanningPhase(workspaceDir) {
   }
 }
 
+function normalizePlanningPhase(phase) {
+  if (!phase) return 'plan';
+  if (phase === 'plan-feature' || phase === 'plan-implementation') return 'plan';
+  if (phase === 'plan') return 'plan';
+  return 'plan';
+}
+
 function isFeatureInImplementationMode(workspaceDir, featureName) {
-  // Check if this specific feature has a state.json (created in Phase 3)
+  // Check if this specific feature has a state.json (created by /5:implement)
   const stateFile = path.join(
     workspaceDir, '.5', 'features', featureName, 'state.json'
   );

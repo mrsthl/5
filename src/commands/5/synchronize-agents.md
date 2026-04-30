@@ -4,7 +4,6 @@ description: Synchronize user-generated skills, rules, and custom content betwee
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 model: haiku
-context: fork
 ---
 
 <role>

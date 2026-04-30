@@ -36,7 +36,7 @@
 
 ## Layer 2: Feature Completeness
 
-{If feature.md was not found: "Skipped — no feature.md available (normal for quick-implement workflows)"}
+{If plan.md was not found: "Skipped — no plan.md available (normal for implement workflows)"}
 
 ### Acceptance Criteria
 

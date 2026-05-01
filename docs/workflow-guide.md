@@ -6,7 +6,7 @@ v2.0.0 collapses the old five command path into the dev-workflow command path:
 /5:plan -> /5:implement -> /5:review
 ```
 
-The package is named `foif`.
+The package is named `foifi`.
 
 ## Architecture
 
@@ -146,7 +146,7 @@ If an implementation failed:
 If an upgrade left old command files installed, run:
 
 ```text
-npx foif --upgrade
+npx foifi --upgrade
 ```
 
 v2.0.0 removes old commands during upgrade:

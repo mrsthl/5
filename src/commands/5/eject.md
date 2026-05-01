@@ -27,7 +27,7 @@ Ejecting permanently removes the update system from this installation. After eje
 
 All other workflow files (commands, skills, hooks, templates) remain untouched.
 
-**This is irreversible.** To restore update functionality, reinstall with `npx foif`.
+**This is irreversible.** To restore update functionality, reinstall with `npx foifi`.
 
 ## Step 1: Check Current State
 
@@ -56,7 +56,7 @@ Tell the user what ejecting means:
 > - `.codex/skills/5-eject/` (this skill)
 > - `.codex/instructions.md` is removed only if it is workflow-managed and no longer needed for remaining installed workflow files
 >
-> All other workflow files remain untouched. To restore updates later, reinstall with `npx foif`.
+> All other workflow files remain untouched. To restore updates later, reinstall with `npx foifi`.
 
 Ask: "Proceed with eject?"
 
@@ -106,6 +106,6 @@ Tell the user:
 
 > Ejected successfully. Update infrastructure has been removed from this installation (was v{packageVersion}).
 >
-> To restore update functionality, reinstall with: `npx foif`
+> To restore update functionality, reinstall with: `npx foifi`
 >
-> If this was a Codex install, use: `npx foif --codex`
+> If this was a Codex install, use: `npx foifi --codex`

@@ -22,13 +22,13 @@ Read `.5/version.json` and note the current `installedVersion`.
 ## Step 2: Run Upgrade
 
 ```bash
-npx foif@latest --upgrade
+npx foifi@latest --upgrade
 ```
 
 If this installation is running in Codex (workflow files live in `.codex/` or the workflow command was invoked as a `$5-...` skill), run this instead:
 
 ```bash
-npx foif@latest --codex --upgrade
+npx foifi@latest --codex --upgrade
 ```
 
 ## Step 3: Confirm Upgrade

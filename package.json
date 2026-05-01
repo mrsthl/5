@@ -1,9 +1,9 @@
 {
-  "name": "foif",
+  "name": "foifi",
   "version": "2.0.0-beta-1",
   "description": "A dev-workflow for Claude Code and Codex",
   "bin": {
-    "foif": "bin/install.js"
+    "foifi": "bin/install.js"
   },
   "scripts": {
     "test": "bash test/verify-install-js.sh && bash test/test-check-updates-hook.sh && bash test/test-update-system.sh",

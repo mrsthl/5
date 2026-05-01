@@ -583,20 +583,20 @@ function main() {
 
   if (!hasClaude && !hasCodex) {
     log.error('No runtime installations found.');
-    log.info('Install Claude Code: npx foif');
-    log.info('Install Codex: npx foif --codex');
+    log.info('Install Claude Code: npx foifi');
+    log.info('Install Codex: npx foifi --codex');
     process.exit(1);
   }
 
   if (!hasClaude) {
     log.error('Claude Code runtime not installed.');
-    log.info('Install with: npx foif');
+    log.info('Install with: npx foifi');
     process.exit(1);
   }
 
   if (!hasCodex) {
     log.error('Codex runtime not installed.');
-    log.info('Install with: npx foif --codex');
+    log.info('Install with: npx foifi --codex');
     process.exit(1);
   }
 

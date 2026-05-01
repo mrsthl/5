@@ -128,7 +128,7 @@ function showHelp() {
   console.log(`
 ${colors.bright}dev-workflow Installer${colors.reset}
 
-Usage: npx foif [options]
+Usage: npx foifi [options]
 
 Options:
   --global, -g      Install to ~/.claude/ (available across all projects)
@@ -141,13 +141,13 @@ Options:
   --help, -h        Show this help message
 
 Examples:
-  npx foif              # Install locally for Claude Code
-  npx foif --global     # Install globally for Claude Code
-  npx foif --codex      # Install locally for Codex CLI
-  npx foif --codex -g   # Install globally for Codex CLI
-  npx foif --upgrade    # Auto-update to latest version
-  npx foif --check      # Check version without updating
-  npx foif --uninstall  # Remove from current directory
+  npx foifi              # Install locally for Claude Code
+  npx foifi --global     # Install globally for Claude Code
+  npx foifi --codex      # Install locally for Codex CLI
+  npx foifi --codex -g   # Install globally for Codex CLI
+  npx foifi --upgrade    # Auto-update to latest version
+  npx foifi --check      # Check version without updating
+  npx foifi --uninstall  # Remove from current directory
 `);
 }
 
@@ -509,6 +509,11 @@ function getCodexFileManifest() {
   // Original skills also become Codex skills
   for (const skill of managed.skills) {
     manifest.push(`skills/${skill}`);
+  }
+
+  // Agents are copied as-is for Codex skills that reference .codex/agents/
+  for (const agent of managed.agents) {
+    manifest.push(`agents/${agent}`);
   }
 
   // Templates are copied as-is
@@ -1049,6 +1054,28 @@ function installCodexSkills(targetPath, sourcePath) {
   log.success('Installed utility skills');
 }
 
+// Install workflow agents for Codex skills that reference .codex/agents/
+function installCodexAgents(targetPath, sourcePath) {
+  const managed = getWorkflowManagedFiles();
+  const agentsSrc = path.join(sourcePath, 'agents');
+  const agentsDest = path.join(targetPath, 'agents');
+
+  if (!fs.existsSync(agentsSrc) || managed.agents.length === 0) return;
+
+  if (!fs.existsSync(agentsDest)) {
+    fs.mkdirSync(agentsDest, { recursive: true });
+  }
+
+  for (const agent of managed.agents) {
+    const src = path.join(agentsSrc, agent);
+    const dest = path.join(agentsDest, agent);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+  log.success('Installed agents/');
+}
+
 // Codex fresh installation
 function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
   if (!fs.existsSync(targetPath)) {
@@ -1058,6 +1085,7 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
 
   // Install commands as Codex skills
   installCodexSkills(targetPath, sourcePath);
+  installCodexAgents(targetPath, sourcePath);
 
   // Copy templates and references as-is (just path conversion)
   for (const dir of ['templates', 'references']) {
@@ -1114,6 +1142,7 @@ function codexSelectiveUpdate(targetPath, sourcePath) {
 
   // Re-install all skills
   installCodexSkills(targetPath, sourcePath);
+  installCodexAgents(targetPath, sourcePath);
 
   // Update templates and references
   for (const dir of ['templates', 'references']) {
@@ -1186,6 +1215,13 @@ function codexUninstall() {
     if (fs.existsSync(skillDir)) removeDir(skillDir);
   }
   log.success('Removed utility skills (preserved user-created skills)');
+
+  // Remove agents
+  for (const agent of managed.agents) {
+    const agentPath = path.join(targetPath, 'agents', agent);
+    if (fs.existsSync(agentPath)) fs.unlinkSync(agentPath);
+  }
+  log.success('Removed workflow agents');
 
   // Remove templates
   for (const template of managed.templates) {
@@ -1468,7 +1504,7 @@ function main() {
     }
 
     if (anyUpdateAvailable) {
-      log.info('Run: npx foif --upgrade');
+      log.info('Run: npx foifi --upgrade');
     }
 
     activeRuntime = primaryRuntime;

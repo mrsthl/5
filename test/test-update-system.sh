@@ -193,6 +193,12 @@ else
   echo "✗ Codex skills not created"
   exit 1
 fi
+if [ -f ".codex/agents/step-orchestrator-agent.md" ] && [ -f ".codex/agents/step-executor-agent.md" ] && [ -f ".codex/agents/verification-agent.md" ]; then
+  echo "✓ Agents installed for Codex skills"
+else
+  echo "✗ Codex agents not installed"
+  exit 1
+fi
 if [ -f ".codex/instructions.md" ]; then
   echo "✓ instructions.md generated"
 else
@@ -246,6 +252,12 @@ for skill in 5-plan 5-implement 5-review; do
   fi
 done
 echo "✓ Workflow skills removed"
+if [ -f ".codex/agents/step-orchestrator-agent.md" ] || [ -f ".codex/agents/step-executor-agent.md" ] || [ -f ".codex/agents/verification-agent.md" ]; then
+  echo "✗ Workflow agents not removed"
+  exit 1
+else
+  echo "✓ Workflow agents removed"
+fi
 if [ -f ".codex/instructions.md" ]; then
   echo "✗ instructions.md not removed"
   exit 1

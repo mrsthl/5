@@ -1,6 +1,6 @@
 # Repository Guide
 
-This repository publishes the `foif` npm package for Claude Code and Codex.
+This repository publishes the `foifi` npm package for Claude Code and Codex.
 
 ## Development
 

@@ -1,19 +1,19 @@
-# foif
+# foifi
 
 A structured AI-assisted development workflow for Claude Code and Codex.
 
 ## Install
 
 ```bash
-npx foif
-npx foif --codex
+npx foifi
+npx foifi --codex
 ```
 
 Global installs are also supported:
 
 ```bash
-npx foif --global
-npx foif --codex --global
+npx foifi --global
+npx foifi --codex --global
 ```
 
 Claude Code installs commands under `.claude/`. Codex installs converted skills under `.codex/skills/`.
@@ -94,8 +94,8 @@ Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at
 ## Updating
 
 ```bash
-npx foif --upgrade
-npx foif --codex --upgrade
+npx foifi --upgrade
+npx foifi --codex --upgrade
 ```
 
 v2.0.0 is a hard migration. Finish in-progress v1.9.5 features before upgrading; v1 `feature.md` and old `state.json` formats are not supported.

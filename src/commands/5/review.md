@@ -75,7 +75,7 @@ Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` using `.
 Use action markers:
 
 - Fixable -> `[FIX]`
-- Questions -> `[FIX]` with the question as the fix instruction
+- Questions -> `[MANUAL]` with the question in custom instructions
 - Manual -> `[MANUAL]`
 
 ## Completion

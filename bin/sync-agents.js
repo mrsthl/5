@@ -32,6 +32,7 @@ const WORKFLOW_MANAGED_SKILLS = new Set([
 ]);
 
 const WORKFLOW_MANAGED_AGENTS = new Set([
+  'component-executor.md',
   'step-executor-agent.md',
   'step-orchestrator-agent.md',
   'verification-agent.md'
@@ -200,11 +201,13 @@ function findProjectRoot() {
 }
 
 function isClaudeInstalled(root) {
-  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md'));
+  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md')) ||
+    fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
 }
 
 function isCodexInstalled(root) {
-  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan', 'SKILL.md'));
+  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan', 'SKILL.md')) ||
+    fs.existsSync(path.join(root, '.codex', 'skills', '5-plan-feature', 'SKILL.md'));
 }
 
 function getClaudeUserSkills(root) {

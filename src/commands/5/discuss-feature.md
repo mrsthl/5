@@ -1,6 +1,6 @@
 ---
 name: 5:discuss-feature
-description: Discusses and refines an existing unified plan through iterative Q&A. Use after /plan when requirements need clarification or changes. Updates the unified plan based on discussion.
+description: Discusses and refines an existing unified plan through iterative Q&A. Use after /5:plan when requirements need clarification or changes. Updates the unified plan based on discussion.
 allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 model: opus
@@ -67,7 +67,7 @@ If user provides only ticket ID (e.g., "PROJ-1234"), find the plan file:
 - Use Glob: `.5/features/{TICKET-ID}-*/plan.md` (pattern from config)
 - Match the ticket ID
 - If multiple matches, ask user to specify
-- If no match found, inform user and suggest running `/plan` first
+- If no match found, inform user and suggest running `/5:plan` first
 
 If user provides full feature name (e.g., "PROJ-1234-add-feature"), use directly.
 
@@ -77,15 +77,17 @@ Read the unified plan from `.5/features/{feature-name}/plan.md`.
 
 Extract current state:
 - Ticket ID
-- Summary
-- Requirements (functional and non-functional)
+- Overview
+- What Changes
+- Existing Patterns to Follow
 - Constraints
-- Affected domains
-- Entity definitions
-- Business rules
-- Acceptance criteria
-- Alternatives considered
-- Decisions (with [DECIDED]/[FLEXIBLE]/[DEFERRED] labels)
+- Scope
+- Acceptance Criteria
+- Decisions ([DECIDED]/[FLEXIBLE]/[DEFERRED])
+- Module Impact
+- Component Checklist
+- Technical Notes
+- Alternatives Considered
 
 ### Step 3: Initial Discussion Prompt
 
@@ -138,7 +140,7 @@ After each round of Q&A:
 3. Provide options:
    - "Yes, discuss another aspect"
    - "Yes, continue this topic"
-   - "No, update the spec"
+   - "No, update the plan"
 
 Allow multiple rounds of discussion until user is satisfied.
 
@@ -186,4 +188,3 @@ After updating the plan, tell the developer:
    - "Discuss more (run /5:discuss-feature again)"
    - "Proceed to implementation (run `/clear` followed by `/5:implement {feature-name}`)"
    - "Review the updated plan first"
-

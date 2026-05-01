@@ -19,10 +19,10 @@ Read:
 
 ## Checks
 
-1. Files: every planned create/modify target exists unless action is `delete`.
+1. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that the source path is removed and the destination path exists.
 2. Build: run configured build command unless `none`.
 3. Tests: run configured test command unless `none`.
-4. Acceptance criteria: inspect changed files and mark each criterion satisfied or not satisfied with evidence.
+4. Acceptance criteria: inspect changed files and mark each criterion satisfied or not satisfied with evidence. For rename criteria, include evidence for both source removal and destination creation.
 5. Quality: logic-bearing created components have tests when the project has a test framework.
 
 ## Report

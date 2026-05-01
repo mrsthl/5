@@ -258,7 +258,7 @@ If no patterns/commands detected:
 - Allow manual entry of pattern names/locations or command names
 
 **2m. Git-ignore `.5/features/` folder:**
-- "The `.5/features/` folder will contain unified plans, implementation plans, and state files. Would you like to add it to `.gitignore`?"
+- "The `.5/features/` folder will contain unified plans, state files, verification reports, and review findings. Would you like to add it to `.gitignore`?"
   - Options:
     1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
     2. "No, track in git" — useful if you want to share specs and plans with your team

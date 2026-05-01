@@ -25,7 +25,7 @@ Read:
 - `.5/config.json` if it exists
 - `.5/features/{feature-name}/state.json` if it exists
 
-If `plan.md` is missing, stop and tell the user to run `/5:plan {feature-name}` first.
+If `plan.md` is missing, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}` with the created feature folder name.
 
 If state exists:
 
@@ -62,7 +62,7 @@ Remove `.5/.planning-active` after state is valid.
 
 ### Step 3: Establish Baseline
 
-Run build/test commands from `state.json.verification.commands` or `.5/config.json`. Skip commands explicitly set to `none`.
+Run build/test commands from `.5/config.json` by default. If `state.json` defines an explicit baseline command block, prefer that block. Skip commands explicitly set to `none`.
 
 Record results in `state.json.baseline`. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
 

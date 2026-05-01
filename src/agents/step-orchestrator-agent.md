@@ -33,7 +33,7 @@ Write valid JSON:
   "feature": "{feature-name}",
   "status": "in-progress",
   "currentStep": 1,
-  "totalSteps": 0,
+  "totalSteps": 1,
   "steps": [
     {
       "number": 1,

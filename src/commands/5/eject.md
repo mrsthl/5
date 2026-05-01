@@ -3,6 +3,7 @@ name: 5:eject
 description: Eject from the update mechanism — permanently removes update infrastructure
 allowed-tools: Bash, Read, Edit, AskUserQuestion
 user-invocable: true
+context: inherit
 ---
 
 <role>

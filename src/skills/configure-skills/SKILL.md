@@ -1,7 +1,7 @@
 ---
 name: configure-skills
 description: Generates project-specific create-*/run-* skills and scoped rules from the current codebase. Used during /5:implement CONFIGURE.
-allowed-tools: Read, Write, Bash, Glob, Grep
+allowed-tools: Read, Write, Bash, Glob, Grep, create-skill, scaffold-skill
 model: sonnet
 context: fork
 user-invocable: false

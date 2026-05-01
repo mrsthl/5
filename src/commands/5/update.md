@@ -4,6 +4,7 @@ description: Update the 3-phase workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 model: haiku
+context: inherit
 ---
 
 <role>

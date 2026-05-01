@@ -65,6 +65,12 @@ The component checklist stays intentionally lean: component, action, target path
 - `step-executor-agent.md` implements assigned components and reports a strict `---RESULT---` block.
 - `verification-agent.md` runs file/build/test/acceptance/quality checks and writes `verification.md`.
 
+Usage examples:
+
+- `step-orchestrator-agent.md`: input `plan.md` + `codebase-scan.md` -> output `state.json` with numbered steps.
+- `step-executor-agent.md`: input one assigned component -> output `---RESULT--- STATUS: success ...`.
+- `verification-agent.md`: input `plan.md` + `state.json` -> output `verification.md` and `---VERIFICATION---`.
+
 ## Installer Rules
 
 When adding or deleting workflow-owned files, update:

@@ -73,6 +73,9 @@ mkdir -p test-5phase-2/.claude/commands/5
 touch test-5phase-2/.claude/commands/5/plan-feature.md
 touch test-5phase-2/.claude/commands/5/plan-implementation.md
 touch test-5phase-2/.claude/commands/5/implement-feature.md
+touch test-5phase-2/.claude/commands/5/quick-implement.md
+touch test-5phase-2/.claude/commands/5/review-code.md
+touch test-5phase-2/.claude/commands/5/verify-implementation.md
 mkdir -p test-5phase-2/.claude/agents test-5phase-2/.claude/templates/workflow
 touch test-5phase-2/.claude/agents/component-executor.md
 touch test-5phase-2/.claude/templates/workflow/FEATURE-SPEC.md
@@ -94,6 +97,9 @@ for old_file in \
   ".claude/commands/5/plan-feature.md" \
   ".claude/commands/5/plan-implementation.md" \
   ".claude/commands/5/implement-feature.md" \
+  ".claude/commands/5/quick-implement.md" \
+  ".claude/commands/5/review-code.md" \
+  ".claude/commands/5/verify-implementation.md" \
   ".claude/agents/component-executor.md" \
   ".claude/templates/workflow/FEATURE-SPEC.md"; do
   if [ -e "$old_file" ]; then
@@ -233,12 +239,13 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-if [ -f ".codex/skills/5-plan/SKILL.md" ]; then
-  echo "✗ Workflow skills not removed"
-  exit 1
-else
-  echo "✓ Workflow skills removed"
-fi
+for skill in 5-plan 5-implement 5-review 5-verify; do
+  if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
+    echo "✗ Workflow skill not removed: ${skill}"
+    exit 1
+  fi
+done
+echo "✓ Workflow skills removed"
 if [ -f ".codex/instructions.md" ]; then
   echo "✗ instructions.md not removed"
   exit 1

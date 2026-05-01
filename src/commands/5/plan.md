@@ -62,11 +62,14 @@ Only run this step when `--github` or `--jira` was passed.
 
 1. Read `.5/config.json` if it exists and extract `ticket.pattern`.
 2. Match the pattern against the branch name above.
-3. If a ticket ID is found:
-   - `--jira`: fetch via `mcp__claude_ai_Atlassian_Rovo__getJiraIssue`.
-   - `--github`: run `gh issue view {id} --json title,body`.
-4. If no ticket ID is found, ask the user for the ID, then fetch.
-5. If fetching fails, report the reason and continue without fetched content.
+3. If a ticket ID is found, validate format first:
+   - `--github`: digits only (`^[0-9]+$`)
+   - `--jira`: key format (`^[A-Z][A-Z0-9]+-[0-9]+$`)
+4. After validation:
+   - `--jira`: fetch via `mcp__claude_ai_Atlassian_Rovo__getJiraIssue` using the validated key as a typed parameter.
+   - `--github`: run `gh issue view "$id" --json title,body`.
+5. If no ticket ID is found, ask the user for the ID, validate it, then fetch.
+6. If validation or fetching fails, report the reason and continue without fetched content.
 
 ## Step 2: Gather Description
 

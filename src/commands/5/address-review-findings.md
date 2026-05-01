@@ -4,6 +4,7 @@ description: Applies annotated review findings and/or addresses GitHub PR review
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
+context: inherit
 ---
 
 <role>

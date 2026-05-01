@@ -1,19 +1,19 @@
 # foif
 
-A structured AI-assisted development workflow for Claude Code and Codex. The npm package name remains `5-phase-workflow` for compatibility.
+A structured AI-assisted development workflow for Claude Code and Codex.
 
 ## Install
 
 ```bash
-npx 5-phase-workflow
-npx 5-phase-workflow --codex
+npx foif
+npx foif --codex
 ```
 
 Global installs are also supported:
 
 ```bash
-npx 5-phase-workflow --global
-npx 5-phase-workflow --codex --global
+npx foif --global
+npx foif --codex --global
 ```
 
 Claude Code installs commands under `.claude/`. Codex installs converted skills under `.codex/skills/`.
@@ -94,8 +94,8 @@ Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at
 ## Updating
 
 ```bash
-npx 5-phase-workflow --upgrade
-npx 5-phase-workflow --codex --upgrade
+npx foif --upgrade
+npx foif --codex --upgrade
 ```
 
 v2.0.0 is a hard migration. Finish in-progress v1.9.5 features before upgrading; v1 `feature.md` and old `state.json` formats are not supported.

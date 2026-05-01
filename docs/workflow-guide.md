@@ -6,7 +6,7 @@ v2.0.0 collapses the old five command path into the dev-workflow command path:
 /5:plan -> /5:implement -> /5:review
 ```
 
-The package is still named `5-phase-workflow` for npm compatibility.
+The package is named `foif`.
 
 ## Architecture
 
@@ -146,7 +146,7 @@ If an implementation failed:
 If an upgrade left old command files installed, run:
 
 ```text
-npx 5-phase-workflow --upgrade
+npx foif --upgrade
 ```
 
 v2.0.0 removes old commands during upgrade:

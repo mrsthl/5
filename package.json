@@ -1,9 +1,9 @@
 {
-  "name": "5-phase-workflow",
-  "version": "1.9.5",
+  "name": "foif",
+  "version": "2.0.0-beta-1",
   "description": "A dev-workflow for Claude Code and Codex",
   "bin": {
-    "5-phase-workflow": "bin/install.js"
+    "foif": "bin/install.js"
   },
   "scripts": {
     "test": "bash test/verify-install-js.sh && bash test/test-check-updates-hook.sh && bash test/test-update-system.sh",
@@ -32,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mrsthl/5"
+    "url": "git+https://github.com/mrsthl/5.git"
   },
   "bugs": {
     "url": "https://github.com/mrsthl/5/issues"

@@ -1,6 +1,6 @@
 # Repository Guide
 
-This repository publishes the `5-phase-workflow` npm package. The package name is historical; the product is now called dev-workflow for Claude Code and Codex.
+This repository publishes the `foif` npm package for Claude Code and Codex.
 
 ## Development
 

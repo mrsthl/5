@@ -743,7 +743,7 @@ Major reduction in token usage across all commands and skills, a new `config-gua
 Moved update notifications from chat output to the **status line** at the bottom of the terminal, and added a new `/5:update` command for one-step upgrades.
 
 **New: `/5:update` Command**
-- Runs `npx 5-phase-workflow --upgrade` to update to the latest version
+- Runs `npx foif --upgrade` to update to the latest version
 - Shown as a hint directly in the status line when an update is available
 
 **Status Line Integration**
@@ -899,7 +899,7 @@ Fixed contradiction where installer auto-created config but `/5:configure` was d
 
 **For existing installations:**
 - No action needed, config preserved during upgrade
-- Run `npx 5-phase-workflow --upgrade` to update workflow commands
+- Run `npx foif --upgrade` to update workflow commands
 
 **For fresh installations:**
 - Must run `/5:configure` before using workflow
@@ -940,11 +940,11 @@ After:
 **Migration Instructions:**
 
 Users with NO in-progress features:
-- Simply upgrade: `npx 5-phase-workflow --upgrade`
+- Simply upgrade: `npx foif --upgrade`
 - New features automatically use new structure
 
 Users with in-progress features:
-1. Upgrade: `npx 5-phase-workflow --upgrade`
+1. Upgrade: `npx foif --upgrade`
 2. Migrate existing features:
    ```bash
    mkdir -p .5/features
@@ -1216,7 +1216,7 @@ We're excited to announce the first release of **dev-workflow** - a systematic, 
 - **Custom projects**: Manual configuration support
 
 **Smart Installation**
-- One-command installation via `npx 5-phase-workflow`
+- One-command installation via `npx foif`
 - Auto-detects project type and tech stack
 - Configures build and test commands automatically
 - Supports local (per-project) or global installation
@@ -1269,10 +1269,10 @@ We're excited to announce the first release of **dev-workflow** - a systematic, 
 
 ```bash
 # Install locally in current project
-npx 5-phase-workflow
+npx foif
 
 # Or install globally for all projects
-npx 5-phase-workflow --global
+npx foif --global
 ```
 
 ## Quick Start

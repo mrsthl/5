@@ -68,7 +68,7 @@ async function getLatestVersion() {
   return new Promise((resolve) => {
     const https = require('https');
     const req = https.get(
-      'https://registry.npmjs.org/5-phase-workflow/latest',
+      'https://registry.npmjs.org/foif/latest',
       { timeout: 3000 },
       (res) => {
         if (res.statusCode !== 200) {

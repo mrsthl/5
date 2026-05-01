@@ -128,7 +128,7 @@ function showHelp() {
   console.log(`
 ${colors.bright}dev-workflow Installer${colors.reset}
 
-Usage: npx 5-phase-workflow [options]
+Usage: npx foif [options]
 
 Options:
   --global, -g      Install to ~/.claude/ (available across all projects)
@@ -141,13 +141,13 @@ Options:
   --help, -h        Show this help message
 
 Examples:
-  npx 5-phase-workflow              # Install locally for Claude Code
-  npx 5-phase-workflow --global     # Install globally for Claude Code
-  npx 5-phase-workflow --codex      # Install locally for Codex CLI
-  npx 5-phase-workflow --codex -g   # Install globally for Codex CLI
-  npx 5-phase-workflow --upgrade    # Auto-update to latest version
-  npx 5-phase-workflow --check      # Check version without updating
-  npx 5-phase-workflow --uninstall  # Remove from current directory
+  npx foif              # Install locally for Claude Code
+  npx foif --global     # Install globally for Claude Code
+  npx foif --codex      # Install locally for Codex CLI
+  npx foif --codex -g   # Install globally for Codex CLI
+  npx foif --upgrade    # Auto-update to latest version
+  npx foif --check      # Check version without updating
+  npx foif --uninstall  # Remove from current directory
 `);
 }
 
@@ -1468,7 +1468,7 @@ function main() {
     }
 
     if (anyUpdateAvailable) {
-      log.info('Run: npx 5-phase-workflow --upgrade');
+      log.info('Run: npx foif --upgrade');
     }
 
     activeRuntime = primaryRuntime;

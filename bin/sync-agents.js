@@ -583,20 +583,20 @@ function main() {
 
   if (!hasClaude && !hasCodex) {
     log.error('No runtime installations found.');
-    log.info('Install Claude Code: npx 5-phase-workflow');
-    log.info('Install Codex: npx 5-phase-workflow --codex');
+    log.info('Install Claude Code: npx foif');
+    log.info('Install Codex: npx foif --codex');
     process.exit(1);
   }
 
   if (!hasClaude) {
     log.error('Claude Code runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow');
+    log.info('Install with: npx foif');
     process.exit(1);
   }
 
   if (!hasCodex) {
     log.error('Codex runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow --codex');
+    log.info('Install with: npx foif --codex');
     process.exit(1);
   }
 

@@ -51,6 +51,7 @@ Write valid JSON:
       "mode": "parallel|sequential",
       "model": "haiku|sonnet",
       "file": "path/to/file",
+      "sourceFile": null,
       "description": "one sentence",
       "dependsOn": [],
       "patternFiles": ["path/to/pattern"],
@@ -76,4 +77,5 @@ Before writing state:
 - Every non-first-step dependency refers to an existing component name.
 - Every component has at least one pattern file or a note explaining why no pattern exists.
 - Every component has at least one verify command or a note explaining why verification is manual.
+- Rename components must set `sourceFile` to the original path and `file` to the destination path.
 - `totalSteps` equals `steps.length`.

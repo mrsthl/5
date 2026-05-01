@@ -21,6 +21,7 @@
       "mode": "parallel",
       "model": "haiku",
       "file": "{target-path}",
+      "sourceFile": null,
       "description": "{one-sentence intent}",
       "dependsOn": [],
       "patternFiles": [],

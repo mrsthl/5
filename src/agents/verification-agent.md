@@ -20,7 +20,7 @@ Read:
 ## Checks
 
 1. Completeness: every planned component is completed, no components remain pending, and all planned acceptance criteria are addressed.
-2. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that the source path is removed and the destination path exists.
+2. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that `sourceFile` is removed and `file` exists at the destination path.
 3. Build: run configured build command unless `none`.
 4. Tests: run configured test command unless `none`.
 5. Correctness: inspect changed files and executor results to confirm the implementation matches the plan and does not only satisfy file existence.

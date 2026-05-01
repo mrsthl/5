@@ -3,7 +3,6 @@ name: 5:implement
 description: Executes a unified plan by spawning step-orchestrator-agent, per-step executor agents, and final verification-agent inline. Phase 2 of the 3-phase workflow.
 allowed-tools: Agent, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
 user-invocable: true
-model: opus
 argument-hint: [feature-name]
 ---
 

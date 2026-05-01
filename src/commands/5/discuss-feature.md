@@ -3,7 +3,6 @@ name: 5:discuss-feature
 description: Discusses and refines an existing unified plan through iterative Q&A. Use after /5:plan when requirements need clarification or changes. Updates the unified plan based on discussion.
 allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
-model: opus
 context: inherit
 ---
 

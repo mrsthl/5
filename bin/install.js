@@ -25,15 +25,60 @@ const log = {
   header: (msg) => console.log(`\n${colors.bright}${msg}${colors.reset}\n`)
 };
 
-// Version comparison (semver)
-// Uses parseInt to handle pre-release tags (e.g., "2-beta" → 2)
+// Version comparison (semver, including pre-release ordering)
 function compareVersions(v1, v2) {
-  const parts1 = v1.split('.').map(p => parseInt(p, 10) || 0);
-  const parts2 = v2.split('.').map(p => parseInt(p, 10) || 0);
+  const parsed1 = parseSemver(v1);
+  const parsed2 = parseSemver(v2);
+
   for (let i = 0; i < 3; i++) {
-    if (parts1[i] > parts2[i]) return 1;
-    if (parts1[i] < parts2[i]) return -1;
+    if (parsed1.core[i] > parsed2.core[i]) return 1;
+    if (parsed1.core[i] < parsed2.core[i]) return -1;
   }
+
+  return comparePrerelease(parsed1.prerelease, parsed2.prerelease);
+}
+
+function parseSemver(version) {
+  const normalized = String(version || '').trim().replace(/^v/, '').split('+')[0];
+  const prereleaseIndex = normalized.indexOf('-');
+  const corePart = prereleaseIndex === -1 ? normalized : normalized.slice(0, prereleaseIndex);
+  const prereleasePart = prereleaseIndex === -1 ? '' : normalized.slice(prereleaseIndex + 1);
+  const core = corePart.split('.').slice(0, 3).map(part => parseInt(part, 10) || 0);
+  while (core.length < 3) core.push(0);
+
+  return {
+    core,
+    prerelease: prereleasePart ? prereleasePart.split(/[.-]/) : []
+  };
+}
+
+function comparePrerelease(pre1, pre2) {
+  if (pre1.length === 0 && pre2.length === 0) return 0;
+  if (pre1.length === 0) return 1;
+  if (pre2.length === 0) return -1;
+
+  const length = Math.max(pre1.length, pre2.length);
+  for (let i = 0; i < length; i++) {
+    const id1 = pre1[i];
+    const id2 = pre2[i];
+    if (id1 === undefined) return -1;
+    if (id2 === undefined) return 1;
+    if (id1 === id2) continue;
+
+    const id1Numeric = /^[0-9]+$/.test(id1);
+    const id2Numeric = /^[0-9]+$/.test(id2);
+    if (id1Numeric && id2Numeric) {
+      const n1 = parseInt(id1, 10);
+      const n2 = parseInt(id2, 10);
+      if (n1 > n2) return 1;
+      if (n1 < n2) return -1;
+      continue;
+    }
+    if (id1Numeric) return -1;
+    if (id2Numeric) return 1;
+    return id1 > id2 ? 1 : -1;
+  }
+
   return 0;
 }
 

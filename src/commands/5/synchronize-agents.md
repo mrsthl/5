@@ -4,7 +4,6 @@ description: Synchronize user-generated skills, rules, and custom content betwee
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 model: haiku
-context: fork
 ---
 
 <role>
@@ -21,13 +20,13 @@ Synchronizes user-generated content (skills, commands, agents, rules) between th
 The script is `bin/sync-agents.js` in the workflow package. Find it by checking these paths in order:
 
 1. `./bin/sync-agents.js` (development checkout / project root)
-2. `./node_modules/5-phase-workflow/bin/sync-agents.js` (local npm install)
+2. `./node_modules/foifi/bin/sync-agents.js` (local npm install)
 
 Read `.5/version.json` if available — its location confirms the project root.
 
 Store the resolved path for the following steps.
 
-If the script cannot be found, tell the user: "Sync script not found. Update the workflow first: `npx 5-phase-workflow --upgrade`" and **stop**.
+If the script cannot be found, tell the user: "Sync script not found. Update the workflow first: `npx foifi --upgrade`" and **stop**.
 
 ## Step 2: Dry Run
 

@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_SCRIPT="$PROJECT_ROOT/bin/install.js"
 
-echo "Testing 5-Phase Workflow Update System"
+echo "Testing dev-workflow Update System"
 echo "======================================="
 echo ""
 
@@ -71,6 +71,14 @@ cd /tmp
 rm -rf test-5phase-2
 mkdir -p test-5phase-2/.claude/commands/5
 touch test-5phase-2/.claude/commands/5/plan-feature.md
+touch test-5phase-2/.claude/commands/5/plan-implementation.md
+touch test-5phase-2/.claude/commands/5/implement-feature.md
+touch test-5phase-2/.claude/commands/5/quick-implement.md
+touch test-5phase-2/.claude/commands/5/review-code.md
+touch test-5phase-2/.claude/commands/5/verify-implementation.md
+mkdir -p test-5phase-2/.claude/agents test-5phase-2/.claude/templates/workflow
+touch test-5phase-2/.claude/agents/component-executor.md
+touch test-5phase-2/.claude/templates/workflow/FEATURE-SPEC.md
 cd test-5phase-2
 node "$INSTALL_SCRIPT" --upgrade
 if [ -f ".5/version.json" ]; then
@@ -79,6 +87,27 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
+if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ]; then
+  echo "✓ New v2 commands installed for legacy upgrade"
+else
+  echo "✗ New v2 commands missing after legacy upgrade"
+  exit 1
+fi
+for old_file in \
+  ".claude/commands/5/plan-feature.md" \
+  ".claude/commands/5/plan-implementation.md" \
+  ".claude/commands/5/implement-feature.md" \
+  ".claude/commands/5/quick-implement.md" \
+  ".claude/commands/5/review-code.md" \
+  ".claude/commands/5/verify-implementation.md" \
+  ".claude/agents/component-executor.md" \
+  ".claude/templates/workflow/FEATURE-SPEC.md"; do
+  if [ -e "$old_file" ]; then
+    echo "✗ Legacy file still present: $old_file"
+    exit 1
+  fi
+done
+echo "✓ Legacy v1 files removed"
 echo ""
 
 # Test 7: Deep Merge Settings
@@ -158,10 +187,16 @@ else
   echo "✗ version.json not created"
   exit 1
 fi
-if [ -f ".codex/skills/5-plan-feature/SKILL.md" ]; then
+if [ -f ".codex/skills/5-plan/SKILL.md" ]; then
   echo "✓ Commands converted to Codex skills"
 else
   echo "✗ Codex skills not created"
+  exit 1
+fi
+if [ -f ".codex/agents/step-orchestrator-agent.md" ] && [ -f ".codex/agents/step-executor-agent.md" ] && [ -f ".codex/agents/verification-agent.md" ]; then
+  echo "✓ Agents installed for Codex skills"
+else
+  echo "✗ Codex agents not installed"
   exit 1
 fi
 if [ -f ".codex/instructions.md" ]; then
@@ -177,21 +212,21 @@ else
   exit 1
 fi
 # Verify skill content has adapter header
-if grep -q "codex_skill_adapter" .codex/skills/5-plan-feature/SKILL.md; then
+if grep -q "codex_skill_adapter" .codex/skills/5-plan/SKILL.md; then
   echo "✓ Skill has Codex adapter header"
 else
   echo "✗ Skill missing Codex adapter header"
   exit 1
 fi
 # Verify slash commands converted to skill mentions
-if grep -q '\$5-plan-implementation' .codex/skills/5-plan-feature/SKILL.md; then
+if grep -q '\$5-implement' .codex/skills/5-plan/SKILL.md; then
   echo "✓ Slash commands converted to \$ skill mentions"
 else
   echo "✗ Slash command conversion failed"
   exit 1
 fi
 # Verify no .claude/ directory references in converted skills
-if grep -q '\.claude/' .codex/skills/5-plan-feature/SKILL.md; then
+if grep -q '\.claude/' .codex/skills/5-plan/SKILL.md; then
   echo "✗ Still contains .claude/ path references"
   exit 1
 else
@@ -210,11 +245,18 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-if [ -f ".codex/skills/5-plan-feature/SKILL.md" ]; then
-  echo "✗ Workflow skills not removed"
+for skill in 5-plan 5-implement 5-review; do
+  if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
+    echo "✗ Workflow skill not removed: ${skill}"
+    exit 1
+  fi
+done
+echo "✓ Workflow skills removed"
+if [ -f ".codex/agents/step-orchestrator-agent.md" ] || [ -f ".codex/agents/step-executor-agent.md" ] || [ -f ".codex/agents/verification-agent.md" ]; then
+  echo "✗ Workflow agents not removed"
   exit 1
 else
-  echo "✓ Workflow skills removed"
+  echo "✓ Workflow agents removed"
 fi
 if [ -f ".codex/instructions.md" ]; then
   echo "✗ instructions.md not removed"
@@ -230,10 +272,35 @@ else
 fi
 echo ""
 
+# Test 12: Codex Legacy Install Migration
+echo "Test 12: Codex Legacy Install Migration"
+echo "---------------------------------------"
+cd /tmp
+rm -rf test-5phase-codex-legacy
+mkdir -p test-5phase-codex-legacy/.codex/skills/5-plan-feature
+mkdir -p test-5phase-codex-legacy/.codex/skills/5-implement-feature
+echo "# old" > test-5phase-codex-legacy/.codex/skills/5-plan-feature/SKILL.md
+echo "# old" > test-5phase-codex-legacy/.codex/skills/5-implement-feature/SKILL.md
+cd test-5phase-codex-legacy
+node "$INSTALL_SCRIPT" --codex --upgrade
+if [ -f ".codex/skills/5-plan/SKILL.md" ] && [ -f ".codex/skills/5-implement/SKILL.md" ]; then
+  echo "✓ New Codex v2 skills installed for legacy upgrade"
+else
+  echo "✗ New Codex v2 skills missing after legacy upgrade"
+  exit 1
+fi
+if [ -e ".codex/skills/5-plan-feature" ] || [ -e ".codex/skills/5-implement-feature" ]; then
+  echo "✗ Legacy Codex skills still present"
+  exit 1
+else
+  echo "✓ Legacy Codex skills removed"
+fi
+echo ""
+
 # Cleanup
 echo "Cleanup"
 echo "-------"
-rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4 /tmp/test-5phase-codex-1
+rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4 /tmp/test-5phase-codex-1 /tmp/test-5phase-codex-legacy
 echo "✓ Cleaned up test directories"
 echo ""
 

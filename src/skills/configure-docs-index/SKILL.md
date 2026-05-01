@@ -1,6 +1,6 @@
 ---
 name: configure-docs-index
-description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement-feature CONFIGURE.
+description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
 context: fork
@@ -11,7 +11,7 @@ user-invocable: false
 
 ## Overview
 
-This skill handles the documentation and indexing work during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `AGENTS.md`.
+This skill handles the documentation and indexing work during implementation for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `AGENTS.md`.
 
 It handles one task:
 
@@ -27,10 +27,10 @@ This skill supports two modes. The analysis (A1), template filling (A2-A3), inde
 
 ### Full Mode (default)
 
-Used by `/5:configure` → `/5:implement-feature CONFIGURE` flow.
+Used by `/5:configure` → `/5:implement CONFIGURE` flow.
 
-- **Input:** Pattern/command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
-- **Behavior:** Creates documentation, index files, and `AGENTS.md` from scratch based on feature spec requirements
+- **Input:** Pattern/command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+- **Behavior:** Creates documentation, index files, and `AGENTS.md` from scratch based on unified plan requirements
 
 ### Refresh Mode
 

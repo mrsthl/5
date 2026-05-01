@@ -1,5 +1,36 @@
 # Release Notes
 
+## v2.0.0
+
+**Release Date:** 2026-04-30
+
+### dev-workflow
+
+Hard-cut migration from the old five command flow to the dev-workflow command path:
+
+```text
+/5:plan -> /5:implement -> /5:review
+```
+
+**Breaking changes**
+- Removed old commands: `plan-feature`, `plan-implementation`, `implement-feature`, `verify`, `verify-implementation`, `review-code`, and `quick-implement`
+- Removed `feature.md`; the single planning artifact is now `plan.md`
+- Removed `component-executor.md`; execution now uses `step-executor-agent.md`
+- Removed `FEATURE-SPEC.md`
+- Removed `VERIFICATION-REPORT.md` and generated `verification.md` reports
+- v1 in-progress features should be finished on v1.9.5 before upgrading
+
+**What's new**
+- `step-orchestrator-agent` derives `state.json` from a clean human `plan.md`
+- `verification-agent` runs from `/5:implement` and records concise verification status directly in `state.json`
+- `plan-guard.js` now allows only `.planning-active`, `codebase-scan.md`, and `plan.md` during planning
+- Installer and sync logic use the new command, agent, skill, and template names
+
+**Optimization**
+- Planning consumes fewer tokens because humans no longer fill mechanical columns such as model, step, pattern file, and verify command
+- Implementation is more reliable because those details are derived once into `state.json`
+
+---
 
 ## v1.9.5
 
@@ -439,7 +470,7 @@ Integrates the skill-creator plugin for higher-quality project skill generation,
 
 ### Block EnterPlanMode During Workflow Planning Phases
 
-Prevents Claude Code's built-in `EnterPlanMode` tool from being invoked during the 5-phase workflow's planning commands, eliminating interference between the built-in plan mode and the workflow's own structured planning process.
+Prevents Claude Code's built-in `EnterPlanMode` tool from being invoked during dev-workflow planning commands, eliminating interference between the built-in plan mode and the workflow's own structured planning process.
 
 **Bug Fixes**
 - `plan-guard.js` hook now intercepts and blocks `EnterPlanMode` calls when a planning phase is active, returning a clear redirect message instructing the agent to continue with its workflow artifact instead
@@ -712,7 +743,7 @@ Major reduction in token usage across all commands and skills, a new `config-gua
 Moved update notifications from chat output to the **status line** at the bottom of the terminal, and added a new `/5:update` command for one-step upgrades.
 
 **New: `/5:update` Command**
-- Runs `npx 5-phase-workflow --upgrade` to update to the latest version
+- Runs `npx foifi --upgrade` to update to the latest version
 - Shown as a hint directly in the status line when an update is available
 
 **Status Line Integration**
@@ -868,7 +899,7 @@ Fixed contradiction where installer auto-created config but `/5:configure` was d
 
 **For existing installations:**
 - No action needed, config preserved during upgrade
-- Run `npx 5-phase-workflow --upgrade` to update workflow commands
+- Run `npx foifi --upgrade` to update workflow commands
 
 **For fresh installations:**
 - Must run `/5:configure` before using workflow
@@ -909,11 +940,11 @@ After:
 **Migration Instructions:**
 
 Users with NO in-progress features:
-- Simply upgrade: `npx 5-phase-workflow --upgrade`
+- Simply upgrade: `npx foifi --upgrade`
 - New features automatically use new structure
 
 Users with in-progress features:
-1. Upgrade: `npx 5-phase-workflow --upgrade`
+1. Upgrade: `npx foifi --upgrade`
 2. Migrate existing features:
    ```bash
    mkdir -p .5/features
@@ -1162,7 +1193,7 @@ plan-implementation: Read feature.md → Explore-Agent → Q&A (+ re-explore) �
 
 ## Overview
 
-We're excited to announce the first release of **5-Phase Workflow** - a systematic, AI-assisted feature development workflow for Claude Code that works with any tech stack.
+We're excited to announce the first release of **dev-workflow** - a systematic, AI-assisted feature development workflow for Claude Code that works with any tech stack.
 
 ## What's New
 
@@ -1185,7 +1216,7 @@ We're excited to announce the first release of **5-Phase Workflow** - a systemat
 - **Custom projects**: Manual configuration support
 
 **Smart Installation**
-- One-command installation via `npx 5-phase-workflow`
+- One-command installation via `npx foifi`
 - Auto-detects project type and tech stack
 - Configures build and test commands automatically
 - Supports local (per-project) or global installation
@@ -1238,10 +1269,10 @@ We're excited to announce the first release of **5-Phase Workflow** - a systemat
 
 ```bash
 # Install locally in current project
-npx 5-phase-workflow
+npx foifi
 
 # Or install globally for all projects
-npx 5-phase-workflow --global
+npx foifi --global
 ```
 
 ## Quick Start

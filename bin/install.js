@@ -25,15 +25,60 @@ const log = {
   header: (msg) => console.log(`\n${colors.bright}${msg}${colors.reset}\n`)
 };
 
-// Version comparison (semver)
-// Uses parseInt to handle pre-release tags (e.g., "2-beta" → 2)
+// Version comparison (semver, including pre-release ordering)
 function compareVersions(v1, v2) {
-  const parts1 = v1.split('.').map(p => parseInt(p, 10) || 0);
-  const parts2 = v2.split('.').map(p => parseInt(p, 10) || 0);
+  const parsed1 = parseSemver(v1);
+  const parsed2 = parseSemver(v2);
+
   for (let i = 0; i < 3; i++) {
-    if (parts1[i] > parts2[i]) return 1;
-    if (parts1[i] < parts2[i]) return -1;
+    if (parsed1.core[i] > parsed2.core[i]) return 1;
+    if (parsed1.core[i] < parsed2.core[i]) return -1;
   }
+
+  return comparePrerelease(parsed1.prerelease, parsed2.prerelease);
+}
+
+function parseSemver(version) {
+  const normalized = String(version || '').trim().replace(/^v/, '').split('+')[0];
+  const prereleaseIndex = normalized.indexOf('-');
+  const corePart = prereleaseIndex === -1 ? normalized : normalized.slice(0, prereleaseIndex);
+  const prereleasePart = prereleaseIndex === -1 ? '' : normalized.slice(prereleaseIndex + 1);
+  const core = corePart.split('.').slice(0, 3).map(part => parseInt(part, 10) || 0);
+  while (core.length < 3) core.push(0);
+
+  return {
+    core,
+    prerelease: prereleasePart ? prereleasePart.split(/[.-]/) : []
+  };
+}
+
+function comparePrerelease(pre1, pre2) {
+  if (pre1.length === 0 && pre2.length === 0) return 0;
+  if (pre1.length === 0) return 1;
+  if (pre2.length === 0) return -1;
+
+  const length = Math.max(pre1.length, pre2.length);
+  for (let i = 0; i < length; i++) {
+    const id1 = pre1[i];
+    const id2 = pre2[i];
+    if (id1 === undefined) return -1;
+    if (id2 === undefined) return 1;
+    if (id1 === id2) continue;
+
+    const id1Numeric = /^[0-9]+$/.test(id1);
+    const id2Numeric = /^[0-9]+$/.test(id2);
+    if (id1Numeric && id2Numeric) {
+      const n1 = parseInt(id1, 10);
+      const n2 = parseInt(id2, 10);
+      if (n1 > n2) return 1;
+      if (n1 < n2) return -1;
+      continue;
+    }
+    if (id1Numeric) return -1;
+    if (id2Numeric) return 1;
+    return id1 > id2 ? 1 : -1;
+  }
+
   return 0;
 }
 
@@ -126,9 +171,9 @@ function parseArgs() {
 // Show help message
 function showHelp() {
   console.log(`
-${colors.bright}5-Phase Workflow Installer${colors.reset}
+${colors.bright}dev-workflow Installer${colors.reset}
 
-Usage: npx 5-phase-workflow [options]
+Usage: npx foifi [options]
 
 Options:
   --global, -g      Install to ~/.claude/ (available across all projects)
@@ -141,13 +186,13 @@ Options:
   --help, -h        Show this help message
 
 Examples:
-  npx 5-phase-workflow              # Install locally for Claude Code
-  npx 5-phase-workflow --global     # Install globally for Claude Code
-  npx 5-phase-workflow --codex      # Install locally for Codex CLI
-  npx 5-phase-workflow --codex -g   # Install globally for Codex CLI
-  npx 5-phase-workflow --upgrade    # Auto-update to latest version
-  npx 5-phase-workflow --check      # Check version without updating
-  npx 5-phase-workflow --uninstall  # Remove from current directory
+  npx foifi              # Install locally for Claude Code
+  npx foifi --global     # Install globally for Claude Code
+  npx foifi --codex      # Install locally for Codex CLI
+  npx foifi --codex -g   # Install globally for Codex CLI
+  npx foifi --upgrade    # Auto-update to latest version
+  npx foifi --check      # Check version without updating
+  npx foifi --uninstall  # Remove from current directory
 `);
 }
 
@@ -280,11 +325,28 @@ const LEGACY_REMOVED_FILES = [
   'agents/integration-agent.md',
   'agents/step-fixer.md',
   'agents/step-verifier.md',
-  'agents/verification-agent.md',
   'templates/STACK.md',
   'templates/STRUCTURE.md',
   'templates/CONVENTIONS.md',
-  'templates/INTEGRATIONS.md'
+  'templates/INTEGRATIONS.md',
+  'commands/5/plan-feature.md',
+  'commands/5/plan-implementation.md',
+  'commands/5/implement-feature.md',
+  'commands/5/verify.md',
+  'commands/5/verify-implementation.md',
+  'commands/5/review-code.md',
+  'commands/5/quick-implement.md',
+  'agents/component-executor.md',
+  'templates/workflow/FEATURE-SPEC.md',
+  'templates/workflow/VERIFICATION-REPORT.md',
+  'skills/5-plan-feature',
+  'skills/5-plan-implementation',
+  'skills/5-implement-feature',
+  'skills/5-verify',
+  'skills/5-verify-implementation',
+  'skills/5-review-code',
+  'skills/5-quick-implement',
+  'skills/configure-project'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -295,13 +357,14 @@ function getWorkflowManagedFiles() {
 
     // Agents: separate agent files referenced by commands via agent: frontmatter
     agents: [
-      'component-executor.md'
+      'step-executor-agent.md',
+      'step-orchestrator-agent.md',
+      'verification-agent.md'
     ],
 
     // Skills: specific skill directories
     skills: [
       'configure-docs-index',
-      'configure-project',
       'configure-skills',
       'generate-readme'
     ],
@@ -327,10 +390,8 @@ function getWorkflowManagedFiles() {
       'CONCERNS.md',
       'TESTING.md',
       // Workflow output templates
-      'workflow/FEATURE-SPEC.md',
       'workflow/PLAN.md',
       'workflow/STATE.json',
-      'workflow/VERIFICATION-REPORT.md',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',
       'workflow/FIX-PLAN.md'
@@ -365,7 +426,7 @@ function getFileManifest() {
     manifest.push(`hooks/${hook}`);
   }
 
-  // Templates are files (may include nested paths like workflow/FEATURE-SPEC.md)
+  // Templates are files (may include nested paths like workflow/PLAN.md)
   for (const template of managed.templates) {
     manifest.push(`templates/${template}`);
   }
@@ -435,9 +496,9 @@ This skill was authored for Claude Code. Map these tool references:
 | \`EnterPlanMode\` | Not available — use structured output instead |
 
 ## Guard Rules (replaces plan-guard hook)
-During planning phases (plan-feature, plan-implementation):
+During the planning phase ($5-plan):
 - Do NOT write to any file outside \`.5/\`
-- Do NOT write source code — only specifications and plans
+- Do NOT write source code — only the unified plan and scan cache
 - Do NOT spawn implementation agents — only Explore/research agents
 </codex_skill_adapter>`;
 }
@@ -447,7 +508,7 @@ function convertClaudeCommandToCodexSkill(content, skillName) {
   const converted = convertClaudeToCodexMarkdown(content);
   const { frontmatter, body } = extractFrontmatterAndBody(converted);
 
-  let description = `Run 5-Phase Workflow: ${skillName}`;
+  let description = `Run dev-workflow: ${skillName}`;
   if (frontmatter) {
     const maybeDesc = extractFrontmatterField(frontmatter, 'description');
     if (maybeDesc) description = maybeDesc;
@@ -493,6 +554,11 @@ function getCodexFileManifest() {
   // Original skills also become Codex skills
   for (const skill of managed.skills) {
     manifest.push(`skills/${skill}`);
+  }
+
+  // Agents are copied as-is for Codex skills that reference .codex/agents/
+  for (const agent of managed.agents) {
+    manifest.push(`agents/${agent}`);
   }
 
   // Templates are copied as-is
@@ -590,7 +656,7 @@ function selectiveUpdate(targetPath, sourcePath) {
     const src = path.join(templatesSrc, template);
     const dest = path.join(templatesDest, template);
     if (fs.existsSync(src)) {
-      // Ensure parent directory exists for nested paths (e.g., workflow/FEATURE-SPEC.md)
+      // Ensure parent directory exists for nested paths (e.g., workflow/PLAN.md)
       const destDir = path.dirname(dest);
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
@@ -825,23 +891,23 @@ function mergeSettings(targetPath, sourcePath) {
 // Check if installation exists
 function checkExistingInstallation(targetPath) {
   if (activeRuntime === 'codex') {
-    // Codex: commands are installed as skills/5-plan-feature/SKILL.md
-    const markerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
-    return fs.existsSync(markerFile);
+    // Codex: commands are installed as skills/5-plan/SKILL.md
+    const markerFile = path.join(targetPath, 'skills', '5-plan', 'SKILL.md');
+    const legacyMarkerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
+    return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
   }
-  const markerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
-  return fs.existsSync(markerFile);
+  const markerFile = path.join(targetPath, 'commands', '5', 'plan.md');
+  const legacyMarkerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
+  return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
 }
 
 // Helper to show commands
 function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
-    log.info('  $5-plan-feature              - Start feature planning (Phase 1)');
-    log.info('  $5-plan-implementation       - Create implementation plan (Phase 2)');
-    log.info('  $5-implement-feature         - Execute implementation (Phase 3)');
-    log.info('  $5-verify-implementation     - Verify implementation (Phase 4)');
-    log.info('  $5-review-code               - Code review (Phase 5)');
+    log.info('  $5-plan                      - Create unified plan');
+    log.info('  $5-implement                 - Execute implementation + verification');
+    log.info('  $5-review                    - Code review');
     log.info('  $5-address-review-findings   - Apply review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
@@ -850,11 +916,9 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
-    log.info('  /5:plan-feature              - Start feature planning (Phase 1)');
-    log.info('  /5:plan-implementation       - Create implementation plan (Phase 2)');
-    log.info('  /5:implement-feature         - Execute implementation (Phase 3)');
-    log.info('  /5:verify-implementation     - Verify implementation (Phase 4)');
-    log.info('  /5:review-code               - Code review (Phase 5)');
+    log.info('  /5:plan                      - Create unified plan');
+    log.info('  /5:implement                 - Execute implementation + verification');
+    log.info('  /5:review                    - Code review');
     log.info('  /5:address-review-findings   - Apply review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
@@ -944,34 +1008,31 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
 // Generate instructions.md for Codex (replaces hooks + settings.json)
 function generateCodexInstructions(targetPath) {
-  const content = `# 5-Phase Workflow — Codex Instructions
+  const content = `# dev-workflow — Codex Instructions
 
-This file is managed by the 5-Phase Workflow installer. It provides Codex with
+This file is managed by the dev-workflow installer. It provides Codex with
 the context it needs to run the workflow skills correctly.
 
 ## Workflow Overview
 
-The 5-Phase Workflow provides structured feature development:
+The workflow provides structured feature development:
 
-1. **Plan Feature** (\`$5-plan-feature\`) — Requirements gathering & feature spec
-2. **Plan Implementation** (\`$5-plan-implementation\`) — Technical planning
-3. **Implement Feature** (\`$5-implement-feature\`) — Orchestrated implementation
-4. **Verify Implementation** (\`$5-verify-implementation\`) — Build & test verification
-5. **Review Code** (\`$5-review-code\`) — Code review
+1. **Plan** (\`$5-plan\`) — Requirements, discovery, and unified plan
+2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification
+3. **Review** (\`$5-review\`) — Code review
 
 ## Data Directory
 
 All workflow state lives in \`.5/\` at the project root:
 - \`.5/config.json\` — Project configuration
-- \`.5/features/{name}/feature.md\` — Feature specifications
-- \`.5/features/{name}/plan.md\` — Implementation plans
+- \`.5/features/{name}/plan.md\` — Unified plan
 - \`.5/features/{name}/state.json\` — Implementation state
 
 ## Guard Rules
 
-During planning phases (plan-feature, plan-implementation):
+During the planning phase ($5-plan):
 - Do NOT write files outside \`.5/\`
-- Do NOT write source code — only specifications and plans
+- Do NOT write source code — only the unified plan and scan cache
 - The \`.5/.planning-active\` marker indicates planning is in progress
 
 ## Configuration
@@ -1038,6 +1099,28 @@ function installCodexSkills(targetPath, sourcePath) {
   log.success('Installed utility skills');
 }
 
+// Install workflow agents for Codex skills that reference .codex/agents/
+function installCodexAgents(targetPath, sourcePath) {
+  const managed = getWorkflowManagedFiles();
+  const agentsSrc = path.join(sourcePath, 'agents');
+  const agentsDest = path.join(targetPath, 'agents');
+
+  if (!fs.existsSync(agentsSrc) || managed.agents.length === 0) return;
+
+  if (!fs.existsSync(agentsDest)) {
+    fs.mkdirSync(agentsDest, { recursive: true });
+  }
+
+  for (const agent of managed.agents) {
+    const src = path.join(agentsSrc, agent);
+    const dest = path.join(agentsDest, agent);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+  log.success('Installed agents/');
+}
+
 // Codex fresh installation
 function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
   if (!fs.existsSync(targetPath)) {
@@ -1047,6 +1130,7 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
 
   // Install commands as Codex skills
   installCodexSkills(targetPath, sourcePath);
+  installCodexAgents(targetPath, sourcePath);
 
   // Copy templates and references as-is (just path conversion)
   for (const dir of ['templates', 'references']) {
@@ -1103,6 +1187,7 @@ function codexSelectiveUpdate(targetPath, sourcePath) {
 
   // Re-install all skills
   installCodexSkills(targetPath, sourcePath);
+  installCodexAgents(targetPath, sourcePath);
 
   // Update templates and references
   for (const dir of ['templates', 'references']) {
@@ -1148,7 +1233,7 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 function codexUninstall() {
   const targetPath = getTargetPath(false);
 
-  log.header('5-Phase Workflow Uninstallation (Codex)');
+  log.header('dev-workflow Uninstallation (Codex)');
   log.info(`Target: ${targetPath}`);
 
   if (!checkExistingInstallation(targetPath)) {
@@ -1175,6 +1260,13 @@ function codexUninstall() {
     if (fs.existsSync(skillDir)) removeDir(skillDir);
   }
   log.success('Removed utility skills (preserved user-created skills)');
+
+  // Remove agents
+  for (const agent of managed.agents) {
+    const agentPath = path.join(targetPath, 'agents', agent);
+    if (fs.existsSync(agentPath)) fs.unlinkSync(agentPath);
+  }
+  log.success('Removed workflow agents');
 
   // Remove templates
   for (const template of managed.templates) {
@@ -1217,7 +1309,7 @@ function install(isGlobal, forceUpgrade = false) {
   const sourcePath = getSourcePath();
 
   const runtimeLabel = activeRuntime === 'codex' ? 'Codex' : 'Claude Code';
-  log.header(`5-Phase Workflow Installation (${runtimeLabel})`);
+  log.header(`dev-workflow Installation (${runtimeLabel})`);
   log.info(`Target: ${targetPath}`);
   log.info(`Source: ${sourcePath}`);
 
@@ -1311,7 +1403,7 @@ function uninstall() {
 
   const targetPath = getTargetPath(false); // Always local for uninstall
 
-  log.header('5-Phase Workflow Uninstallation');
+  log.header('dev-workflow Uninstallation');
   log.info(`Target: ${targetPath}`);
 
   if (!checkExistingInstallation(targetPath)) {
@@ -1457,7 +1549,7 @@ function main() {
     }
 
     if (anyUpdateAvailable) {
-      log.info('Run: npx 5-phase-workflow --upgrade');
+      log.info('Run: npx foifi --upgrade');
     }
 
     activeRuntime = primaryRuntime;

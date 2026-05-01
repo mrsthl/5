@@ -27,13 +27,15 @@ const log = {
 
 const WORKFLOW_MANAGED_SKILLS = new Set([
   'configure-docs-index',
-  'configure-project',
   'configure-skills',
   'generate-readme'
 ]);
 
 const WORKFLOW_MANAGED_AGENTS = new Set([
-  'component-executor.md'
+  'component-executor.md',
+  'step-executor-agent.md',
+  'step-orchestrator-agent.md',
+  'verification-agent.md'
 ]);
 
 const RULES_SYNC_START = '<!-- 5-sync:rules-start -->';
@@ -91,6 +93,12 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Grep\` | \`grep\` / \`search\` |
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`EnterPlanMode\` | Not available — use structured output instead |
+
+## Guard Rules
+During the planning phase ($5-plan):
+- Do NOT write source code.
+- Do NOT write files outside \`.5/\`.
+- Do NOT spawn implementation agents.
 </codex_skill_adapter>`;
 }
 
@@ -193,11 +201,13 @@ function findProjectRoot() {
 }
 
 function isClaudeInstalled(root) {
-  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
+  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md')) ||
+    fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
 }
 
 function isCodexInstalled(root) {
-  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan-feature', 'SKILL.md'));
+  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan', 'SKILL.md')) ||
+    fs.existsSync(path.join(root, '.codex', 'skills', '5-plan-feature', 'SKILL.md'));
 }
 
 function getClaudeUserSkills(root) {
@@ -573,20 +583,20 @@ function main() {
 
   if (!hasClaude && !hasCodex) {
     log.error('No runtime installations found.');
-    log.info('Install Claude Code: npx 5-phase-workflow');
-    log.info('Install Codex: npx 5-phase-workflow --codex');
+    log.info('Install Claude Code: npx foifi');
+    log.info('Install Codex: npx foifi --codex');
     process.exit(1);
   }
 
   if (!hasClaude) {
     log.error('Claude Code runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow');
+    log.info('Install with: npx foifi');
     process.exit(1);
   }
 
   if (!hasCodex) {
     log.error('Codex runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow --codex');
+    log.info('Install with: npx foifi --codex');
     process.exit(1);
   }
 

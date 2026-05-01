@@ -1,55 +1,51 @@
 ---
 name: 5:configure
-description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates feature spec for remaining setup. Follow up with /5:plan-implementation CONFIGURE.
+description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates .5/features/CONFIGURE/plan.md. Follow up with /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 user-invocable: true
-model: opus
-context: fork
 ---
 
 <role>
-You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a feature spec.
-You do NOT generate AGENTS.md, CLAUDE.md, documentation files, or skills directly — those are Phase 3's job.
-You write ONLY to: .5/config.json, .5/version.json, .5/features/CONFIGURE/feature.md, and .gitignore.
-After writing config.json and the feature spec, you are DONE. Exit immediately.
+You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a unified plan.
+You do NOT generate AGENTS.md, CLAUDE.md, documentation files, or skills directly — those are /5:implement's job.
+You write ONLY to: .5/config.json, .5/version.json, .5/features/CONFIGURE/plan.md, and .gitignore.
+After writing config.json and the unified plan, you are DONE. Exit immediately.
 </role>
 
-# Configure (Phase 1 - Plan Feature for Project Configuration)
+# Configure (Project Setup Plan)
 
 Current commit: !`git rev-parse --short HEAD 2>/dev/null || echo "none"`
 
 ## Overview
 
-This command is **Phase 1** of the 5-phase workflow applied to project configuration itself. It analyzes the project, asks the user questions, and outputs a feature spec at `.5/features/CONFIGURE/feature.md`.
+This command prepares project configuration. It analyzes the project, asks preference questions, writes `.5/config.json`, and writes a unified plan at `.5/features/CONFIGURE/plan.md`.
 
 After running this command, proceed through the standard phases:
-1. **`/5:configure`** (this command) - Plan the configuration feature
-2. `/5:plan-implementation CONFIGURE` - Create implementation plan
-3. `/5:implement-feature CONFIGURE` - Execute configuration (uses `configure-docs-index` and `configure-skills`)
-4. `/5:verify-implementation` - Verify configuration
-5. `/5:review-code` - Review generated files
+1. **`/5:configure`** (this command) - Create config and CONFIGURE plan
+2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-docs-index` and `configure-skills`)
+3. `/5:review` - Review generated files if desired
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
 
-**THIS COMMAND WRITES config.json AND CREATES THE FEATURE SPEC. NOTHING ELSE.**
+**THIS COMMAND WRITES config.json AND CREATES THE CONFIGURE PLAN. NOTHING ELSE.**
 
 Your job in this command:
 ✅ Analyze project (detect type, build commands, etc.)
 ✅ Gather user preferences via questions
 ✅ Write `.5/config.json` directly
-✅ Create feature spec at `.5/features/CONFIGURE/feature.md` for remaining work
-✅ Tell user to run /5:plan-implementation CONFIGURE
+✅ Create unified plan at `.5/features/CONFIGURE/plan.md` for remaining work
+✅ Tell user to run /5:implement CONFIGURE
 
 Your job is NOT:
-❌ Create AGENTS.md or CLAUDE.md directly (Phase 3 does this)
-❌ Generate documentation files directly (Phase 3 does this)
-❌ Generate skills directly (Phase 3 does this)
+❌ Create AGENTS.md or CLAUDE.md directly (/5:implement does this)
+❌ Generate documentation files directly (/5:implement does this)
+❌ Generate skills directly (/5:implement does this)
 ❌ Skip user interaction
 ❌ Assume project structure
 
-**After writing config.json, creating the feature spec, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+**After writing config.json, creating the unified plan, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-**If you find yourself creating AGENTS.md, CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the feature spec.**
+**If you find yourself creating AGENTS.md, CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the unified plan.**
 
 ## Configuration Process
 
@@ -96,7 +92,7 @@ fi
 
 **1e. Check AGENTS.md / CLAUDE.md:**
 - If `AGENTS.md` exists, read its content
-- If `AGENTS.md` does not exist but `CLAUDE.md` exists with real content (not just `@AGENTS.md`), read it — this is a legacy setup that will be migrated to AGENTS.md during Phase 3
+- If `AGENTS.md` does not exist but `CLAUDE.md` exists with real content (not just `@AGENTS.md`), read it — this is a legacy setup that will be migrated to AGENTS.md during planning
 
 **1f. Scan existing skills:**
 - Check `.claude/skills/` for existing project-specific skills
@@ -261,7 +257,7 @@ If no patterns/commands detected:
 - Allow manual entry of pattern names/locations or command names
 
 **2m. Git-ignore `.5/features/` folder:**
-- "The `.5/features/` folder will contain feature specs, implementation plans, and state files. Would you like to add it to `.gitignore`?"
+- "The `.5/features/` folder will contain unified plans, state files, and review findings. Would you like to add it to `.gitignore`?"
   - Options:
     1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
     2. "No, track in git" — useful if you want to share specs and plans with your team
@@ -302,20 +298,89 @@ Ensure `.5/.reconfig-reminder` is gitignored (it's a transient runtime flag that
 1. Check if `.gitignore` exists in the project root — create it if not
 2. Check if `.5/.reconfig-reminder` is already listed — if not, append `.5/.reconfig-reminder` on a new line
 
-### Step 3: Create Feature Spec
+### Step 3: Create Configuration Plan
 
-Write `.5/features/CONFIGURE/feature.md` containing all gathered data:
+Write `.5/features/CONFIGURE/plan.md` containing all gathered data:
 
 ```markdown
-# Feature: Project Configuration
+---
+ticket: CONFIGURE
+feature: CONFIGURE
+created: {ISO-timestamp}
+---
 
-## Summary
+# Plan: CONFIGURE - Project Configuration
+
+## Overview
 Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-specific skills. (config.json already written.)
 
-## Requirements
+## What Changes
 
-### Requirement 1: Generate Documentation Files
-Handled by: `configure-docs-index`
+- Generate focused documentation and a rebuildable codebase index.
+- Generate selected project-specific skills and scoped rules.
+- Preserve existing user-authored AGENTS.md/CLAUDE.md content.
+
+## Existing Patterns to Follow
+
+- `.claude/skills/configure-docs-index/SKILL.md` - documentation and index generation behavior.
+- `.claude/skills/configure-skills/SKILL.md` - skill and rule generation behavior.
+
+## Constraints
+
+- config.json is already written by `/5:configure`.
+- Do not generate empty placeholder documentation or index files.
+- Preserve user-authored sections in AGENTS.md.
+
+## Scope
+
+### In
+
+- Documentation files under `.5/`.
+- `.5/index/` and rebuild script.
+- AGENTS.md plus CLAUDE.md shim.
+- Selected create/run skills.
+- Selected scoped rules.
+
+### Out
+
+- Changing preferences already saved in `.5/config.json`.
+
+## Acceptance Criteria
+
+- [ ] `.5/ARCHITECTURE.md` exists when architecture knowledge was found.
+- [ ] `.5/TESTING.md` exists when test knowledge was found.
+- [ ] `.5/CONCERNS.md` exists only if concerns were found.
+- [ ] `.5/index/rebuild-index.sh` exists and rebuilds the index.
+- [ ] `.5/index/README.md` documents generated index files.
+- [ ] `AGENTS.md` references created `.5/` files and the index rebuild rule.
+- [ ] `CLAUDE.md` contains only `@AGENTS.md`.
+- [ ] Selected project-specific skills are generated in `.claude/skills/`.
+- [ ] Selected scoped rules are generated in `.claude/rules/`.
+- [ ] User-written AGENTS.md/CLAUDE.md content is preserved.
+
+## Decisions
+
+- [DECIDED] Use the detected project type, build command, test command, ticket settings, review tool, and selected patterns from this configure session.
+- [FLEXIBLE] Omit optional generated files when no useful project knowledge exists.
+- [DEFERRED] Further preference changes; rerun `/5:configure` for those.
+
+## Module Impact
+
+| Module/Area | Impact |
+|-------------|--------|
+| `.5/` | Create/update documentation and index artifacts. |
+| `AGENTS.md` / `CLAUDE.md` | Create or update provider instructions. |
+| `.claude/skills/` | Create selected project-specific skills. |
+| `.claude/rules/` | Create selected scoped rules. |
+
+## Component Checklist
+
+| Component | Action | Target Path | Intent |
+|-----------|--------|-------------|--------|
+| configure docs and index | create | `.5/` | Generate project documentation, codebase index, AGENTS.md, and CLAUDE.md shim. |
+| configure skills and rules | create | `.claude/skills/` | Generate selected create/run skills and scoped rules from detected conventions. |
+
+## Technical Notes
 
 Analyze the codebase and generate focused documentation capturing only non-derivable knowledge (skip version numbers, dependency lists, directory layouts, linter configs — Claude Code can look these up directly):
 
@@ -384,43 +449,23 @@ Only generate rules for patterns that were actually detected:
 - `api-patterns.md` — API conventions, error handling (scoped to API/route/controller files)
 - `dependencies.md` — dependency usage patterns, env var conventions (unconditional)
 
-## Acceptance Criteria
-- [ ] `.5/` directory created
-- [ ] Documentation files exist and contain only non-derivable knowledge:
-  - [ ] `.5/ARCHITECTURE.md` — architecture, conventions, where to add code
-  - [ ] `.5/TESTING.md` — test patterns and gotchas
-  - [ ] `.5/CONCERNS.md` — only if concerns were found (omit if empty)
-- [ ] `.5/index/` directory exists
-- [ ] `.5/index/rebuild-index.sh` exists and rebuilds the index
-- [ ] `.5/index/README.md` exists and documents the generated index files
-- [ ] Multiple focused `.5/index/*.md` files are generated for applicable codebase concerns
-- [ ] Empty sections omitted (no "Not detected" / "None found" placeholders)
-- [ ] `AGENTS.md` exists with references to created `.5/` files
-- [ ] `AGENTS.md` links to the codebase index and rebuild script
-- [ ] `AGENTS.md` says to regenerate the index if it is older than one day
-- [ ] `AGENTS.md` contains 6 coding guidelines
-- [ ] `CLAUDE.md` exists and contains only `@AGENTS.md`
-- [ ] All specified project-specific skills are generated in `.claude/skills/`
-- [ ] Generated skills reference actual project conventions
-- [ ] If AGENTS.md or CLAUDE.md existed before, user-written sections are preserved in AGENTS.md
-- [ ] `.claude/rules/` directory exists with scoped rule files (if rules generation selected)
-- [ ] Generated rules use `paths:` frontmatter for scoping where applicable
-- [ ] Rules contain concise directives, not documentation
-- [ ] No rules generated for undetected patterns
+## Next Steps
+
+1. Run `/5:implement CONFIGURE`.
 ```
 
-**Important:** Use `mkdir -p .5/features/CONFIGURE` before writing the feature spec.
+**Important:** Use `mkdir -p .5/features/CONFIGURE` before writing the unified plan.
 
 ### Step 4: Guide User to Next Phase
 
 Tell the user:
 
 1. "Configuration saved to `.5/config.json`"
-2. "Configuration feature planned at `.5/features/CONFIGURE/feature.md`"
+2. "Configuration plan written to `.5/features/CONFIGURE/plan.md`"
 3. "Next steps:"
    - "Run `/clear` to reset context"
-   - "Then run `/5:plan-implementation CONFIGURE`"
-4. "After that: Continue with `/5:implement-feature CONFIGURE` -> `/5:verify-implementation` -> `/5:review-code` (clearing context between each phase)"
+   - "Then run `/5:implement CONFIGURE`"
+4. "After that: Run `/5:review` if you want a review of generated files"
 
 ## Related Documentation
 - [configure-docs-index skill](../../skills/configure-docs-index/SKILL.md)

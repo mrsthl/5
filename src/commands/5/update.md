@@ -1,10 +1,10 @@
 ---
 name: 5:update
-description: Update the 5-Phase Workflow to the latest version
+description: Update dev-workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 model: haiku
-context: fork
+context: inherit
 ---
 
 <role>
@@ -13,7 +13,7 @@ You do NOT modify workflow files manually. You do NOT touch user project files.
 After reporting the result, you are DONE.
 </role>
 
-# Update 5-Phase Workflow
+# Update dev-workflow
 
 ## Step 1: Check Current Version
 
@@ -22,13 +22,13 @@ Read `.5/version.json` and note the current `installedVersion`.
 ## Step 2: Run Upgrade
 
 ```bash
-npx 5-phase-workflow@latest --upgrade
+npx foifi@latest --upgrade
 ```
 
 If this installation is running in Codex (workflow files live in `.codex/` or the workflow command was invoked as a `$5-...` skill), run this instead:
 
 ```bash
-npx 5-phase-workflow@latest --codex --upgrade
+npx foifi@latest --codex --upgrade
 ```
 
 ## Step 3: Confirm Upgrade
@@ -60,9 +60,9 @@ Read `.5/config.json` if it exists and extract `git.commitMessage.pattern` (defa
 
 Build the commit message by applying the pattern:
 - Replace `{ticket-id}` with an empty string (no ticket for upgrades) and trim any leading/trailing whitespace
-- Replace `{short-description}` with `update 5-Phase Workflow to {new-version}`
-- If the pattern is the conventional format (`feat({ticket-id}): {short-description}`), use: `chore: update 5-Phase Workflow to {new-version}`
-- If no config or no pattern, use: `update 5-Phase Workflow to {new-version}`
+- Replace `{short-description}` with `update dev-workflow to {new-version}`
+- If the pattern is the conventional format (`feat({ticket-id}): {short-description}`), use: `chore: update dev-workflow to {new-version}`
+- If no config or no pattern, use: `update dev-workflow to {new-version}`
 
 Stage **only** the workflow-managed files shown in `git status`.
 

@@ -4,7 +4,7 @@ description: Applies annotated review findings and/or addresses GitHub PR review
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
-context: fork
+context: inherit
 ---
 
 <role>
@@ -14,9 +14,9 @@ You apply fixes exactly as described in the findings file and confirmed by the u
 You follow the exact step sequence below. Do not skip or reorder steps.
 </role>
 
-# Address Review Findings (Phase 5b)
+# Address Review Findings (Review helper)
 
-This command reads a `review-findings-*.md` file produced by `/5:review-code`, applies all `[FIX]` items, and optionally fetches and addresses GitHub PR review comments.
+This command reads a `review-findings-*.md` file produced by `/5:review`, applies all `[FIX]` items, and optionally fetches and addresses GitHub PR review comments.
 
 ## Options
 
@@ -55,8 +55,8 @@ Use Glob to find `review-findings-*.md` in the feature directory:
 - **One file found:** Use it.
 - **No file found:** Ask via AskUserQuestion:
   - "No review-findings file found. How would you like to proceed?"
-  - Options: "Proceed with GitHub PR comments only" / "Stop — I'll run /5:review-code first"
-  - If "Stop", exit with: `Run /5:review-code to generate a findings file first.`
+  - Options: "Proceed with GitHub PR comments only" / "Stop — I'll run /5:review first"
+  - If "Stop", exit with: `Run /5:review to generate a findings file first.`
   - If "GitHub PR only", skip to Step 4.
 
 #### Parse Findings

@@ -1,15 +1,16 @@
 {
-  "name": "5-phase-workflow",
-  "version": "1.9.5",
-  "description": "A 5-phase feature development workflow for Claude Code",
+  "name": "foifi",
+  "version": "2.0.0-beta-2",
+  "description": "A dev-workflow for Claude Code and Codex",
   "bin": {
-    "5-phase-workflow": "bin/install.js"
+    "foifi": "bin/install.js"
   },
   "scripts": {
-    "test": "bash test/verify-install-js.sh && bash test/test-check-updates-hook.sh && bash test/test-update-system.sh",
+    "test": "bash test/verify-install-js.sh && bash test/test-version-compare.sh && bash test/test-check-updates-hook.sh && bash test/test-update-system.sh",
     "test:install": "bash test/verify-install-js.sh",
     "test:hook": "bash test/test-check-updates-hook.sh",
     "test:update": "bash test/test-update-system.sh",
+    "test:version": "bash test/test-version-compare.sh",
     "verify": "bash test/verify-install-js.sh"
   },
   "files": [
@@ -32,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mrsthl/5"
+    "url": "git+https://github.com/mrsthl/5.git"
   },
   "bugs": {
     "url": "https://github.com/mrsthl/5/issues"

@@ -1,6 +1,6 @@
 # Repository Guide
 
-This repository publishes the `5-phase-workflow` npm package. The package name is historical; v2 exposes a 3-phase workflow for Claude Code and Codex.
+This repository publishes the `5-phase-workflow` npm package. The package name is historical; the product is now called dev-workflow for Claude Code and Codex.
 
 ## Development
 
@@ -38,7 +38,6 @@ Primary commands:
 
 Helpers:
 
-- `/5:verify {name}` re-runs verification.
 - `/5:discuss-feature {name}` refines an existing `plan.md`.
 - `/5:address-review-findings {name}` applies approved review findings.
 - `/5:configure` writes config and the CONFIGURE plan.
@@ -63,13 +62,13 @@ The component checklist stays intentionally lean: component, action, target path
 
 - `step-orchestrator-agent.md` reads `plan.md` and `codebase-scan.md`, then writes enriched `state.json`.
 - `step-executor-agent.md` implements assigned components and reports a strict `---RESULT---` block.
-- `verification-agent.md` runs file/build/test/acceptance/quality checks and writes `verification.md`.
+- `verification-agent.md` verifies completeness, correctness, build/tests, acceptance criteria, and test coverage, then records concise status in `state.json`.
 
 Usage examples:
 
 - `step-orchestrator-agent.md`: input `plan.md` + `codebase-scan.md` -> output `state.json` with numbered steps.
 - `step-executor-agent.md`: input one assigned component -> output `---RESULT--- STATUS: success ...`.
-- `verification-agent.md`: input `plan.md` + `state.json` -> output `verification.md` and `---VERIFICATION---`.
+- `verification-agent.md`: input `plan.md` + `state.json` -> update `state.json` and output `---VERIFICATION---`.
 
 ## Installer Rules
 

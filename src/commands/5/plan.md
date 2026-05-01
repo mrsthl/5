@@ -1,6 +1,6 @@
 ---
 name: 5:plan
-description: Plans a feature end-to-end, combines requirements and technical discovery, and writes a unified plan.md. Single review gate before /5:implement. Phase 1 of the 3-phase workflow.
+description: Plans a feature end-to-end, combines requirements and technical discovery, and writes a unified plan.md. Single review gate before /5:implement.
 allowed-tools: Bash, Read, Write, Agent, AskUserQuestion, mcp__claude_ai_Atlassian_Rovo__getJiraIssue
 user-invocable: true
 argument-hint: [ticket-id-or-description]
@@ -23,7 +23,7 @@ HARD CONSTRAINTS:
 - Do NOT spawn implementation agents.
 </constraints>
 
-# Plan (Phase 1)
+# Plan
 
 ## Options
 

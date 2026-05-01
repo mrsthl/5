@@ -1,6 +1,6 @@
-# 5-Phase Workflow
+# foif
 
-A structured AI-assisted development workflow for Claude Code and Codex. The npm package name remains `5-phase-workflow`, but v2 uses a simpler 3-phase command model.
+A structured AI-assisted development workflow for Claude Code and Codex. The npm package name remains `5-phase-workflow` for compatibility.
 
 ## Install
 
@@ -56,7 +56,7 @@ $5-review
 $5-address-review-findings {feature-name}
 ```
 
-`/5:verify {feature-name}` or `$5-verify {feature-name}` re-runs verification when needed. Verification also runs inline at the end of `/5:implement`.
+Verification runs at the end of `/5:implement` and records concise results in `state.json`.
 
 ## Commands
 
@@ -66,7 +66,6 @@ $5-address-review-findings {feature-name}
 | `/5:plan` / `$5-plan` | Create one unified `plan.md` from requirements, codebase exploration, and user decisions |
 | `/5:discuss-feature` / `$5-discuss-feature` | Refine an existing `plan.md` |
 | `/5:implement` / `$5-implement` | Derive `state.json`, execute steps with agents, and verify inline |
-| `/5:verify` / `$5-verify` | Re-run verification for a feature |
 | `/5:review` / `$5-review` | Review code changes and save findings |
 | `/5:address-review-findings` / `$5-address-review-findings` | Apply approved review findings and PR comments |
 | `/5:reconfigure` / `$5-reconfigure` | Refresh docs, index, skills, and rules |
@@ -82,7 +81,6 @@ Each feature lives under `.5/features/{feature-name}/`:
 - `plan.md` - single human-reviewed planning artifact
 - `codebase-scan.md` - cached discovery used to reduce repeated scanning
 - `state.json` - enriched execution state derived by `step-orchestrator-agent`
-- `verification.md` - verification report
 - `review-findings-*.md` - review output for `/5:address-review-findings`
 
 ## Design
@@ -91,7 +89,7 @@ Planning stays human-readable. `plan.md` contains scope, acceptance criteria, de
 
 Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into `state.json`, then `/5:implement` delegates each component to `step-executor-agent`. This reduces planning token cost and avoids brittle prompt-table metadata.
 
-Verification is reusable. `/5:implement` runs `verification-agent` inline, and `/5:verify` can run the same checks again after manual fixes.
+Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end and records a concise final status in `state.json` without generating an extra report.
 
 ## Updating
 

@@ -1,7 +1,7 @@
 {
   "name": "5-phase-workflow",
   "version": "1.9.5",
-  "description": "A 3-phase feature development workflow for Claude Code and Codex",
+  "description": "A dev-workflow for Claude Code and Codex",
   "bin": {
     "5-phase-workflow": "bin/install.js"
   },

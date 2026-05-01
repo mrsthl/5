@@ -1,6 +1,6 @@
 ---
 name: 5:implement
-description: Executes a unified plan by spawning step-orchestrator-agent, per-step executor agents, and final verification-agent inline. Phase 2 of the 3-phase workflow.
+description: Executes a unified plan by spawning step-orchestrator-agent, per-step executor agents, and verification-agent.
 allowed-tools: Agent, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
 user-invocable: true
 argument-hint: [feature-name]
@@ -11,7 +11,7 @@ You are an Implementation Orchestrator. You keep your context lean, delegate all
 You do NOT write source code yourself.
 </role>
 
-# Implement (Phase 2)
+# Implement
 
 ## Process
 
@@ -28,7 +28,7 @@ If `plan.md` is missing, stop and ask the user to run `/5:plan` first, then reru
 
 If state exists:
 
-- `completed`: tell the user it is already implemented and suggest `/5:verify {feature-name}`.
+- `completed`: tell the user it is already implemented and verification already ran.
 - `in-progress`: resume from `currentStep`.
 - `failed`: ask whether to resume or restart.
 
@@ -82,7 +82,7 @@ For each step from `currentStep`:
 
 Retry failed components up to two times. Upgrade retries to `sonnet`. Never fix code in the orchestrator context.
 
-### Step 5: Inline Verification
+### Step 5: Final Verification
 
 After all steps complete, spawn `verification-agent`.
 
@@ -97,12 +97,15 @@ Verify feature `{feature-name}` using:
 - .5/features/{feature-name}/codebase-scan.md if present
 - .5/config.json if present
 
-Write `.5/features/{feature-name}/verification.md`.
-Update state verification fields.
+Verify that the implementation is complete and correct, the project builds, tests run, everything from the plan is implemented, and tests are written for the implemented feature where appropriate.
+Update `.5/features/{feature-name}/state.json` verification fields.
+Do not write a verification report.
 Do not implement fixes.
 ```
 
-If verification passes, set state `status` to `completed`. If it fails or is partial, set `status` to `failed` and point the user to `/5:verify {feature-name}` after fixes.
+Parse only the `---VERIFICATION---` block from the response.
+
+If final verification passes, set state `status` to `completed`. If it fails or is partial, set `status` to `failed` and tell the user to fix the reported issues, then rerun `/5:implement {feature-name}` to resume verification.
 
 ### Step 6: Report
 
@@ -111,6 +114,7 @@ Report:
 - Completed component count
 - Failed component count
 - Verification status
-- Paths to `state.json` and `verification.md`
+- Path to `state.json`
+- Failed commands, missing tests, or unmet acceptance criteria, if any
 
 Stop.

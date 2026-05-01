@@ -49,7 +49,7 @@ process.stdin.on('end', () => {
         : '';
       process.stderr.write(
         `BLOCKED: EnterPlanMode is not allowed during workflow planning. ` +
-        `The 3-phase workflow has its own planning process. ` +
+        `dev-workflow has its own planning process. ` +
         `REDIRECT: You are in ${phase || 'a planning phase'}. Return to your Progress Checklist. ` +
         `Find the last "✓ Step N complete" you output, then continue with Step N+1. ` +
         `Write your output to .5/features/{name}/ and output the completion message when done.${escalation}`

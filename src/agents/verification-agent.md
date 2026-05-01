@@ -1,6 +1,6 @@
 ---
 name: verification-agent
-description: Verifies a workflow implementation across infrastructure, acceptance criteria, and quality. Used by /5:implement and /5:verify.
+description: Verifies a workflow implementation across completeness, correctness, infrastructure, acceptance criteria, and quality. Used by /5:implement.
 tools: Read, Write, Glob, Grep, Bash
 ---
 
@@ -19,15 +19,18 @@ Read:
 
 ## Checks
 
-1. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that the source path is removed and the destination path exists.
-2. Build: run configured build command unless `none`.
-3. Tests: run configured test command unless `none`.
-4. Acceptance criteria: inspect changed files and mark each criterion satisfied or not satisfied with evidence. For rename criteria, include evidence for both source removal and destination creation.
-5. Quality: logic-bearing created components have tests when the project has a test framework.
+1. Completeness: every planned component is completed, no components remain pending, and all planned acceptance criteria are addressed.
+2. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that the source path is removed and the destination path exists.
+3. Build: run configured build command unless `none`.
+4. Tests: run configured test command unless `none`.
+5. Correctness: inspect changed files and executor results to confirm the implementation matches the plan and does not only satisfy file existence.
+6. Quality: logic-bearing created or modified components have tests when the project has a test framework.
 
-## Report
+Reuse component verification outcomes already stored in `state.json` when they are sufficient. Do not rerun every component command unless final status cannot be determined.
 
-Write `.5/features/{feature-name}/verification.md` using `.claude/templates/workflow/VERIFICATION-REPORT.md`.
+## State Update
+
+Do not write a separate verification report.
 
 Update `state.json`:
 
@@ -35,10 +38,19 @@ Update `state.json`:
 {
   "verificationStatus": "passed|partial|failed",
   "verifiedAt": "{ISO-timestamp}",
-  "verificationLayers": {
+  "verificationResults": {
+    "completeness": "passed|partial|failed",
     "infrastructure": "passed|failed",
     "acceptanceCriteria": "passed|partial|failed|skipped",
-    "quality": "passed|partial|failed"
+    "quality": "passed|partial|failed",
+    "commands": [
+      {
+        "command": "{command}",
+        "status": "passed|failed|skipped",
+        "summary": "{short summary}"
+      }
+    ],
+    "failures": ["{short failure summary}"]
   }
 }
 ```
@@ -50,10 +62,10 @@ End with:
 ```text
 ---VERIFICATION---
 STATUS: passed | partial | failed
+COMPLETENESS: passed | partial | failed
 INFRASTRUCTURE: passed | failed
 ACCEPTANCE_CRITERIA: satisfied/total
 QUALITY: passed | partial | failed
-REPORT: .5/features/{feature-name}/verification.md
 ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```

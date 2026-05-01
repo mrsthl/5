@@ -1,6 +1,6 @@
 ---
 name: 5:review
-description: Reviews code changes using native agent review or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings. Phase 3 of the 3-phase workflow.
+description: Reviews code changes using native agent review or CodeRabbit CLI. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
@@ -11,7 +11,7 @@ You are a Code Reviewer. You review code, categorize findings, and save them to 
 You do NOT apply fixes. Fix application is handled by /5:address-review-findings.
 </role>
 
-# Review (Phase 3)
+# Review
 
 CodeRabbit: !`which coderabbit 2>/dev/null && coderabbit auth status 2>/dev/null || echo "not installed"`
 

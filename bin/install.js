@@ -126,7 +126,7 @@ function parseArgs() {
 // Show help message
 function showHelp() {
   console.log(`
-${colors.bright}5-Phase Workflow Installer${colors.reset}
+${colors.bright}dev-workflow Installer${colors.reset}
 
 Usage: npx 5-phase-workflow [options]
 
@@ -287,14 +287,17 @@ const LEGACY_REMOVED_FILES = [
   'commands/5/plan-feature.md',
   'commands/5/plan-implementation.md',
   'commands/5/implement-feature.md',
+  'commands/5/verify.md',
   'commands/5/verify-implementation.md',
   'commands/5/review-code.md',
   'commands/5/quick-implement.md',
   'agents/component-executor.md',
   'templates/workflow/FEATURE-SPEC.md',
+  'templates/workflow/VERIFICATION-REPORT.md',
   'skills/5-plan-feature',
   'skills/5-plan-implementation',
   'skills/5-implement-feature',
+  'skills/5-verify',
   'skills/5-verify-implementation',
   'skills/5-review-code',
   'skills/5-quick-implement',
@@ -344,7 +347,6 @@ function getWorkflowManagedFiles() {
       // Workflow output templates
       'workflow/PLAN.md',
       'workflow/STATE.json',
-      'workflow/VERIFICATION-REPORT.md',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',
       'workflow/FIX-PLAN.md'
@@ -461,7 +463,7 @@ function convertClaudeCommandToCodexSkill(content, skillName) {
   const converted = convertClaudeToCodexMarkdown(content);
   const { frontmatter, body } = extractFrontmatterAndBody(converted);
 
-  let description = `Run 5-Phase Workflow: ${skillName}`;
+  let description = `Run dev-workflow: ${skillName}`;
   if (frontmatter) {
     const maybeDesc = extractFrontmatterField(frontmatter, 'description');
     if (maybeDesc) description = maybeDesc;
@@ -853,10 +855,9 @@ function checkExistingInstallation(targetPath) {
 function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
-    log.info('  $5-plan                      - Create unified plan (Phase 1)');
-    log.info('  $5-implement                 - Execute implementation + verification (Phase 2)');
-    log.info('  $5-review                    - Code review (Phase 3)');
-    log.info('  $5-verify                    - Re-run verification helper');
+    log.info('  $5-plan                      - Create unified plan');
+    log.info('  $5-implement                 - Execute implementation + verification');
+    log.info('  $5-review                    - Code review');
     log.info('  $5-address-review-findings   - Apply review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
@@ -865,10 +866,9 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
-    log.info('  /5:plan                      - Create unified plan (Phase 1)');
-    log.info('  /5:implement                 - Execute implementation + verification (Phase 2)');
-    log.info('  /5:review                    - Code review (Phase 3)');
-    log.info('  /5:verify                    - Re-run verification helper');
+    log.info('  /5:plan                      - Create unified plan');
+    log.info('  /5:implement                 - Execute implementation + verification');
+    log.info('  /5:review                    - Code review');
     log.info('  /5:address-review-findings   - Apply review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
@@ -958,9 +958,9 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
 // Generate instructions.md for Codex (replaces hooks + settings.json)
 function generateCodexInstructions(targetPath) {
-  const content = `# 3-Phase Workflow — Codex Instructions
+  const content = `# dev-workflow — Codex Instructions
 
-This file is managed by the 3-Phase Workflow installer. It provides Codex with
+This file is managed by the dev-workflow installer. It provides Codex with
 the context it needs to run the workflow skills correctly.
 
 ## Workflow Overview
@@ -970,8 +970,6 @@ The workflow provides structured feature development:
 1. **Plan** (\`$5-plan\`) — Requirements, discovery, and unified plan
 2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification
 3. **Review** (\`$5-review\`) — Code review
-
-Helper: **Verify** (\`$5-verify\`) re-runs verification.
 
 ## Data Directory
 
@@ -1161,7 +1159,7 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 function codexUninstall() {
   const targetPath = getTargetPath(false);
 
-  log.header('5-Phase Workflow Uninstallation (Codex)');
+  log.header('dev-workflow Uninstallation (Codex)');
   log.info(`Target: ${targetPath}`);
 
   if (!checkExistingInstallation(targetPath)) {
@@ -1230,7 +1228,7 @@ function install(isGlobal, forceUpgrade = false) {
   const sourcePath = getSourcePath();
 
   const runtimeLabel = activeRuntime === 'codex' ? 'Codex' : 'Claude Code';
-  log.header(`5-Phase Workflow Installation (${runtimeLabel})`);
+  log.header(`dev-workflow Installation (${runtimeLabel})`);
   log.info(`Target: ${targetPath}`);
   log.info(`Source: ${sourcePath}`);
 
@@ -1324,7 +1322,7 @@ function uninstall() {
 
   const targetPath = getTargetPath(false); // Always local for uninstall
 
-  log.header('5-Phase Workflow Uninstallation');
+  log.header('dev-workflow Uninstallation');
   log.info(`Target: ${targetPath}`);
 
   if (!checkExistingInstallation(targetPath)) {

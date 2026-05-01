@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_SCRIPT="$PROJECT_ROOT/bin/install.js"
 
-echo "Testing 5-Phase Workflow Update System"
+echo "Testing dev-workflow Update System"
 echo "======================================="
 echo ""
 
@@ -239,7 +239,7 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-for skill in 5-plan 5-implement 5-review 5-verify; do
+for skill in 5-plan 5-implement 5-review; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"
     exit 1

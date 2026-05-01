@@ -1,6 +1,6 @@
 ---
 name: 5:update
-description: Update the 3-phase workflow to the latest version
+description: Update dev-workflow to the latest version
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 model: haiku
@@ -13,7 +13,7 @@ You do NOT modify workflow files manually. You do NOT touch user project files.
 After reporting the result, you are DONE.
 </role>
 
-# Update 3-phase workflow
+# Update dev-workflow
 
 ## Step 1: Check Current Version
 
@@ -60,9 +60,9 @@ Read `.5/config.json` if it exists and extract `git.commitMessage.pattern` (defa
 
 Build the commit message by applying the pattern:
 - Replace `{ticket-id}` with an empty string (no ticket for upgrades) and trim any leading/trailing whitespace
-- Replace `{short-description}` with `update 3-phase workflow to {new-version}`
-- If the pattern is the conventional format (`feat({ticket-id}): {short-description}`), use: `chore: update 3-phase workflow to {new-version}`
-- If no config or no pattern, use: `update 3-phase workflow to {new-version}`
+- Replace `{short-description}` with `update dev-workflow to {new-version}`
+- If the pattern is the conventional format (`feat({ticket-id}): {short-description}`), use: `chore: update dev-workflow to {new-version}`
+- If no config or no pattern, use: `update dev-workflow to {new-version}`
 
 Stage **only** the workflow-managed files shown in `git status`.
 

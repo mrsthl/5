@@ -31,7 +31,9 @@
   "completedComponents": [],
   "failedAttempts": [],
   "baseline": {},
+  "verificationStatus": "pending",
   "verificationResults": {},
+  "verifiedAt": null,
   "commitResults": [],
   "startedAt": "{ISO-timestamp}",
   "lastUpdated": "{ISO-timestamp}"

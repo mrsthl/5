@@ -17,12 +17,13 @@ You do NOT write source code yourself.
 
 ### Step 1: Load Artifacts
 
-Read:
+Read `.5/features/{feature-name}/state.json` first if it exists.
 
-- `.5/features/{feature-name}/plan.md`
-- `.5/features/{feature-name}/codebase-scan.md` if it exists
-- `.5/config.json` if it exists
-- `.5/features/{feature-name}/state.json` if it exists
+Then read only the artifacts needed for the current path:
+
+- Resume existing state: `.5/config.json` if needed for baseline, verification, or auto-commit.
+- New state or restart: `plan.md`, `codebase-scan.md` if it exists, and `.5/config.json` if it exists.
+- Final verification: `plan.md`, `state.json`, `.5/config.json` if present, and `codebase-scan.md` only if verification needs missing context.
 
 If `plan.md` is missing, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}` with the created feature folder name.
 
@@ -65,7 +66,9 @@ Remove `.5/.planning-active` after state is valid.
 
 Run build/test commands from `.5/config.json` by default. If `state.json` defines an explicit baseline command block, prefer that block. Skip commands explicitly set to `none`.
 
-Record results in `state.json.baseline`. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
+If `state.json.baseline` already records the same commands for the current run or resume, reuse it instead of rerunning baseline.
+
+Record compact command results in `state.json.baseline`: command, status, and a one-line summary only. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
 
 ### Step 4: Execute Steps
 
@@ -83,7 +86,7 @@ For each step from `currentStep`:
      - missing model -> `model: gpt-5.4-mini`, `reasoning_effort: low`
 4. Give each executor only its component block from `state.json`, relevant global notes, required pattern references, and verify commands. If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
 5. Parse only the `---RESULT---` block from each response.
-6. Update `completedComponents`, `failedAttempts`, `pendingComponents`, `currentStep`, and `lastUpdated`.
+6. Update `completedComponents`, `failedAttempts`, `pendingComponents`, `currentStep`, `commandResults`, and `lastUpdated`.
 7. Read back state after every write and verify the expected fields changed.
 
 Retry failed components up to two times. Upgrade retries to `sonnet`; in Codex this means `model: gpt-5.4`, `reasoning_effort: medium`. Never fix code in the orchestrator context.
@@ -139,6 +142,7 @@ Verify feature `{feature-name}` using:
 - .5/features/{feature-name}/codebase-scan.md only if plan/state are insufficient to judge acceptance criteria, patterns, or risks
 
 Verify that the implementation is complete and correct, the project builds, tests run, everything from the plan is implemented, and tests are written for the implemented feature where appropriate.
+Reuse `state.json.baseline`, component `VERIFY` outcomes, and `commandResults` when they are fresh enough to prove the final status. Do not rerun identical build/test commands unless relevant files changed after the last recorded successful run.
 Update `.5/features/{feature-name}/state.json` verification fields.
 Do not write a verification report.
 Do not implement fixes.

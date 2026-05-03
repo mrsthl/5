@@ -27,7 +27,7 @@ Read `.5/features/{feature-name}/codebase-scan.md` only if plan and state do not
 5. Correctness: inspect changed files and executor results to confirm the implementation matches the plan and does not only satisfy file existence. Prefer changed files and targeted imports over broad codebase scanning.
 6. Quality: logic-bearing created or modified components have tests when the project has a test framework.
 
-Reuse component verification outcomes, `baseline`, and `commandResults` already stored in `state.json` when they are sufficient. Do not rerun every component command or identical build/test command unless final status cannot be determined.
+Reuse component verification outcomes, `baseline`, and `latestCommandResults` already stored in `state.json` when they are sufficient. Read `state-events.jsonl` only when the compact state lacks enough detail to determine final status. Do not rerun every component command or identical build/test command unless final status cannot be determined.
 
 ## State Update
 

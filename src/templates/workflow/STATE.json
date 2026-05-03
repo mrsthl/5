@@ -30,13 +30,14 @@
     }
   ],
   "completedComponents": [],
-  "failedAttempts": [],
+  "recentFailures": [],
   "baseline": {},
-  "commandResults": [],
+  "latestCommandResults": [],
   "verificationStatus": "pending",
   "verificationResults": {},
   "verifiedAt": null,
-  "commitResults": [],
+  "latestCommitResults": [],
+  "eventLog": ".5/features/{feature-name}/state-events.jsonl",
   "startedAt": "{ISO-timestamp}",
   "lastUpdated": "{ISO-timestamp}"
 }

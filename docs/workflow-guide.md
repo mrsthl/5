@@ -87,6 +87,7 @@ Implementation does three things:
 - pattern files
 - verify commands
 - baseline and verification results
+- compact latest command/commit summaries, with detailed history in `state-events.jsonl`
 
 If implementation is interrupted, rerun `/5:implement {feature-name}` to resume from the recorded step.
 

@@ -68,7 +68,7 @@ Run build/test commands from `.5/config.json` by default. If `state.json` define
 
 If `state.json.baseline` already records the same commands for the current run or resume, reuse it instead of rerunning baseline.
 
-Record compact command results in `state.json.baseline`: command, status, and a one-line summary only. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
+Record compact command results in `state.json.baseline`: command, status, and a one-line summary only. Append full command history to `state-events.jsonl`. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
 
 ### Step 4: Execute Steps
 
@@ -86,7 +86,9 @@ For each step from `currentStep`:
      - missing model -> `model: gpt-5.4-mini`, `reasoning_effort: low`
 4. Give each executor only its component block from `state.json`, relevant global notes, required pattern references, and verify commands. If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
 5. Parse only the `---RESULT---` block from each response.
-6. Update `completedComponents`, `failedAttempts`, `pendingComponents`, `currentStep`, `commandResults`, and `lastUpdated`.
+6. Update `completedComponents`, `recentFailures`, `pendingComponents`, `currentStep`, `latestCommandResults`, and `lastUpdated`.
+   - Append detailed failure, retry, and command records to `state-events.jsonl`.
+   - Keep only the most recent compact summaries in `state.json`.
 7. Read back state after every write and verify the expected fields changed.
 
 Retry failed components up to two times. Upgrade retries to `sonnet`; in Codex this means `model: gpt-5.4`, `reasoning_effort: medium`. Never fix code in the orchestrator context.
@@ -107,15 +109,13 @@ If `git.autoCommit` is `true`:
    - Replace `{short-description}` with `step {number}: {step-name}`.
    - Trim redundant whitespace and punctuation if ticket ID is empty.
 4. Commit the staged files.
-5. Append an entry to `state.json.commitResults`:
+5. Append a detailed entry to `state-events.jsonl` and a compact latest entry to `state.json.latestCommitResults`:
 
 ```json
 {
   "step": 1,
   "status": "committed|skipped|failed",
   "commit": "{sha-or-null}",
-  "message": "{commit-message}",
-  "files": ["path/to/file"],
   "error": null
 }
 ```
@@ -142,7 +142,7 @@ Verify feature `{feature-name}` using:
 - .5/features/{feature-name}/codebase-scan.md only if plan/state are insufficient to judge acceptance criteria, patterns, or risks
 
 Verify that the implementation is complete and correct, the project builds, tests run, everything from the plan is implemented, and tests are written for the implemented feature where appropriate.
-Reuse `state.json.baseline`, component `VERIFY` outcomes, and `commandResults` when they are fresh enough to prove the final status. Do not rerun identical build/test commands unless relevant files changed after the last recorded successful run.
+Reuse `state.json.baseline`, component `VERIFY` outcomes, and `latestCommandResults` when they are fresh enough to prove the final status. Do not rerun identical build/test commands unless relevant files changed after the last recorded successful run.
 Update `.5/features/{feature-name}/state.json` verification fields.
 Do not write a verification report.
 Do not implement fixes.

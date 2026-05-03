@@ -68,10 +68,12 @@ Write valid JSON:
     }
   ],
   "completedComponents": [],
-  "failedAttempts": [],
+  "recentFailures": [],
   "baseline": {},
+  "latestCommandResults": [],
   "verificationResults": {},
-  "commitResults": [],
+  "latestCommitResults": [],
+  "eventLog": ".5/features/{feature-name}/state-events.jsonl",
   "startedAt": "{ISO-timestamp}",
   "lastUpdated": "{ISO-timestamp}"
 }
@@ -87,3 +89,7 @@ Before writing state:
 - Every component has at least one verify command or a note explaining why verification is manual.
 - Rename components must set `sourceFile` to the original path and `file` to the destination path.
 - `totalSteps` equals `steps.length`.
+
+## Event Log
+
+Keep `state.json` small. Append historical details to `.5/features/{name}/state-events.jsonl` as one JSON object per line for failures, command runs, retries, verification details, and commit attempts. Keep only the latest compact summaries in `state.json`.

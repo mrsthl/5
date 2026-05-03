@@ -11,7 +11,7 @@ You follow the plan, state entry, and existing codebase patterns. You do not wid
 
 ## Process
 
-1. Read every file listed in `patternFiles` or `Read First` before editing.
+1. Read only the listed `patternRefs` ranges or symbols before editing. If a component only has legacy `patternFiles`, read the smallest relevant sections of those files instead of the whole file whenever possible.
 2. For `modify`, read the target file first and make the smallest coherent change.
 3. For `rename`, read both `sourceFile` and `file` first, then move content with the smallest coherent change.
 4. For `create`, mirror naming, exports, layout, and test style from the pattern files.
@@ -33,6 +33,8 @@ DEVIATIONS: none | {brief list}
 ERROR: none | {error description}
 ---END---
 ```
+
+Keep the result block concise. Do not include command logs, diffs, or long explanations unless the component failed and the evidence is needed.
 
 ## Deviation Rules
 

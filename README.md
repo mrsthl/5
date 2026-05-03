@@ -87,9 +87,11 @@ Each feature lives under `.5/features/{feature-name}/`:
 
 Planning stays human-readable. `plan.md` contains scope, acceptance criteria, decisions, module impact, and a clean component checklist. It intentionally does not ask the planner to fill model choices, verify commands, step grouping, or pattern-file wiring.
 
-Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into `state.json`, then `/5:implement` delegates each component to `step-executor-agent`. This reduces planning token cost and avoids brittle prompt-table metadata.
+Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into `state.json`, then `/5:implement` delegates each component to `step-executor-agent`. Pattern context is passed as targeted references instead of broad file lists so executors can read only the relevant ranges. This reduces planning token cost and avoids brittle prompt-table metadata.
 
 Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end and records a concise final status in `state.json` without generating an extra report.
+
+For Codex installs, the workflow is token-budgeted: exploration, orchestration, and simple executors default to `gpt-5.4-mini` with low reasoning. Complex logic, security-sensitive work, data migrations, public API changes, final verification that needs deeper review, and failed retries escalate to `gpt-5.4` with medium reasoning.
 
 ## Updating
 

@@ -24,7 +24,7 @@
       "sourceFile": null,
       "description": "{one-sentence intent}",
       "dependsOn": [],
-      "patternFiles": [],
+      "patternRefs": [],
       "verifyCommands": [],
       "notes": []
     }

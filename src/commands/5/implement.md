@@ -82,7 +82,40 @@ For each step from `currentStep`:
 
 Retry failed components up to two times. Upgrade retries to `sonnet`. Never fix code in the orchestrator context.
 
-### Step 5: Final Verification
+### Step 5: Auto-commit Completed Step
+
+After each step completes successfully, check `.5/config.json` for `git.autoCommit`.
+
+If `git.autoCommit` is `true`:
+
+1. Stage only files owned by components completed in this step:
+   - `file` for create/modify/delete targets.
+   - both `sourceFile` and `file` for rename targets.
+   - files reported in executor `FILES_CREATED` and `FILES_MODIFIED`.
+2. Do not stage unrelated working tree changes.
+3. Build the commit message from `git.commitMessage.pattern`:
+   - Replace `{ticket-id}` with `state.ticket` or an empty string.
+   - Replace `{short-description}` with `step {number}: {step-name}`.
+   - Trim redundant whitespace and punctuation if ticket ID is empty.
+4. Commit the staged files.
+5. Append an entry to `state.json.commitResults`:
+
+```json
+{
+  "step": 1,
+  "status": "committed|skipped|failed",
+  "commit": "{sha-or-null}",
+  "message": "{commit-message}",
+  "files": ["path/to/file"],
+  "error": null
+}
+```
+
+If there are no changed files for the step, skip the commit and record `status: "skipped"`. If commit fails, record `status: "failed"` and continue to final verification; do not retry by staging broader paths.
+
+If `git.autoCommit` is missing or `false`, do not commit.
+
+### Step 6: Final Verification
 
 After all steps complete, spawn `verification-agent`.
 
@@ -107,7 +140,7 @@ Parse only the `---VERIFICATION---` block from the response.
 
 If final verification passes, set state `status` to `completed`. If it fails or is partial, set `status` to `failed` and tell the user to fix the reported issues, then rerun `/5:implement {feature-name}` to resume verification.
 
-### Step 6: Report
+### Step 7: Report
 
 Report:
 
@@ -115,6 +148,7 @@ Report:
 - Failed component count
 - Verification status
 - Path to `state.json`
+- Auto-commit count and any failed commit attempts, if `git.autoCommit` is true
 - Failed commands, missing tests, or unmet acceptance criteria, if any
 
 Stop.

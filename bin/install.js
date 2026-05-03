@@ -391,6 +391,7 @@ function getWorkflowManagedFiles() {
       'TESTING.md',
       // Workflow output templates
       'workflow/PLAN.md',
+      'workflow/PLAN-COMPACT.md',
       'workflow/STATE.json',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',

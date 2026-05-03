@@ -40,7 +40,7 @@ The planner gathers requirements, explores the codebase, asks targeted questions
 .5/features/{feature-name}/codebase-scan.md
 ```
 
-`plan.md` contains:
+`plan.md` uses either the normal template or a compact template for small, low-risk changes. It contains:
 
 - overview
 - what changes

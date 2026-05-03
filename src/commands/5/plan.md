@@ -124,7 +124,12 @@ Ask only useful questions. Prefer proposing a concrete understanding and letting
 
 Determine a short kebab-case feature folder name. If a ticket ID is known, use `{ticket-id}-{feature-name}`. Sanitize folder names to alphanumeric, dash, and underscore only.
 
-Write `.5/features/{name}/plan.md` using `.claude/templates/workflow/PLAN.md`.
+Choose the plan template:
+
+- Use `.claude/templates/workflow/PLAN-COMPACT.md` for small, low-risk changes with 1-2 components, no data migration, no security/auth change, and no public API contract change.
+- Use `.claude/templates/workflow/PLAN.md` for everything else.
+
+Write `.5/features/{name}/plan.md` using the selected template.
 
 The component checklist is intentionally lean:
 

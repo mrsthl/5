@@ -936,6 +936,7 @@ function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
     log.info('  $5-plan                      - Create unified plan');
+    log.info('  $5-split                     - Split plan into smaller plans');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
     log.info('  $5-address-review-findings   - Decide review findings & PR comments');
@@ -947,6 +948,7 @@ function showCommandsHelp(isGlobal) {
   } else {
     log.info('Available commands:');
     log.info('  /5:plan                      - Create unified plan');
+    log.info('  /5:split                     - Split plan into smaller plans');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
     log.info('  /5:address-review-findings   - Decide review findings & PR comments');

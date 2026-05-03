@@ -42,6 +42,7 @@ That generates project documentation, a rebuildable `.5/index/`, AGENTS.md, a CL
 
 ```bash
 /5:plan
+/5:split {feature-name}
 /5:implement {feature-name}
 /5:review
 /5:address-review-findings {feature-name}
@@ -51,6 +52,7 @@ Codex equivalents:
 
 ```bash
 $5-plan
+$5-split {feature-name}
 $5-implement {feature-name}
 $5-review
 $5-address-review-findings {feature-name}
@@ -65,6 +67,7 @@ Verification runs at the end of `/5:implement` and records concise results in `s
 | `/5:configure` / `$5-configure` | Detect project settings and write the CONFIGURE plan |
 | `/5:plan` / `$5-plan` | Create one unified `plan.md` from requirements, codebase exploration, and user decisions |
 | `/5:discuss-feature` / `$5-discuss-feature` | Refine an existing `plan.md` |
+| `/5:split` / `$5-split` | Split an existing plan into smaller linked plans for separate implementation |
 | `/5:implement` / `$5-implement` | Derive `state.json`, execute steps with agents, and verify inline |
 | `/5:review` / `$5-review` | Review code changes and save findings |
 | `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply approved fixes and PR comments |
@@ -82,6 +85,7 @@ Each feature lives under `.5/features/{feature-name}/`:
 - `codebase-scan.md` - cached discovery used to reduce repeated scanning
 - `state.json` - enriched execution state derived by `step-orchestrator-agent`
 - `state-events.jsonl` - detailed execution history for retries, commands, commits, and verification
+- `split-manifest-*.json` - parent feature record for child plans created by `/5:split`
 - `review-findings-*.md` - review output for `/5:address-review-findings`
 - `review-decisions-*.json` - interactive fix/wont-fix/wait decisions for local findings
 - `pr-comment-decisions.json` - PR review comment decisions when PR handling is used

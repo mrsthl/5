@@ -36,6 +36,12 @@ for helper_command in apply-review-findings triage-pr-comments reply-pr-comments
   fi
 done
 echo "✓ Internal review helper commands installed"
+if [ -f ".claude/commands/5/split.md" ]; then
+  echo "✓ Split command installed"
+else
+  echo "✗ Split command missing"
+  exit 1
+fi
 echo ""
 
 # Test 2: Same Version Check
@@ -94,7 +100,7 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
-if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ]; then
+if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/split.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ]; then
   echo "✓ New v2 commands installed for legacy upgrade"
 else
   echo "✗ New v2 commands missing after legacy upgrade"
@@ -201,6 +207,12 @@ else
   echo "✗ Codex skills not created"
   exit 1
 fi
+if [ -f ".codex/skills/5-split/SKILL.md" ]; then
+  echo "✓ Split command converted to Codex skill"
+else
+  echo "✗ Codex split skill not created"
+  exit 1
+fi
 for helper_skill in 5-apply-review-findings 5-triage-pr-comments 5-reply-pr-comments; do
   if [ ! -f ".codex/skills/${helper_skill}/SKILL.md" ]; then
     echo "✗ Internal review helper skill missing: ${helper_skill}"
@@ -273,7 +285,7 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-for skill in 5-plan 5-implement 5-review; do
+for skill in 5-plan 5-split 5-implement 5-review; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"
     exit 1
@@ -311,7 +323,7 @@ echo "# old" > test-5phase-codex-legacy/.codex/skills/5-plan-feature/SKILL.md
 echo "# old" > test-5phase-codex-legacy/.codex/skills/5-implement-feature/SKILL.md
 cd test-5phase-codex-legacy
 node "$INSTALL_SCRIPT" --codex --upgrade
-if [ -f ".codex/skills/5-plan/SKILL.md" ] && [ -f ".codex/skills/5-implement/SKILL.md" ]; then
+if [ -f ".codex/skills/5-plan/SKILL.md" ] && [ -f ".codex/skills/5-split/SKILL.md" ] && [ -f ".codex/skills/5-implement/SKILL.md" ]; then
   echo "✓ New Codex v2 skills installed for legacy upgrade"
 else
   echo "✗ New Codex v2 skills missing after legacy upgrade"

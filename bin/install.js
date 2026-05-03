@@ -938,7 +938,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-plan                      - Create unified plan');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
-    log.info('  $5-address-review-findings   - Apply review findings & PR comments');
+    log.info('  $5-address-review-findings   - Decide review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
@@ -949,7 +949,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:plan                      - Create unified plan');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
-    log.info('  /5:address-review-findings   - Apply review findings & PR comments');
+    log.info('  /5:address-review-findings   - Decide review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');

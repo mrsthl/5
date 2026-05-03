@@ -67,7 +67,7 @@ Verification runs at the end of `/5:implement` and records concise results in `s
 | `/5:discuss-feature` / `$5-discuss-feature` | Refine an existing `plan.md` |
 | `/5:implement` / `$5-implement` | Derive `state.json`, execute steps with agents, and verify inline |
 | `/5:review` / `$5-review` | Review code changes and save findings |
-| `/5:address-review-findings` / `$5-address-review-findings` | Apply approved review findings and PR comments |
+| `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply approved fixes and PR comments |
 | `/5:reconfigure` / `$5-reconfigure` | Refresh docs, index, skills, and rules |
 | `/5:update` / `$5-update` | Upgrade installed workflow files |
 | `/5:eject` / `$5-eject` | Stop workflow-managed updates |
@@ -83,6 +83,7 @@ Each feature lives under `.5/features/{feature-name}/`:
 - `state.json` - enriched execution state derived by `step-orchestrator-agent`
 - `state-events.jsonl` - detailed execution history for retries, commands, commits, and verification
 - `review-findings-*.md` - review output for `/5:address-review-findings`
+- `review-decisions-*.json` - interactive fix/wont-fix/wait decisions for local findings
 - `pr-comment-decisions.json` - PR review comment decisions when PR handling is used
 
 ## Design
@@ -93,7 +94,7 @@ Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `cod
 
 Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end and records a concise final status in `state.json` without generating an extra report.
 
-Review is risk-based. Native review triages changed files first and reads full files only for risky changes or when diff context is insufficient. `/5:address-review-findings` coordinates narrower helpers for local fixes, PR comment triage, and PR replies so the common path stays compact.
+Review is risk-based. Native review triages changed files first and reads full files only for risky changes or when diff context is insufficient. `/5:address-review-findings` presents each finding one by one with a recommendation, records `fix`/`wont_fix`/`wait` decisions, then coordinates narrower helpers for approved local fixes, PR comment triage, and PR replies so the common path stays compact.
 
 Reconfiguration uses a compact `.5/reconfigure-manifest.json` to pass refresh decisions to documentation and skill generation helpers without duplicating long detection summaries in prompts.
 

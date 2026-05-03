@@ -76,11 +76,7 @@ Determine feature name from the most recent `.5/features/*/state.json`, or ask t
 
 Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-FINDINGS.md`.
 
-Use action markers:
-
-- Fixable -> `[FIX]`
-- Questions -> `[MANUAL]` with the question in custom instructions
-- Manual -> `[MANUAL]`
+Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` will present each finding interactively and record decisions separately.
 
 ## Completion
 
@@ -95,5 +91,5 @@ Review complete.
 
 Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
 
-Edit the file to adjust actions ([FIX] / [SKIP] / [MANUAL]), then run `/5:address-review-findings {feature-name}`.
+Run `/5:address-review-findings {feature-name}` to decide on each finding interactively, then apply approved fixes.
 ```

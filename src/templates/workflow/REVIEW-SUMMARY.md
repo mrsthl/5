@@ -11,6 +11,7 @@
 - **User-Resolved Questions:** {N}
 - **Manual Review Needed:** {N}
 - **Skipped by User:** {N}
+- **Deferred by User:** {N}
 
 ## Applied Fixes (User Approved)
 
@@ -28,6 +29,10 @@
 ## Skipped Issues
 
 - `{file-path}:{line}` - User chose not to apply
+
+## Deferred Issues
+
+- `{file-path}:{line}` - User chose to wait
 
 ## Files Modified
 

@@ -4,7 +4,7 @@ description: Applies approved local review findings and approved PR fixes for on
 allowed-tools: Read, Edit, Write, Glob, Bash, AskUserQuestion, Agent
 user-invocable: false
 model: haiku
-argument-hint: [feature-name] [--pr-approved]
+argument-hint: [feature-name] [--decisions path] [--pr-approved]
 ---
 
 <role>
@@ -16,14 +16,15 @@ You are a Review Fix Applicator. Apply only approved fixes. Do not review code, 
 ## Inputs
 
 - Feature directory: `.5/features/{feature}/`
-- Local findings: latest `review-findings-*.md` unless `--pr-approved` is passed.
+- Local decisions: the `--decisions` JSON file written by `/5:address-review-findings`, or the latest `.5/features/{feature}/review-decisions-*.json` unless `--pr-approved` is passed.
 - Approved PR fixes: decisions recorded by `/5:triage-pr-comments` when `--pr-approved` is passed.
 
 ## Process
 
 1. Parse approved items:
-   - Local `[FIX]` items.
-   - Local `[MANUAL]` items only when custom instructions are present.
+   - Local decision records where `decision` is `fix`.
+   - Use `customInstructions` when present; otherwise use `suggestedFix`.
+   - Treat `wont_fix` and `wait` as skipped.
    - Approved PR comments where decision is `fix`.
 2. Group fixes by target file.
 3. Before editing a file, read it and keep an in-memory snapshot for rollback of this command's edits only.

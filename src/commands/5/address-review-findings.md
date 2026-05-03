@@ -254,6 +254,8 @@ Derive `pr_approved_fixes` as the subset of `pr_decisions` where `decision == fi
 
 Apply fixes in this order: local `[FIX]` items first, then local `[MANUAL]` items, then approved PR fixes.
 
+Before applying any fix, create an in-memory snapshot of each target file's current content after reading it. Use these snapshots only for rollback of edits made by this command. Do not use `git show HEAD:{file}` as rollback source because the working tree may contain unrelated user changes.
+
 #### Grouping Strategy
 
 Group fixes by target file. For each file:
@@ -359,8 +361,9 @@ After all fixes are applied:
 If build fails:
 - Report which file(s) were modified and likely caused the failure
 - Ask via AskUserQuestion: "Build failed after applying fixes. What would you like to do?"
-  - Options: "Show me the error and I'll fix manually" / "Revert the last fix and retry"
-  - If revert: re-read the original file content (from git: `git show HEAD:{file}`) and restore it, then re-run build
+  - Options: "Show me the error and I'll fix manually" / "Restore this command's edits and retry"
+  - If restore is selected: restore only files touched by this command from the in-memory snapshots captured in Step 5, then re-run build
+  - Never restore a whole file from `HEAD`; that can erase unrelated uncommitted user edits
 
 ### Step 8: Save Summary Report
 

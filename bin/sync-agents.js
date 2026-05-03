@@ -104,8 +104,10 @@ This skill was authored for Claude Code. Map these tool references:
 | Claude Code | Codex Equivalent |
 |-------------|------------------|
 | \`AskUserQuestion\` | Ask the user directly in conversation |
-| \`Agent(subagent_type="Explore")\` | Research the codebase yourself using available tools |
-| \`Agent(prompt="...")\` | \`spawn_agent(message="...")\` |
+| \`Agent(subagent_type="Explore")\` | \`spawn_agent(agent_type="explorer", model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
+| \`Agent(prompt="...", model="haiku")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
+| \`Agent(prompt="...", model="sonnet")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="medium", message="...")\` |
+| \`Agent(prompt="...")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` unless the prompt explicitly requires complex reasoning |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |
 | \`Edit\` | \`patch\` |
@@ -114,6 +116,12 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Grep\` | \`grep\` / \`search\` |
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`EnterPlanMode\` | Not available — use structured output instead |
+
+## Codex Token Budget
+- Default to \`gpt-5.4-mini\` with \`reasoning_effort: low\` for exploration, orchestration, simple implementation, and mechanical file edits.
+- Use \`gpt-5.4\` with \`reasoning_effort: medium\` only for complex logic, cross-module behavior, security-sensitive changes, data migrations, final verification with meaningful logic review, or retries after failure.
+- Use stronger models only when a previous cheaper attempt failed for reasoning reasons.
+- Keep the parent skill context lean: delegate read-heavy exploration to explorer agents and pass only compact findings, target paths, pattern references, and command summaries between agents.
 
 ## Guard Rules
 During the planning phase ($5-plan):

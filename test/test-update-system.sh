@@ -29,6 +29,13 @@ else
   echo "✗ version.json not created"
   exit 1
 fi
+for helper_command in apply-review-findings triage-pr-comments reply-pr-comments; do
+  if [ ! -f ".claude/commands/5/${helper_command}.md" ]; then
+    echo "✗ Internal review helper command missing: ${helper_command}"
+    exit 1
+  fi
+done
+echo "✓ Internal review helper commands installed"
 echo ""
 
 # Test 2: Same Version Check
@@ -180,7 +187,8 @@ cd /tmp
 rm -rf test-5phase-codex-1
 mkdir test-5phase-codex-1
 cd test-5phase-codex-1
-node "$INSTALL_SCRIPT" --codex --local
+CODEX_INSTALL_OUTPUT="$(node "$INSTALL_SCRIPT" --codex --local 2>&1)"
+echo "$CODEX_INSTALL_OUTPUT"
 if [ -f ".5/version.json" ]; then
   echo "✓ version.json created"
 else
@@ -192,6 +200,19 @@ if [ -f ".codex/skills/5-plan/SKILL.md" ]; then
 else
   echo "✗ Codex skills not created"
   exit 1
+fi
+for helper_skill in 5-apply-review-findings 5-triage-pr-comments 5-reply-pr-comments; do
+  if [ ! -f ".codex/skills/${helper_skill}/SKILL.md" ]; then
+    echo "✗ Internal review helper skill missing: ${helper_skill}"
+    exit 1
+  fi
+done
+echo "✓ Internal review helper skills installed"
+if echo "$CODEX_INSTALL_OUTPUT" | grep -q '\$5-apply-review-findings\|\$5-triage-pr-comments\|\$5-reply-pr-comments'; then
+  echo "✗ Internal helper skills should not be listed as user-facing commands"
+  exit 1
+else
+  echo "✓ Internal helper skills hidden from user-facing install summary"
 fi
 if [ -f ".codex/agents/step-orchestrator-agent.md" ] && [ -f ".codex/agents/step-executor-agent.md" ] && [ -f ".codex/agents/verification-agent.md" ]; then
   echo "✓ Agents installed for Codex skills"

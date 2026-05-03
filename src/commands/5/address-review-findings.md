@@ -4,7 +4,6 @@ description: Applies annotated review findings and/or addresses GitHub PR review
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 user-invocable: true
 model: sonnet
-context: inherit
 ---
 
 <role>
@@ -135,6 +134,13 @@ To get `{owner}` and `{repo}`, run:
 gh repo view --json owner,name
 ```
 
+Before spawning an agent, normalize the fetched comments into compact records and discard comments that are clearly irrelevant without model reasoning:
+
+- Keep only `id`, `path`, `line`, `body`, `user.login`, `created_at`, `updated_at`, `in_reply_to_id`, and `resolved/outdated` flags when present.
+- For issue comments, use `path: "PR"` and `line: 0`.
+- Drop bot comments, empty comments, minimized/resolved/outdated comments, and duplicate API records.
+- Truncate each body to the smallest useful excerpt, preserving the actionable request and any quoted code identifier.
+
 Spawn a sonnet agent to analyze PR comments:
 
 ```
@@ -149,10 +155,10 @@ Agent tool call:
     {list of file:line:description from to_fix + to_skip + to_manual — or "none" in --github mode}
 
     ## PR Review Comments
-    {raw JSON of review comments}
+    {compact normalized review comment records}
 
     ## PR Issue Comments
-    {raw JSON of issue comments}
+    {compact normalized issue comment records}
 
     ## Instructions
     For each PR comment, categorize it as:

@@ -81,15 +81,21 @@ Each feature lives under `.5/features/{feature-name}/`:
 - `plan.md` - single human-reviewed planning artifact
 - `codebase-scan.md` - cached discovery used to reduce repeated scanning
 - `state.json` - enriched execution state derived by `step-orchestrator-agent`
+- `state-events.jsonl` - detailed execution history for retries, commands, commits, and verification
 - `review-findings-*.md` - review output for `/5:address-review-findings`
+- `pr-comment-decisions.json` - PR review comment decisions when PR handling is used
 
 ## Design
 
-Planning stays human-readable. `plan.md` contains scope, acceptance criteria, decisions, module impact, and a clean component checklist. It intentionally does not ask the planner to fill model choices, verify commands, step grouping, or pattern-file wiring.
+Planning stays human-readable. `plan.md` contains scope, acceptance criteria, decisions, module impact, and a clean component checklist. Small low-risk changes can use the compact plan template. Plans intentionally do not ask the planner to fill model choices, verify commands, step grouping, or pattern-file wiring.
 
-Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into `state.json`, then `/5:implement` delegates each component to `step-executor-agent`. Pattern context is passed as targeted references instead of broad file lists so executors can read only the relevant ranges. This reduces planning token cost and avoids brittle prompt-table metadata.
+Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into compact `state.json`, then `/5:implement` delegates each component to `step-executor-agent` with an inline executor contract. Pattern context is passed as targeted references instead of broad file lists so executors can read only the relevant ranges. Detailed history is appended to `state-events.jsonl`. This reduces planning token cost and avoids brittle prompt-table metadata.
 
 Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end and records a concise final status in `state.json` without generating an extra report.
+
+Review is risk-based. Native review triages changed files first and reads full files only for risky changes or when diff context is insufficient. `/5:address-review-findings` coordinates narrower helpers for local fixes, PR comment triage, and PR replies so the common path stays compact.
+
+Reconfiguration uses a compact `.5/reconfigure-manifest.json` to pass refresh decisions to documentation and skill generation helpers without duplicating long detection summaries in prompts.
 
 For Codex installs, the workflow is token-budgeted: exploration, orchestration, and simple executors default to `gpt-5.4-mini` with low reasoning. Complex logic, security-sensitive work, data migrations, public API changes, final verification that needs deeper review, and failed retries escalate to `gpt-5.4` with medium reasoning.
 

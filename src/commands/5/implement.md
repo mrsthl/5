@@ -70,6 +70,12 @@ If `state.json.baseline` already records the same commands for the current run o
 
 Record compact command results in `state.json.baseline`: command, status, and a one-line summary only. Append full command history to `state-events.jsonl`. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
 
+Command event shape:
+
+```json
+{"type":"command","timestamp":"{ISO}","step":0,"component":null,"status":"passed|failed|skipped","summary":"one line","details":{"command":"{command}","phase":"baseline"}}
+```
+
 ### Step 4: Execute Steps
 
 For each step from `currentStep`:
@@ -103,11 +109,18 @@ ERROR: none | {error description}
 If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
 5. Parse only the `---RESULT---` block from each response.
 6. Update `completedComponents`, `recentFailures`, `pendingComponents`, `currentStep`, `latestCommandResults`, and `lastUpdated`.
-   - Append detailed failure, retry, and command records to `state-events.jsonl`.
+   - Append `component_result`, `retry`, and `command` events to `state-events.jsonl`.
    - Keep only the most recent compact summaries in `state.json`.
 7. Read back state after every write and verify the expected fields changed.
 
 Retry failed components up to two times. Upgrade retries to `sonnet`; in Codex this means `model: gpt-5.4`, `reasoning_effort: medium`. Never fix code in the orchestrator context.
+
+Component and retry event shapes:
+
+```json
+{"type":"component_result","timestamp":"{ISO}","step":1,"component":"{name}","status":"success|failed","summary":"one line","details":{"filesCreated":[],"filesModified":[],"verify":"passed|failed|skipped"}}
+{"type":"retry","timestamp":"{ISO}","step":1,"component":"{name}","status":"failed","summary":"retry reason","details":{"attempt":2,"model":"sonnet"}}
+```
 
 ### Step 5: Auto-commit Completed Step
 
@@ -129,10 +142,17 @@ If `git.autoCommit` is `true`:
 
 ```json
 {
+  "type": "commit",
+  "timestamp": "{ISO-timestamp}",
   "step": 1,
+  "component": null,
   "status": "committed|skipped|failed",
-  "commit": "{sha-or-null}",
-  "error": null
+  "summary": "{commit-message-or-reason}",
+  "details": {
+    "commit": "{sha-or-null}",
+    "files": ["path/to/file"],
+    "error": null
+  }
 }
 ```
 

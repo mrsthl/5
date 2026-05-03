@@ -33,6 +33,12 @@ Reuse component verification outcomes, `baseline`, and `latestCommandResults` al
 
 Do not write a separate verification report.
 
+Append one `verification` event to `state-events.jsonl` with compact evidence:
+
+```json
+{"type":"verification","timestamp":"{ISO}","step":null,"component":null,"status":"passed|partial|failed","summary":"one line","details":{"commands":[],"failures":[]}}
+```
+
 Update `state.json`:
 
 ```json

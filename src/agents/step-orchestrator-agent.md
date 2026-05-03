@@ -92,4 +92,20 @@ Before writing state:
 
 ## Event Log
 
-Keep `state.json` small. Append historical details to `.5/features/{name}/state-events.jsonl` as one JSON object per line for failures, command runs, retries, verification details, and commit attempts. Keep only the latest compact summaries in `state.json`.
+Keep `state.json` small. Append historical details to `.5/features/{name}/state-events.jsonl` as one JSON object per line. Keep only the latest compact summaries in `state.json`.
+
+Each event must include:
+
+```json
+{
+  "type": "command|component_result|retry|commit|verification|state_change",
+  "timestamp": "{ISO-timestamp}",
+  "step": 1,
+  "component": "{component-name-or-null}",
+  "status": "passed|failed|skipped|success|partial",
+  "summary": "one line",
+  "details": {}
+}
+```
+
+Use `details` for command text, files, commit SHA, errors, or verification evidence. Do not duplicate large logs or diffs.

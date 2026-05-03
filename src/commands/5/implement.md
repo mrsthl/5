@@ -79,12 +79,28 @@ For each step from `currentStep`:
 3. Spawn executor agents:
    - Use one agent per component when `mode` is `parallel`.
    - Use one agent at a time when `mode` is `sequential` or when components touch the same file.
-   - Prompt each executor to read `.claude/agents/step-executor-agent.md` first.
+   - Give each executor the inline contract below instead of making it read `.claude/agents/step-executor-agent.md`.
    - In Codex, map each component model before spawning:
      - `haiku` -> `model: gpt-5.4-mini`, `reasoning_effort: low`
      - `sonnet` -> `model: gpt-5.4`, `reasoning_effort: medium`
      - missing model -> `model: gpt-5.4-mini`, `reasoning_effort: low`
-4. Give each executor only its component block from `state.json`, relevant global notes, required pattern references, and verify commands. If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
+4. Give each executor only its component block from `state.json`, relevant global notes, required pattern references, verify commands, and this inline contract:
+
+```text
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions.
+
+End with:
+---RESULT---
+STATUS: success | failed
+FILES_CREATED: [comma-separated paths]
+FILES_MODIFIED: [comma-separated paths]
+VERIFY: passed | failed | skipped
+DEVIATIONS: none | {brief list}
+ERROR: none | {error description}
+---END---
+```
+
+If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
 5. Parse only the `---RESULT---` block from each response.
 6. Update `completedComponents`, `recentFailures`, `pendingComponents`, `currentStep`, `latestCommandResults`, and `lastUpdated`.
    - Append detailed failure, retry, and command records to `state-events.jsonl`.

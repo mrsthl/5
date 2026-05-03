@@ -10,6 +10,7 @@ created: {ISO-timestamp}
 - Keep the Component Checklist human-readable. Do not add step/model/pattern/verify columns; step-orchestrator-agent derives those into state.json.
 - Existing Patterns to Follow should name high-value files and conventions so the orchestrator can wire executor prompts cheaply.
 - Decisions must be labeled [DECIDED], [FLEXIBLE], or [DEFERRED].
+- Omit optional sections when they would only contain "none", "n/a", or placeholder content.
 -->
 
 # Plan: {TICKET-ID} - {Title}
@@ -73,8 +74,3 @@ created: {ISO-timestamp}
 ## Alternatives Considered
 
 - {Alternative}: {why it was not chosen}
-
-## Next Steps
-
-1. Review this plan.
-2. Run `/5:implement {feature-name}`.

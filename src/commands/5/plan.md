@@ -79,7 +79,7 @@ Do not ask technical follow-ups yet.
 
 ## Step 3: Explore Codebase
 
-Spawn an Explore agent:
+Spawn one Explore agent. In Codex, use `agent_type: explorer`, `model: gpt-5.4-mini`, and `reasoning_effort: low`.
 
 ```text
 Analyze the codebase for a unified workflow plan.
@@ -88,24 +88,24 @@ Feature description:
 {feature description}
 
 Tasks:
-1. If `.5/index/` exists, read `.5/index/README.md` first. Use fresh index files for structure, and note if the index is stale. If missing, note that `/5:reconfigure` can generate it.
+1. If `.5/index/` exists, read `.5/index/README.md` first. Use only relevant fresh index files; do not rescan broad project structure. If stale, note it and fall back to targeted Grep/Glob.
 2. Identify relevant modules, existing patterns, and likely target files.
-3. Find similar implementations and reusable helpers.
-4. Identify test framework, test file conventions, integration/e2e setup, and build/test commands.
+3. Find at most 3 similar implementations and reusable helpers.
+4. Identify test framework, test file conventions, and the narrowest relevant build/test commands.
 5. Identify constraints, risks, and places where the user needs to decide.
 
 Report:
-- Project structure
-- Relevant existing patterns
-- Similar implementations
+- Relevant existing patterns: path + one-line reason
+- Similar implementations: max 3 paths + one-line reason
 - Likely target paths
-- Test/build setup
+- Test/build setup: commands only, with scope
 - Risks or unknowns
 
 READ-ONLY. Use only Read, Glob, and Grep.
+Keep the report under 40 lines. Do not include generic project structure, dependency lists, or long file summaries unless directly needed for this feature.
 ```
 
-Write the full result to `.5/features/{name}/codebase-scan.md`.
+Write the compact result to `.5/features/{name}/codebase-scan.md`. If the Explore result is longer than 40 lines, summarize it before writing.
 
 ## Step 4: Collaborative Plan Development
 
@@ -142,6 +142,7 @@ Do not include columns for step, model, skill, pattern file, verify command, com
 Verify:
 
 - The plan has all required template sections.
+- Optional sections with no useful content were omitted.
 - Acceptance criteria are checkboxes.
 - Decisions are labeled `[DECIDED]`, `[FLEXIBLE]`, or `[DEFERRED]`.
 - Every component traces to scope or acceptance criteria.

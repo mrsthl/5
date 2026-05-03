@@ -232,6 +232,13 @@ if grep -q '\.claude/' .codex/skills/5-plan/SKILL.md; then
 else
   echo "✓ Path references converted from .claude/ to .codex/"
 fi
+# Verify Claude CLI setup commands are not carried into Codex configure skill
+if grep -q 'claude mcp add\|claude plugin install' .codex/skills/5-configure/SKILL.md; then
+  echo "✗ Codex configure skill still contains Claude CLI setup commands"
+  exit 1
+else
+  echo "✓ Claude CLI setup commands removed from Codex configure skill"
+fi
 # Verify no Claude hooks installed
 if [ -d ".codex/hooks" ]; then
   echo "✗ Hooks directory should not exist for Codex"

@@ -58,9 +58,30 @@ function extractFrontmatterField(frontmatter, field) {
 }
 
 function claudeToCodexContent(content) {
-  return content
+  const converted = content
     .replace(/\/5:([a-z0-9-]+)/g, (_, name) => `$5-${name}`)
     .replace(/\.claude\//g, '.codex/');
+  return convertClaudeSetupCommandsToCodexNotes(converted);
+}
+
+function convertClaudeSetupCommandsToCodexNotes(content) {
+  return content
+    .replace(
+      /1\. "Install now \(recommended\)" — run `claude mcp add context7 -- npx -y @anthropic-ai\/claude-code-mcp-server-context7` via Bash/g,
+      '1. "Install now" — not supported automatically in Codex; install Context7 using your Codex MCP setup outside this workflow, then rerun configuration'
+    )
+    .replace(
+      /- If user selects "Install now": execute the install command/g,
+      '- If user selects "Install now": explain that Codex cannot run the Claude Code installer command; leave `tools.context7.available = false` unless Context7 is already detected'
+    )
+    .replace(
+      /1\. "Install now \(recommended\)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash/g,
+      '1. "Install now" — not supported automatically in Codex; install an equivalent skill authoring workflow outside this command, then rerun configuration'
+    )
+    .replace(
+      /- If user selects "Install now": execute the install command, then set `tools\.skillCreator\.available = true` in the config/g,
+      '- If user selects "Install now": explain that Codex cannot run the Claude Code plugin installer; leave `tools.skillCreator.available = false` unless an equivalent tool is already detected'
+    );
 }
 
 function codexToClaudeContent(content) {

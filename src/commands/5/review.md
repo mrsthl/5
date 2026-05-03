@@ -46,9 +46,12 @@ Base branch: {base branch if relevant}
 
 Process:
 1. Get the diff for the selected scope.
-2. Read full changed files and one level of imports for context.
-3. Review for bugs, security, performance, code quality, API design, and missing tests.
-4. Categorize findings as Fixable, Questions, or Manual.
+2. Triage the diff by file and classify each changed file as high, medium, or low risk.
+3. Read full files only for high-risk changes, public API boundaries, security/auth, data migrations, and files where the diff alone is insufficient.
+4. For medium-risk files, read targeted symbols or nearby changed sections plus direct imports only when needed.
+5. For low-risk mechanical/docs/config changes, review the diff without reading full files unless something looks inconsistent.
+6. Review for bugs, security, performance, code quality, API design, and missing tests.
+7. Categorize findings as Fixable, Questions, or Manual.
 
 Output:
 Status: success | failed
@@ -62,6 +65,7 @@ Manual Review:
 - file: {path}, line: {N}, description: {what}, severity: {level}
 
 Do not apply fixes.
+Keep findings concise and do not include raw diff excerpts unless needed to identify the issue.
 ```
 
 For CodeRabbit, run the CLI for the selected scope, then categorize the output into the same format.

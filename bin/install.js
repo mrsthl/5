@@ -101,9 +101,13 @@ function getInstalledVersion(isGlobal) {
 
 // Get package version from package.json
 function getPackageVersion() {
-  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkgPath = path.join(getPackageRoot(), 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   return pkg.version;
+}
+
+function getPackageRoot() {
+  return path.join(__dirname, '..');
 }
 
 // Get full version info
@@ -273,7 +277,11 @@ function copyDirMerge(src, dest) {
 function getSourcePath() {
   // When installed via npm, __dirname is <install-location>/bin
   // Source files are in <install-location>/src
-  return path.join(__dirname, '..', 'src');
+  return path.join(getPackageRoot(), 'src');
+}
+
+function getPackageBinPath() {
+  return path.join(getPackageRoot(), 'bin');
 }
 
 // Copy directory recursively
@@ -292,6 +300,25 @@ function copyDir(src, dest) {
       copyDir(srcPath, destPath);
     } else {
       fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function copyWorkflowHelperBins(targetPath) {
+  const managed = getWorkflowManagedFiles();
+  if (!managed.binHelpers || managed.binHelpers.length === 0) return;
+
+  const binSrc = getPackageBinPath();
+  const binDest = path.join(targetPath, 'bin');
+  if (!fs.existsSync(binDest)) {
+    fs.mkdirSync(binDest, { recursive: true });
+  }
+
+  for (const binHelper of managed.binHelpers) {
+    const src = path.join(binSrc, binHelper);
+    const dest = path.join(binDest, binHelper);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
     }
   }
 }
@@ -383,6 +410,11 @@ function getWorkflowManagedFiles() {
       'configure-tables.md'
     ],
 
+    // Helper binaries: runtime scripts invoked by commands
+    binHelpers: [
+      'sync-agents.js'
+    ],
+
     // Templates: specific template files
     templates: [
       // Project documentation templates
@@ -437,6 +469,12 @@ function getFileManifest() {
   if (managed.references) {
     for (const ref of managed.references) {
       manifest.push(`references/${ref}`);
+    }
+  }
+
+  if (managed.binHelpers) {
+    for (const binHelper of managed.binHelpers) {
+      manifest.push(`bin/${binHelper}`);
     }
   }
 
@@ -604,6 +642,12 @@ function getCodexFileManifest() {
     }
   }
 
+  if (managed.binHelpers) {
+    for (const binHelper of managed.binHelpers) {
+      manifest.push(`bin/${binHelper}`);
+    }
+  }
+
   // Instructions file
   manifest.push('instructions.md');
 
@@ -712,6 +756,23 @@ function selectiveUpdate(targetPath, sourcePath) {
       }
     }
     log.success('Updated references/ (workflow files only)');
+  }
+
+  // Update helper binaries used by runtime commands
+  if (managed.binHelpers && managed.binHelpers.length > 0) {
+    const binSrc = getPackageBinPath();
+    const binDest = path.join(targetPath, 'bin');
+    if (!fs.existsSync(binDest)) {
+      fs.mkdirSync(binDest, { recursive: true });
+    }
+    for (const binHelper of managed.binHelpers) {
+      const src = path.join(binSrc, binHelper);
+      const dest = path.join(binDest, binHelper);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+      }
+    }
+    log.success('Updated bin/ (workflow helper binaries)');
   }
 }
 
@@ -986,6 +1047,10 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   // Merge settings
   mergeSettings(targetPath, sourcePath);
 
+  // Install helper binaries used by runtime commands
+  copyWorkflowHelperBins(targetPath);
+  log.success('Installed bin/ (workflow helper binaries)');
+
   // Initialize version tracking
   initializeVersionJson(isGlobal);
 
@@ -1179,6 +1244,10 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
     }
   }
 
+  // Install helper binaries used by runtime commands
+  copyWorkflowHelperBins(targetPath);
+  log.success('Installed bin/ (workflow helper binaries)');
+
   // Generate instructions.md (replaces hooks + settings.json)
   generateCodexInstructions(targetPath);
 
@@ -1236,6 +1305,10 @@ function codexSelectiveUpdate(targetPath, sourcePath) {
     }
   }
   log.success('Updated templates and references');
+
+  // Update helper binaries used by runtime commands
+  copyWorkflowHelperBins(targetPath);
+  log.success('Updated bin/ helper binaries');
 
   // Regenerate instructions.md
   generateCodexInstructions(targetPath);
@@ -1319,6 +1392,19 @@ function codexUninstall() {
       if (fs.existsSync(refPath)) fs.unlinkSync(refPath);
     }
     log.success('Removed workflow references');
+  }
+
+  // Remove helper binaries
+  if (managed.binHelpers) {
+    for (const binHelper of managed.binHelpers) {
+      const binPath = path.join(targetPath, 'bin', binHelper);
+      if (fs.existsSync(binPath)) fs.unlinkSync(binPath);
+    }
+    const binDir = path.join(targetPath, 'bin');
+    if (fs.existsSync(binDir) && fs.readdirSync(binDir).length === 0) {
+      fs.rmdirSync(binDir);
+    }
+    log.success('Removed workflow helper binaries');
   }
 
   // Remove instructions.md
@@ -1516,6 +1602,21 @@ function uninstall() {
       }
     }
     log.success('Removed workflow references (preserved user-created references)');
+  }
+
+  // Remove only workflow-managed helper binaries
+  if (managed.binHelpers) {
+    for (const binHelper of managed.binHelpers) {
+      const binPath = path.join(targetPath, 'bin', binHelper);
+      if (fs.existsSync(binPath)) {
+        fs.unlinkSync(binPath);
+      }
+    }
+    const binDir = path.join(targetPath, 'bin');
+    if (fs.existsSync(binDir) && fs.readdirSync(binDir).length === 0) {
+      fs.rmdirSync(binDir);
+    }
+    log.success('Removed workflow helper binaries (preserved user-created binaries)');
   }
 
   // Remove data directory (.5/)

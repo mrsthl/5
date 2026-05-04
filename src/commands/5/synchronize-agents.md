@@ -19,8 +19,9 @@ Synchronizes user-generated content (skills, commands, agents, rules) between th
 
 The script is `bin/sync-agents.js` in the workflow package. Find it by checking these paths in order:
 
-1. `./bin/sync-agents.js` (development checkout / project root)
-2. `./node_modules/foifi/bin/sync-agents.js` (local npm install)
+1. `./.claude/bin/sync-agents.js` (installed Claude Code runtime helper)
+2. `./bin/sync-agents.js` (development checkout / project root)
+3. `./node_modules/foifi/bin/sync-agents.js` (local npm install)
 
 Read `.5/version.json` if available — its location confirms the project root.
 

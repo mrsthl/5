@@ -42,6 +42,12 @@ else
   echo "✗ Split command missing"
   exit 1
 fi
+if [ -f ".claude/bin/sync-agents.js" ]; then
+  echo "✓ Sync helper installed"
+else
+  echo "✗ Sync helper missing"
+  exit 1
+fi
 echo ""
 
 # Test 2: Same Version Check
@@ -213,6 +219,12 @@ else
   echo "✗ Codex split skill not created"
   exit 1
 fi
+if [ -f ".codex/bin/sync-agents.js" ]; then
+  echo "✓ Sync helper installed"
+else
+  echo "✗ Sync helper missing"
+  exit 1
+fi
 for helper_skill in 5-apply-review-findings 5-triage-pr-comments 5-reply-pr-comments; do
   if [ ! -f ".codex/skills/${helper_skill}/SKILL.md" ]; then
     echo "✗ Internal review helper skill missing: ${helper_skill}"
@@ -309,6 +321,12 @@ if [ -d ".5" ]; then
   exit 1
 else
   echo "✓ .5/ directory removed"
+fi
+if [ -e ".codex/bin/sync-agents.js" ]; then
+  echo "✗ Sync helper should be removed on Codex uninstall"
+  exit 1
+else
+  echo "✓ Sync helper removed"
 fi
 echo ""
 

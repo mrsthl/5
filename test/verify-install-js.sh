@@ -139,6 +139,12 @@ errors += compareLists(
   [...(managed.references || [])].sort()
 );
 
+errors += compareLists(
+  'Helper Binaries',
+  listEntries('bin', { filesOnly: true }).filter(file => file === 'sync-agents.js'),
+  [...(managed.binHelpers || [])].sort()
+);
+
 console.log('========================================');
 if (errors === 0) {
   console.log(`${GREEN}All workflow files are properly listed in install.js${NC}`);

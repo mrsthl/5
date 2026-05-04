@@ -386,6 +386,7 @@ function getWorkflowManagedFiles() {
     // Templates: specific template files
     templates: [
       // Project documentation templates
+      'AGENTS.md',
       'ARCHITECTURE.md',
       'CONCERNS.md',
       'TESTING.md',

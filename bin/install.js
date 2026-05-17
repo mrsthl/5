@@ -569,6 +569,13 @@ During the planning phase ($5-plan):
 - Do NOT write to any file outside \`.5/\`
 - Do NOT write source code — only the unified plan and scan cache
 - Do NOT spawn implementation agents — only Explore/research agents
+
+## Update & Migration Notices (replaces statusline hooks)
+At the very start of this skill, before doing anything else, read these two files if they exist:
+- \`.5/.update-cache.json\` — if \`latestAvailableVersion\` is set, compare it to \`packageVersion\` in \`.5/version.json\`. If a newer version is available, tell the user: "foifi update available: <version> — run \`npx foifi --codex --upgrade\` to update."
+- \`.5/.migration-v2\` — if this file exists, tell the user: "You upgraded from foifi v1 to v2. Run \`$5-reconfigure\` to update your project configuration."
+
+Show each applicable notice once at the top of your response, then continue with the skill normally. Do not abort the skill because of a notice.
 </codex_skill_adapter>`;
 }
 

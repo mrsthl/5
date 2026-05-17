@@ -177,9 +177,9 @@ After the skill completes, update `.5/version.json`:
 
 ### Step 8: Clean Up
 
-Remove the `.5/.reconfig-reminder` flag file if it exists:
+Remove the `.5/.reconfig-reminder` and `.5/.migration-v2` flag files if they exist:
 ```bash
-rm -f .5/.reconfig-reminder
+rm -f .5/.reconfig-reminder .5/.migration-v2
 ```
 
 ### Step 9: Report

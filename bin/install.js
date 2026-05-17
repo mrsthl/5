@@ -828,17 +828,20 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
   }
 }
 
-// Ensure .5/.gitignore exists and contains .update-cache.json
+// Ensure .5/.gitignore exists and contains transient runtime files
 function ensureDotFiveGitignore(dataDir) {
   const gitignorePath = path.join(dataDir, '.gitignore');
-  const entry = '.update-cache.json';
+  const entries = ['.update-cache.json', '.migration-v*', '.reconfig-reminder'];
   if (fs.existsSync(gitignorePath)) {
-    const content = fs.readFileSync(gitignorePath, 'utf8');
-    if (!content.includes(entry)) {
-      fs.appendFileSync(gitignorePath, '\n' + entry + '\n');
+    let content = fs.readFileSync(gitignorePath, 'utf8');
+    for (const entry of entries) {
+      if (!content.includes(entry)) {
+        content += '\n' + entry;
+      }
     }
+    fs.writeFileSync(gitignorePath, content.trimEnd() + '\n');
   } else {
-    fs.writeFileSync(gitignorePath, entry + '\n');
+    fs.writeFileSync(gitignorePath, entries.join('\n') + '\n');
   }
 }
 
@@ -1084,6 +1087,16 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // Merge settings (deep merge preserves user customizations)
   mergeSettings(targetPath, sourcePath);
+
+  // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
+  const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
+  const newMajor = versionInfo.available ? parseInt(versionInfo.available.split('.')[0], 10) : 0;
+  if (!isNaN(prevMajor) && !isNaN(newMajor) && prevMajor < newMajor) {
+    try {
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, '.migration-v' + newMajor), '1');
+    } catch (e) {}
+  }
 
   // Update version.json (per-runtime, preserving other runtime's state)
   writeVersionJson(dataDir, isGlobal, versionInfo.available);

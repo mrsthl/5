@@ -1,6 +1,29 @@
 # foifi
 
-A structured AI-assisted development workflow for Claude Code and Codex.
+**foifi** is an opinionated AI development workflow layer that sits on top of Claude Code and Codex. It handles project setup, structured feature implementation, and code review — so you spend less time managing the AI and more time shipping.
+
+### What it does
+
+**Project setup** — The `/5:configure` command detects your stack, generates a `CLAUDE.md` / `AGENTS.md` tailored to your project, writes a `.5/index/` knowledge base, and installs project-specific skills and rules. This gives every AI session the right context from the start rather than letting the model guess.
+
+**Status line** — foifi installs an informative Claude Code status line that surfaces the active feature, current workflow phase, and relevant state directly in the terminal footer. No more digging through files to remember where you left off.
+
+**Structured implementation workflow** — Instead of asking Claude or Codex to "just implement this," foifi enforces a three-phase loop:
+1. **Plan** (`/5:plan`) — writes a single human-reviewed `plan.md` with scope, acceptance criteria, component checklist, and decisions.
+2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph (`state.json`), then delegates each component to a focused executor agent. A verification agent checks completeness, correctness, and test coverage at the end of every run.
+3. **Review** (`/5:review`) — triages changed files, produces structured findings, and feeds them into `/5:address-review-findings` for interactive fix decisions and PR replies.
+
+This separation keeps planning readable, implementation mechanical, and review structured.
+
+**Code review and findings** — `/5:review` triages changed files and produces structured `review-findings-*.md`. `/5:address-review-findings` presents each finding interactively, records `fix`/`wont_fix`/`wait` decisions, applies approved local fixes, handles PR comment replies, and keeps a decision log — all without losing context between sessions.
+
+**Plan management helpers** — `/5:discuss-feature` refines an existing plan in conversation. `/5:split` breaks a large plan into smaller linked child plans. `/5:unlock` clears a stale planning lock. `/5:reconfigure` refreshes docs and skills when the project evolves.
+
+**Codex support** — Every command has a `$5-*` Codex equivalent. Codex runs are token-budgeted: simple steps use a lighter model and low reasoning, complex or security-sensitive steps escalate automatically.
+
+### The name
+
+"foifi" is Swiss German for *five*. The name comes from the project's original 5-phase workflow. That workflow has since been streamlined into the current 3-phase plan → implement → review loop, but the name stuck — and all commands still carry the `/5:` prefix.
 
 ## Install
 

@@ -1,5 +1,36 @@
 # Release Notes
 
+## v2.0.1
+
+**Release Date:** 2026-05-17
+
+### Generated Skill Fixes and Codex Parity
+
+v2.0.1 fixes a skill-looping bug introduced in v2.0.0, renames generated pattern skills to cleaner bare names, and closes a gap where Codex users never saw update or migration notices.
+
+**Bug Fixes**
+- Removed `context: fork` from generated and internal skill frontmatter — skills were re-invoking themselves in the forked context, causing infinite loops
+- Auto-migration strips `context: fork` from already-installed skills on the next `npx foifi --upgrade`, so projects don't need a manual reconfigure
+
+**Improvements**
+- Generated pattern skills are now named after the pattern itself (e.g. `dto`, `service`, `component`) instead of `create-dto`, `create-service` — they handle both creating and updating; existing `create-*` directories are renamed automatically on upgrade
+- Codex skill adapter preamble now checks `.5/.update-cache.json` and `.5/.migration-v2` at startup and prints a one-line notice, matching what the Claude Code statusline already showed
+- v1→v2 migration notice added to the Claude Code statusline (red `⚠ v1→v2: /5:reconfigure`) until the user runs `/5:reconfigure`; cleared alongside `.reconfig-reminder` on completion
+- `performCodexUpdate` now applies the skill rename migration and major-version migration flag, keeping Claude Code and Codex upgrade paths in sync
+- AGENTS.md updated with the runtime parity rules table, generated skill naming conventions, and the rule that upgrade migrations must be added to both `performUpdate` and `performCodexUpdate`
+- Removed `npm deprecate` step from the publish workflow (requires a classic token; must be run manually)
+
+**Affected files:**
+- `bin/install.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `src/skills/configure-skills/SKILL.md` (modified)
+- `src/skills/configure-docs-index/SKILL.md` (modified)
+- `AGENTS.md` (modified)
+- `README.md` (modified)
+- `.github/workflows/publish.yml` (modified)
+
+---
+
 ## v2.0.0
 
 **Release Date:** 2026-05-17

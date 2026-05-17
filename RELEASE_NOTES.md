@@ -2,15 +2,11 @@
 
 ## v2.0.0
 
-**Release Date:** 2026-04-30
+**Release Date:** 2026-05-17
 
-### dev-workflow
+### Three-Phase Workflow, foifi Package, and Beta Additions
 
-Hard-cut migration from the old five command flow to the dev-workflow command path:
-
-```text
-/5:plan -> /5:implement -> /5:review
-```
+v2.0.0 is a hard-cut major release that replaces the legacy multi-command flow with a clean three-phase workflow (`/5:plan` → `/5:implement` → `/5:review`), ships the package under the new `foifi` npm name, and incorporates all improvements developed during the beta cycle.
 
 **Breaking changes**
 - Removed old commands: `plan-feature`, `plan-implementation`, `implement-feature`, `verify`, `verify-implementation`, `review-code`, and `quick-implement`
@@ -18,17 +14,67 @@ Hard-cut migration from the old five command flow to the dev-workflow command pa
 - Removed `component-executor.md`; execution now uses `step-executor-agent.md`
 - Removed `FEATURE-SPEC.md`
 - Removed `VERIFICATION-REPORT.md` and generated `verification.md` reports
+- Package renamed from `foif` to `foifi` — reinstall via `npx foifi install`
 - v1 in-progress features should be finished on v1.9.5 before upgrading
 
 **What's new**
+- `/5:plan` writes `plan.md` and `codebase-scan.md`; `/5:implement` derives `state.json` and executes; `/5:review` produces structured findings
 - `step-orchestrator-agent` derives `state.json` from a clean human `plan.md`
 - `verification-agent` runs from `/5:implement` and records concise verification status directly in `state.json`
+- `/5:split` splits an existing `plan.md` into smaller linked plans when scope grows
+- `/5:analyze-feature`, `/5:apply-review-findings`, `/5:reply-pr-comments`, `/5:triage-pr-comments` helper commands added
+- `bin/sync-agents.js` is now packaged and installed alongside `bin/install.js`
+- AGENTS guidance template extracted to `src/templates/AGENTS.md` for consistent project onboarding
+- Workflow event log schema defined; history moves from state fields to structured event log
+- Compact `PLAN-COMPACT.md` template for smaller features reduces unnecessary tokens
+- Auto-commit step added to the implementation workflow
+- Risk-based review context in `/5:review` for more targeted findings
+- Semver prerelease version comparison fixed so beta versions sort correctly
 - `plan-guard.js` now allows only `.planning-active`, `codebase-scan.md`, and `plan.md` during planning
-- Installer and sync logic use the new command, agent, skill, and template names
 
-**Optimization**
+**Improvements**
 - Planning consumes fewer tokens because humans no longer fill mechanical columns such as model, step, pattern file, and verify command
 - Implementation is more reliable because those details are derived once into `state.json`
+- Review addressing is now interactive — findings are confirmed before being applied
+- Codex token budgets set for all workflow commands
+- PR review comment analysis compacted for lower context cost
+- Installer manifest verification strengthened; user edits preserved during review roundtrip
+- Codex configure setup guidance fixed
+- `sourceFile` handling added for file rename operations
+
+**Affected files:**
+- `bin/install.js` (modified)
+- `bin/sync-agents.js` (new)
+- `src/commands/5/plan.md` (new)
+- `src/commands/5/implement.md` (new)
+- `src/commands/5/review.md` (new)
+- `src/commands/5/split.md` (new)
+- `src/commands/5/analyze-feature.md` (new)
+- `src/commands/5/apply-review-findings.md` (new)
+- `src/commands/5/reply-pr-comments.md` (new)
+- `src/commands/5/triage-pr-comments.md` (new)
+- `src/commands/5/eject.md` (new)
+- `src/commands/5/synchronize-agents.md` (new)
+- `src/commands/5/plan-feature.md` (removed)
+- `src/commands/5/plan-implementation.md` (removed)
+- `src/commands/5/implement-feature.md` (removed)
+- `src/commands/5/quick-implement.md` (removed)
+- `src/commands/5/review-code.md` (removed)
+- `src/commands/5/verify-implementation.md` (removed)
+- `src/agents/step-orchestrator-agent.md` (new)
+- `src/agents/step-executor-agent.md` (new)
+- `src/agents/verification-agent.md` (new)
+- `src/agents/component-executor.md` (removed)
+- `src/templates/AGENTS.md` (new)
+- `src/templates/workflow/PLAN-COMPACT.md` (new)
+- `src/templates/workflow/FEATURE-SPEC.md` (removed)
+- `src/templates/workflow/VERIFICATION-REPORT.md` (removed)
+- `src/hooks/plan-guard.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `src/hooks/check-updates.js` (modified)
+- `.github/workflows/publish.yml` (modified)
+- `AGENTS.md` (new)
+- `CLAUDE.md` (modified)
 
 ---
 

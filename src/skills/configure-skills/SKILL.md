@@ -76,12 +76,12 @@ For EACH pattern selected by the user in the unified plan:
 
 ### A2. Skill Template Structure
 
-For each skill, create `.claude/skills/create-{pattern}/SKILL.md`:
+For each skill, create `.claude/skills/{pattern}/SKILL.md`:
 
 ```yaml
 ---
-name: create-{pattern}
-description: Creates a {Pattern} following project conventions at {location}.
+name: {pattern}
+description: Creates or updates a {Pattern} following project conventions at {location}.
 allowed-tools: Read, Write, Glob, Grep
 model: haiku
 user-invocable: true
@@ -89,10 +89,10 @@ user-invocable: true
 ```
 
 ```markdown
-# Create {Pattern}
+# {Pattern}
 
-## What This Skill Creates
-A {pattern} following this project's conventions.
+## What This Skill Does
+Creates or updates a {pattern} following this project's conventions.
 
 ## Detected Conventions
 - **Location:** {detected-location}
@@ -101,14 +101,14 @@ A {pattern} following this project's conventions.
 - **Imports:** {detected-import-pattern}
 
 ## Template
-Based on {example-file}, new {patterns} should follow:
+Based on {example-file}, {patterns} should follow:
 
 \`\`\`{language}
 {template-derived-from-analysis}
 \`\`\`
 
 ## Checklist
-- [ ] File created at correct location
+- [ ] File at correct location
 - [ ] Naming convention followed
 - [ ] Required imports added
 - [ ] {pattern-specific-items}
@@ -116,7 +116,7 @@ Based on {example-file}, new {patterns} should follow:
 
 ### A3. Pattern to Skill Name Mapping
 
-**Rule:** Skill name is `create-{pattern}` (e.g., `controller` → `create-controller`, `component` → `create-component`, `dto` → `create-dto`). For compound patterns, use the short form: `model/entity` → `create-model`, `api-route` → `create-api-route`.
+**Rule:** Skill name is `{pattern}` (e.g., `controller` → `controller`, `component` → `component`, `dto` → `dto`). For compound patterns, use the short form: `model/entity` → `model`, `api-route` → `api-route`.
 
 ---
 

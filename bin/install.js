@@ -1397,6 +1397,19 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   const dataDir = getDataPath(isGlobal);
   cleanupOrphanedFiles(targetPath, dataDir);
 
+  // Rename create-* skill dirs to bare pattern names (create-dto → dto)
+  renameCreateSkills(targetPath);
+
+  // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
+  const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
+  const newMajor = versionInfo.available ? parseInt(versionInfo.available.split('.')[0], 10) : 0;
+  if (!isNaN(prevMajor) && !isNaN(newMajor) && prevMajor < newMajor) {
+    try {
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, '.migration-v' + newMajor), '1');
+    } catch (e) {}
+  }
+
   // Update version.json (per-runtime, preserving other runtime's state)
   writeVersionJson(dataDir, isGlobal, versionInfo.available);
   ensureDotFiveGitignore(dataDir);

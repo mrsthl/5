@@ -3,7 +3,6 @@ name: configure-docs-index
 description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-context: fork
 user-invocable: false
 ---
 

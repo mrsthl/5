@@ -3,7 +3,6 @@ name: configure-skills
 description: Generates project-specific create-*/run-* skills and scoped rules from the current codebase. Used during /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, create-skill, scaffold-skill
 model: sonnet
-context: fork
 user-invocable: false
 ---
 
@@ -85,7 +84,6 @@ name: create-{pattern}
 description: Creates a {Pattern} following project conventions at {location}.
 allowed-tools: Read, Write, Glob, Grep
 model: haiku
-context: fork
 user-invocable: true
 ---
 ```
@@ -153,7 +151,6 @@ name: run-{command}
 description: Runs {command} for this project using {source}.
 allowed-tools: Bash
 model: haiku
-context: fork
 user-invocable: true
 ---
 ```

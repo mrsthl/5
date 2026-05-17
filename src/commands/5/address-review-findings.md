@@ -4,6 +4,7 @@ description: Coordinates interactive review finding decisions and optionally han
 allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
 user-invocable: true
 model: haiku
+context: inherit
 ---
 
 <role>

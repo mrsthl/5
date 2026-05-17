@@ -3,6 +3,7 @@ name: 5:eject
 description: Eject from the update mechanism — permanently removes update infrastructure
 allowed-tools: Bash, Read, Edit, AskUserQuestion
 user-invocable: true
+context: inherit
 ---
 
 <role>
@@ -26,11 +27,11 @@ Ejecting permanently removes the update system from this installation. After eje
 
 All other workflow files (commands, skills, hooks, templates) remain untouched.
 
-**This is irreversible.** To restore update functionality, reinstall with `npx 5-phase-workflow`.
+**This is irreversible.** To restore update functionality, reinstall with `npx foifi`.
 
 ## Step 1: Check Current State
 
-Read `.5/version.json`. If it doesn't exist, tell the user: "No 5-Phase Workflow installation found (or already ejected)." and stop.
+Read `.5/version.json`. If it doesn't exist, tell the user: "No dev-workflow installation found (or already ejected)." and stop.
 
 Note the `packageVersion` for the confirmation message.
 
@@ -38,7 +39,7 @@ Note the `packageVersion` for the confirmation message.
 
 Tell the user what ejecting means:
 
-> **Eject from 5-Phase Workflow updates?**
+> **Eject from dev-workflow updates?**
 >
 > This will permanently delete:
 > - `.5/version.json` (version tracking)
@@ -55,7 +56,7 @@ Tell the user what ejecting means:
 > - `.codex/skills/5-eject/` (this skill)
 > - `.codex/instructions.md` is removed only if it is workflow-managed and no longer needed for remaining installed workflow files
 >
-> All other workflow files remain untouched. To restore updates later, reinstall with `npx 5-phase-workflow`.
+> All other workflow files remain untouched. To restore updates later, reinstall with `npx foifi`.
 
 Ask: "Proceed with eject?"
 
@@ -105,6 +106,6 @@ Tell the user:
 
 > Ejected successfully. Update infrastructure has been removed from this installation (was v{packageVersion}).
 >
-> To restore update functionality, reinstall with: `npx 5-phase-workflow`
+> To restore update functionality, reinstall with: `npx foifi`
 >
-> If this was a Codex install, use: `npx 5-phase-workflow --codex`
+> If this was a Codex install, use: `npx foifi --codex`

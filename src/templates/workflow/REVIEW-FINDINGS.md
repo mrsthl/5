@@ -8,15 +8,12 @@
 
 ## How to Use This File
 
-1. Review each finding below
-2. For each finding, choose an action:
-   - `[FIX]` - Apply this fix automatically (leave as-is)
-   - `[SKIP]` - Don't apply this fix (change FIX to SKIP)
-   - `[MANUAL]` - Custom instructions (change FIX to MANUAL and add instructions)
-3. Save this file
-4. Run: `/5:address-review-findings`
+1. Review this file if you want context before applying fixes
+2. Run: `/5:address-review-findings`
+3. The command will present each finding one by one with a recommendation
+4. Choose `fix`, `wont_fix`, `wait`, or provide textual instructions
 
-The command will read your annotations and apply marked fixes.
+The command records your decisions separately and applies only findings marked `fix`.
 
 ---
 
@@ -38,12 +35,6 @@ The command will read your annotations and apply marked fixes.
 {raw output from reviewer}
 ```
 
-**Action:** [FIX]
-
-**Custom Instructions:** (only if you selected [MANUAL])
-<!-- Add detailed instructions here if you want a custom fix -->
-
-
 ---
 
 ## Summary
@@ -54,5 +45,5 @@ The command will read your annotations and apply marked fixes.
 - Manual Review: {N}
 
 **Next Steps:**
-1. Edit this file to mark which findings to fix
-2. Run: `/5:address-review-findings`
+1. Run: `/5:address-review-findings`
+2. Decide on each finding interactively

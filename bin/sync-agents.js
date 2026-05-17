@@ -27,13 +27,15 @@ const log = {
 
 const WORKFLOW_MANAGED_SKILLS = new Set([
   'configure-docs-index',
-  'configure-project',
   'configure-skills',
   'generate-readme'
 ]);
 
 const WORKFLOW_MANAGED_AGENTS = new Set([
-  'component-executor.md'
+  'component-executor.md',
+  'step-executor-agent.md',
+  'step-orchestrator-agent.md',
+  'verification-agent.md'
 ]);
 
 const RULES_SYNC_START = '<!-- 5-sync:rules-start -->';
@@ -56,9 +58,30 @@ function extractFrontmatterField(frontmatter, field) {
 }
 
 function claudeToCodexContent(content) {
-  return content
+  const converted = content
     .replace(/\/5:([a-z0-9-]+)/g, (_, name) => `$5-${name}`)
     .replace(/\.claude\//g, '.codex/');
+  return convertClaudeSetupCommandsToCodexNotes(converted);
+}
+
+function convertClaudeSetupCommandsToCodexNotes(content) {
+  return content
+    .replace(
+      /1\. "Install now \(recommended\)" — run `claude mcp add context7 -- npx -y @anthropic-ai\/claude-code-mcp-server-context7` via Bash/g,
+      '1. "Install now" — not supported automatically in Codex; install Context7 using your Codex MCP setup outside this workflow, then rerun configuration'
+    )
+    .replace(
+      /- If user selects "Install now": execute the install command/g,
+      '- If user selects "Install now": explain that Codex cannot run the Claude Code installer command; leave `tools.context7.available = false` unless Context7 is already detected'
+    )
+    .replace(
+      /1\. "Install now \(recommended\)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash/g,
+      '1. "Install now" — not supported automatically in Codex; install an equivalent skill authoring workflow outside this command, then rerun configuration'
+    )
+    .replace(
+      /- If user selects "Install now": execute the install command, then set `tools\.skillCreator\.available = true` in the config/g,
+      '- If user selects "Install now": explain that Codex cannot run the Claude Code plugin installer; leave `tools.skillCreator.available = false` unless an equivalent tool is already detected'
+    );
 }
 
 function codexToClaudeContent(content) {
@@ -81,8 +104,10 @@ This skill was authored for Claude Code. Map these tool references:
 | Claude Code | Codex Equivalent |
 |-------------|------------------|
 | \`AskUserQuestion\` | Ask the user directly in conversation |
-| \`Agent(subagent_type="Explore")\` | Research the codebase yourself using available tools |
-| \`Agent(prompt="...")\` | \`spawn_agent(message="...")\` |
+| \`Agent(subagent_type="Explore")\` | \`spawn_agent(agent_type="explorer", model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
+| \`Agent(prompt="...", model="haiku")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
+| \`Agent(prompt="...", model="sonnet")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="medium", message="...")\` |
+| \`Agent(prompt="...")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` unless the prompt explicitly requires complex reasoning |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |
 | \`Edit\` | \`patch\` |
@@ -91,6 +116,18 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Grep\` | \`grep\` / \`search\` |
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`EnterPlanMode\` | Not available — use structured output instead |
+
+## Codex Token Budget
+- Default to \`gpt-5.4-mini\` with \`reasoning_effort: low\` for exploration, orchestration, simple implementation, and mechanical file edits.
+- Use \`gpt-5.4\` with \`reasoning_effort: medium\` only for complex logic, cross-module behavior, security-sensitive changes, data migrations, final verification with meaningful logic review, or retries after failure.
+- Use stronger models only when a previous cheaper attempt failed for reasoning reasons.
+- Keep the parent skill context lean: delegate read-heavy exploration to explorer agents and pass only compact findings, target paths, pattern references, and command summaries between agents.
+
+## Guard Rules
+During the planning phase ($5-plan):
+- Do NOT write source code.
+- Do NOT write files outside \`.5/\`.
+- Do NOT spawn implementation agents.
 </codex_skill_adapter>`;
 }
 
@@ -193,11 +230,13 @@ function findProjectRoot() {
 }
 
 function isClaudeInstalled(root) {
-  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
+  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md')) ||
+    fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
 }
 
 function isCodexInstalled(root) {
-  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan-feature', 'SKILL.md'));
+  return fs.existsSync(path.join(root, '.codex', 'skills', '5-plan', 'SKILL.md')) ||
+    fs.existsSync(path.join(root, '.codex', 'skills', '5-plan-feature', 'SKILL.md'));
 }
 
 function getClaudeUserSkills(root) {
@@ -573,20 +612,20 @@ function main() {
 
   if (!hasClaude && !hasCodex) {
     log.error('No runtime installations found.');
-    log.info('Install Claude Code: npx 5-phase-workflow');
-    log.info('Install Codex: npx 5-phase-workflow --codex');
+    log.info('Install Claude Code: npx foifi');
+    log.info('Install Codex: npx foifi --codex');
     process.exit(1);
   }
 
   if (!hasClaude) {
     log.error('Claude Code runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow');
+    log.info('Install with: npx foifi');
     process.exit(1);
   }
 
   if (!hasCodex) {
     log.error('Codex runtime not installed.');
-    log.info('Install with: npx 5-phase-workflow --codex');
+    log.info('Install with: npx foifi --codex');
     process.exit(1);
   }
 

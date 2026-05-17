@@ -1,7 +1,7 @@
 ---
 name: configure-skills
-description: Generates project-specific create-*/run-* skills and scoped rules from the current codebase. Used during /5:implement-feature CONFIGURE.
-allowed-tools: Read, Write, Bash, Glob, Grep
+description: Generates project-specific create-*/run-* skills and scoped rules from the current codebase. Used during /5:implement CONFIGURE.
+allowed-tools: Read, Write, Bash, Glob, Grep, create-skill, scaffold-skill
 model: sonnet
 context: fork
 user-invocable: false
@@ -11,7 +11,7 @@ user-invocable: false
 
 ## Overview
 
-This skill handles skill and rule generation during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create project-specific skills and scoped rules.
+This skill handles skill and rule generation during implementation for the CONFIGURE feature. It is called by step-executor to create project-specific skills and scoped rules.
 
 It handles two tasks:
 
@@ -28,10 +28,10 @@ This skill supports two modes. The skill generation and rule generation logic is
 
 ### Full Mode (default)
 
-Used by `/5:configure` → `/5:implement-feature CONFIGURE` flow.
+Used by `/5:configure` → `/5:implement CONFIGURE` flow.
 
-- **Input:** Pattern/command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
-- **Behavior:** Creates all selected skills and rules from scratch based on feature spec requirements
+- **Input:** Pattern/command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+- **Behavior:** Creates all selected skills and rules from scratch based on unified plan requirements
 
 ### Refresh Mode
 
@@ -53,7 +53,7 @@ If `tools.skillCreator.available` is `true` in `.5/config.json`, use the skill-c
 
 If skill-creator is not available, use the existing template-based generation below — no degradation in workflow behavior.
 
-**Reads:** Pattern selections from feature spec (`.5/features/CONFIGURE/feature.md`)
+**Reads:** Pattern selections from unified plan (`.5/features/CONFIGURE/plan.md`)
 
 **Creates:** SKILL.md files in `.claude/skills/{name}/SKILL.md`
 
@@ -61,7 +61,7 @@ If skill-creator is not available, use the existing template-based generation be
 
 Skills are determined by what patterns exist in the codebase (detected during `/5:configure`) and what the user selected — not by project type.
 
-For EACH pattern selected by the user in the feature spec:
+For EACH pattern selected by the user in the unified plan:
 
 1. **Find examples** - Read 2-3 files from the pattern's location
 2. **Extract conventions:**
@@ -124,13 +124,13 @@ Based on {example-file}, new {patterns} should follow:
 
 ## B. Generate Command Skills (run-*)
 
-**Reads:** Command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
+**Reads:** Command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
 
 **Creates:** SKILL.md files in `.claude/skills/run-{command}/SKILL.md`
 
 ### B1. Command-Based Skill Generation
 
-For EACH command selected by the user in the feature spec:
+For EACH command selected by the user in the unified plan:
 
 1. **Read the source** - Check package.json scripts, Makefile, etc.
 2. **Document the command:**
@@ -219,7 +219,7 @@ For each applicable rule:
 1. **Derive `paths:` globs** from detected file locations (e.g., if tests are at `src/**/*.test.ts` and `tests/**/*.spec.ts`, use those patterns)
 2. **Convert analysis observations into imperative directives** — "Use X", "Always Y", "Never Z"
 3. **Keep each file 15-40 lines** — be concise and actionable
-4. **Do not repeat** the 6 mandatory coding guidelines from `AGENTS.md`
+4. **Do not repeat** the general guidance sections from `AGENTS.md`
 
 Write files to `.claude/rules/`:
 
@@ -311,4 +311,4 @@ Component D (Rules): SKIPPED - rules.generate is false in config
 - DO NOT hardcode conventions - always derive from actual project analysis
 - DO NOT generate empty or placeholder skill or rule files
 - DO NOT assume command syntax - always read from actual config files (package.json, Makefile, etc.)
-- DO NOT repeat the 6 mandatory coding guidelines from `AGENTS.md` in rule files
+- DO NOT repeat the general guidance sections from `AGENTS.md` in rule files

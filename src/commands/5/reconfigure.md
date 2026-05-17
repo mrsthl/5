@@ -3,7 +3,6 @@ name: 5:reconfigure
 description: Lightweight refresh of project documentation, codebase index, and skills without full Q&A. Re-detects codebase changes, regenerates .5/*.md docs, rebuilds .5/index/, updates AGENTS.md, and refreshes all skills.
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
-context: fork
 ---
 
 <role>
@@ -132,40 +131,42 @@ If there are new or stale patterns, use additional `AskUserQuestion` calls with 
 
 New skills will be created and stale skills removed based on the user's choices.
 
-### Step 5: Regenerate
+### Step 5: Build Refresh Manifest
+
+Write `.5/reconfigure-manifest.json` with the compact decisions needed by refresh skills:
+
+```json
+{
+  "mode": "refresh",
+  "docs": ["ARCHITECTURE.md", "TESTING.md", "CONCERNS.md", "index", "AGENTS.md"],
+  "skills": {
+    "refresh": ["skill names"],
+    "create": ["new skill names"],
+    "remove": ["stale skill names selected by user"]
+  },
+  "rules": {
+    "refresh": ["rule files"],
+    "create": ["new rule files"],
+    "remove": ["stale rule files selected by user"]
+  }
+}
+```
+
+Keep detection details out of the prompt once they are represented in this manifest.
+
+### Step 6: Regenerate
 
 Invoke the refresh skills in **refresh mode** via the Agent tool:
 
 ```
-Task prompt 1: "Run configure-docs-index skill in REFRESH MODE.
+Task prompt 1: "Run configure-docs-index skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh generated docs, rebuild `.5/index/`, remove legacy docs, and update `AGENTS.md` plus the CLAUDE.md shim while preserving user sections."
 
-Refresh the generated documentation, rebuild the codebase index in `.5/index/`, delete legacy docs if they exist, and update `AGENTS.md` (plus CLAUDE.md shim) while preserving user-written sections."
-
-Task prompt 2: "Run configure-skills skill in REFRESH MODE.
-
-Refresh ALL existing skills in .claude/skills/:
-- Existing create-* skills: [list from Step 2e]
-- Existing run-* skills: [list from Step 2e]
-- User-created skills: [list from Step 2e]
-- New skills to create: [list from user confirmation, if any]
-- Skills to remove: [list from user confirmation, if any]
-
-Refresh rules in .claude/rules/ (if rules.generate is true):
-- Existing workflow rules: [list from Step 2f]
-- Rules to remove: [list from user confirmation, if any]
-- New rules to create: [if applicable]
-Re-analyze the codebase and:
-1. Refresh ALL skills in .claude/skills/ — read current conventions from codebase and update each skill
-2. Create new skills for newly-added patterns
-3. Remove skills the user chose to drop
-4. Refresh all workflow-generated rule files in .claude/rules/ with updated conventions
-5. Create new rule files for newly-detected patterns
-6. Remove rule files the user chose to drop"
+Task prompt 2: "Run configure-skills skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh, create, and remove only the skills/rules listed in the manifest."
 ```
 
 Use `subagent_type: "general-purpose"` for the Agent.
 
-### Step 6: Track
+### Step 7: Track
 
 After the skill completes, update `.5/version.json`:
 
@@ -174,14 +175,14 @@ After the skill completes, update `.5/version.json`:
 3. Set `configuredAtCommit` to current short commit hash (`git rev-parse --short HEAD`)
 4. Write back version.json preserving all other fields
 
-### Step 7: Clean Up
+### Step 8: Clean Up
 
 Remove the `.5/.reconfig-reminder` flag file if it exists:
 ```bash
 rm -f .5/.reconfig-reminder
 ```
 
-### Step 8: Report
+### Step 9: Report
 
 Show the user a summary:
 - List of documentation files updated

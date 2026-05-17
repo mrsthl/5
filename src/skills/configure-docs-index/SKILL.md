@@ -1,6 +1,6 @@
 ---
 name: configure-docs-index
-description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement-feature CONFIGURE.
+description: Analyzes the codebase, creates project documentation, generates a rebuildable codebase index, and updates AGENTS.md. Used during /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
 context: fork
@@ -11,7 +11,7 @@ user-invocable: false
 
 ## Overview
 
-This skill handles the documentation and indexing work during Phase 3 (implement-feature) for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `AGENTS.md`.
+This skill handles the documentation and indexing work during implementation for the CONFIGURE feature. It is called by step-executor to create the project docs, codebase index, and `AGENTS.md`.
 
 It handles one task:
 
@@ -27,10 +27,10 @@ This skill supports two modes. The analysis (A1), template filling (A2-A3), inde
 
 ### Full Mode (default)
 
-Used by `/5:configure` → `/5:implement-feature CONFIGURE` flow.
+Used by `/5:configure` → `/5:implement CONFIGURE` flow.
 
-- **Input:** Pattern/command selections from feature spec (`.5/features/CONFIGURE/feature.md`)
-- **Behavior:** Creates documentation, index files, and `AGENTS.md` from scratch based on feature spec requirements
+- **Input:** Pattern/command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+- **Behavior:** Creates documentation, index files, and `AGENTS.md` from scratch based on unified plan requirements
 
 ### Refresh Mode
 
@@ -143,20 +143,16 @@ Generate a repository-local codebase index that stays generic and works for any 
 
 Generate `AGENTS.md` — the provider-agnostic instructions file that works with any AI coding tool:
 
-AGENTS.md structure:
-- **Project Overview:** 1-2 sentences from README/package.json
-- **Build & Run Commands:** Build, test, and other detected commands
-- **Workflow Rules:** Include this section verbatim:
-  ```
-  ## Workflow Rules
-  When running `/5:` workflow commands, follow the command instructions exactly as written.
-  Do not skip steps, combine phases, or proceed to actions not specified in the current command.
-  Each phase produces a specific artifact — do not create artifacts belonging to other phases.
-  ```
-- **Coding Guidelines:** The 6 mandatory principles (types, concise docs, short files, extract methods, SRP/DRY, maintainable/modular)
-- **Project Documentation:** Links to whichever `.5/` files were created (only list files that exist)
-- **Codebase Index:** Add a section linking `.5/index/README.md`, the generated index files, and the rebuild script
-- **Index Freshness Rule:** State clearly that if the index files are more than one day old, the agent should regenerate them by running `.5/index/rebuild-index.sh` before relying on them
+Use `.claude/templates/AGENTS.md` as the source template.
+
+Placeholder mapping:
+- `{PROJECT_OVERVIEW}` → 1-2 sentences from README/package.json
+- `{BUILD_RUN_COMMANDS}` → build, test, and other detected commands
+- `{PROJECT_DOCUMENTATION_LINKS}` → links to whichever `.5/` files were created (only list files that exist)
+- `{CODEBASE_INDEX_LINKS}` → links to `.5/index/README.md`, generated index files, and `.5/index/rebuild-index.sh`
+- `{CUSTOM_DOCUMENTATION}` → preserved user-authored sections under `## Custom Documentation`; remove the placeholder entirely if there is no custom content
+
+Preserve the static template sections exactly as written, including skill usage, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness.
 
 ### A5. Migrate and Preserve Existing Content
 
@@ -166,7 +162,7 @@ AGENTS.md structure:
 - Read current content
 - Identify user-written custom sections (not matching template structure)
 - Preserve under "Custom Documentation" section in new AGENTS.md
-- Ensure 6 mandatory coding guidelines are retained
+- Ensure the generated guidance sections are retained
 
 **If `CLAUDE.md` already exists with real content (not just `@AGENTS.md`):**
 - Read current CLAUDE.md content

@@ -55,8 +55,29 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      - name: Publish to npm
+      - name: Publish to npm (foifi)
         run: npm publish --access public --provenance
+
+      # MIGRATION: also publish under the legacy package name so existing users
+      # receive the update transparently. Remove this step after v2.0.0 stable.
+      - name: Publish to npm (5-phase-workflow legacy)
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = '5-phase-workflow';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          npm publish --access public --provenance
+          npm deprecate "5-phase-workflow@${VERSION}" \
+            "⚠️  This package has been renamed to 'foifi' (v2). Please migrate: npm install -g foifi"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = 'foifi';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
 
       - name: Create GitHub Release
         uses: actions/github-script@v7

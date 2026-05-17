@@ -52,9 +52,6 @@ jobs:
             git push origin HEAD:main
           fi
 
-      - name: Install dependencies
-        run: npm ci || npm install
-
       - name: Publish to npm (foifi)
         run: npm publish --access public --provenance
 

@@ -1,5 +1,33 @@
 # Release Notes
 
+## v2.0.2
+
+**Release Date:** 2026-06-01
+
+### use-index Skill and Index-Aware Commands
+
+v2.0.2 introduces the `use-index` skill — a reusable step-by-step guide for navigating the `.5/index/` codebase index — and wires it into the `plan`, `discuss-feature`, and `analyze-feature` commands so they all use a consistent, freshness-aware index lookup instead of duplicating inline instructions.
+
+**What's New**
+- New `use-index` skill (`src/skills/use-index/SKILL.md`): checks index existence, reads the manifest, validates freshness (rebuilds if stale), maps files by task, and gracefully falls back to Glob/Grep when the index is missing
+- Skill registered in `getWorkflowManagedFiles()` so it installs for both Claude Code and Codex
+
+**Improvements**
+- `plan.md`: Explore agent prompt now reads the `use-index` skill directly instead of carrying verbose inline instructions; stale index is rebuilt before spawning the agent
+- `discuss-feature.md`: verbose inline index-shortcut block replaced with a single `use-index` skill invocation
+- `analyze-feature.md`: delegates to the `use-index` skill, falling back only when the index is missing
+- `AGENTS.md` template: Codebase Index and Index Freshness sections merged and updated with a `use-index` skill reference
+
+**Affected files:**
+- `src/skills/use-index/SKILL.md` (new)
+- `bin/install.js` (modified)
+- `src/commands/5/plan.md` (modified)
+- `src/commands/5/discuss-feature.md` (modified)
+- `src/commands/5/analyze-feature.md` (modified)
+- `src/templates/AGENTS.md` (modified)
+
+---
+
 ## v2.0.1
 
 **Release Date:** 2026-05-17

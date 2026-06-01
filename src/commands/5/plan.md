@@ -79,6 +79,8 @@ Do not ask technical follow-ups yet.
 
 ## Step 3: Explore Codebase
 
+If `.5/index/` exists, check the `Generated:` timestamp in `.5/index/README.md`. If the index is more than one day old, run `.5/index/rebuild-index.sh` to refresh it before spawning the Explore agent.
+
 Spawn one Explore agent. In Codex, use `agent_type: explorer`, `model: gpt-5.4-mini`, and `reasoning_effort: low`.
 
 ```text
@@ -88,7 +90,7 @@ Feature description:
 {feature description}
 
 Tasks:
-1. If `.5/index/` exists, read `.5/index/README.md` first. Use only relevant fresh index files; do not rescan broad project structure. If stale, note it and fall back to targeted Grep/Glob.
+1. If `.5/index/` exists, read `.claude/skills/use-index/SKILL.md` and follow its guidance to select and read relevant index files. Skip broad project scanning. If the index is missing, fall back to targeted Grep/Glob and note it in the report.
 2. Identify relevant modules, existing patterns, and likely target files.
 3. Find at most 3 similar implementations and reusable helpers.
 4. Identify test framework, test file conventions, and the narrowest relevant build/test commands.

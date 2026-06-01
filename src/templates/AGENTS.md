@@ -87,8 +87,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 {CODEBASE_INDEX_LINKS}
 
-## Index Freshness
-
-If the codebase index files are more than one day old, regenerate them by running `.5/index/rebuild-index.sh` before relying on them.
+Use the `use-index` skill before running broad Glob/Grep scans. It handles freshness checks, file selection by task type, and fallback strategies. If index files are more than one day old, regenerate them by running `.5/index/rebuild-index.sh` before relying on them.
 
 {CUSTOM_DOCUMENTATION}

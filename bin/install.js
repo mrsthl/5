@@ -393,7 +393,8 @@ function getWorkflowManagedFiles() {
     skills: [
       'configure-docs-index',
       'configure-skills',
-      'generate-readme'
+      'generate-readme',
+      'use-index'
     ],
 
     // Hooks: specific hook files

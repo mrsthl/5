@@ -30,7 +30,7 @@ Do NOT proceed until you have a clear understanding of what to analyze.
 
 1. Derive a short kebab-case name from the analysis subject (e.g., `user-auth`, `order-processing`, `payment-integration`). This becomes the filename: `{name}-analysis.md`.
 
-2. Identify the relevant modules and layers to analyze. If `.5/index/` exists, read the index files for a quick structural overview. Otherwise, use Glob to understand the project layout.
+2. Identify the relevant modules and layers to analyze. Invoke the `use-index` skill for a quick structural overview. The skill will rebuild the index if stale; fall back to Glob only if the index is missing.
 
 3. Use Glob and Grep to locate the relevant source files. Search for key classes, interfaces, functions, and types related to the analysis subject.
 

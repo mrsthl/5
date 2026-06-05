@@ -45,7 +45,14 @@ This is the stable entrypoint after `/5:review`.
    - Ask the user for decisions on actionable/manual comments.
    - Invoke `/5:apply-review-findings {feature} --pr-approved` for approved PR fixes.
    - Invoke `/5:reply-pr-comments {feature}` to post PR replies.
-4. Run configured build/test/lint skills if available, or the narrowest configured commands.
+4. Run post-fix verification. This is mandatory after any approved fix is applied.
+   - Read `.5/config.json`, project run skills, and common project manifests such as `package.json`, `Makefile`, `pyproject.toml`, `Cargo.toml`, and Gradle files only as needed to identify configured commands.
+   - Run every available configured command in these categories: `build`, `test`, `e2e`/`test:e2e`, and `lint`.
+   - Prefer generated run skills when present (`run-build`, `run-tests`, `run-lint`, and any e2e/test-e2e variant). Otherwise run the exact configured command from `.5/config.json` or the project manifest.
+   - Do not skip a category because another category passed. Skip only when no command exists or the command is explicitly configured as `none`; record the reason.
+   - If any command fails, continue running remaining independent categories so the user gets a complete verification picture.
+   - Do not claim the review findings are fully addressed unless every discovered post-fix verification command passes or is explicitly skipped because no command exists.
+   - Store compact results for each category in the summary: command, status (`passed`, `failed`, or `skipped`), and a one-line reason.
 5. Write `.5/features/{feature}/review-summary-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-SUMMARY.md`.
 
 Keep all intermediate summaries compact. Do not paste raw diffs, raw PR JSON, or command logs unless a failure needs exact evidence.
@@ -80,11 +87,14 @@ Allowed `decision` values are `fix`, `wont_fix`, and `wait`.
 Output:
 
 ```text
-Review findings addressed.
+Review findings addressed: {yes/no}
 
 Local findings: {summary}
 PR comments: {summary}
+Post-fix verification: {passed/failed}
 Build: {passed/failed/skipped}
 Tests: {passed/failed/skipped}
+E2E: {passed/failed/skipped}
+Lint: {passed/failed/skipped}
 Summary saved at .5/features/{feature}/review-summary-{timestamp}.md
 ```

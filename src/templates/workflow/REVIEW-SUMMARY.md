@@ -37,4 +37,10 @@
 ## Files Modified
 
 - {file-path} ({N} fixes applied)
-- {file-path} ({N} fixes applied)
+
+## Post-Fix Verification
+
+- **Build:** {passed/failed/skipped} - `{command-or-none}` - {one-line summary}
+- **Tests:** {passed/failed/skipped} - `{command-or-none}` - {one-line summary}
+- **E2E:** {passed/failed/skipped} - `{command-or-none}` - {one-line summary}
+- **Lint:** {passed/failed/skipped} - `{command-or-none}` - {one-line summary}

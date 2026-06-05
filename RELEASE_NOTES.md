@@ -1,5 +1,27 @@
 # Release Notes
 
+## v2.0.3
+
+**Release Date:** 2026-06-05
+
+### Mandatory Post-Fix Verification in address-review-findings
+
+v2.0.3 tightens the `/5:address-review-findings` command so that build, test, e2e, and lint commands always run after applying review fixes — and the command cannot claim success until every available category passes.
+
+**Bug Fixes**
+- Post-fix verification is now mandatory: all four categories (build, tests, e2e, lint) are run after fixes are applied; no category is silently skipped just because another category passed
+- The command no longer allows marking review findings as fully addressed unless every discovered verification command passes or is explicitly skipped because no command exists
+
+**Improvements**
+- Verification results are stored compactly in the result summary: command, status (`passed`/`failed`/`skipped`), and a one-line reason per category
+- `REVIEW-SUMMARY.md` template gains a dedicated **Post-Fix Verification** section listing build, tests, e2e, and lint outcomes
+
+**Affected files:**
+- `src/commands/5/address-review-findings.md` (modified)
+- `src/templates/workflow/REVIEW-SUMMARY.md` (modified)
+
+---
+
 ## v2.0.2
 
 **Release Date:** 2026-06-01

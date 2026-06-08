@@ -882,11 +882,25 @@ function writeVersionJson(dataDir, isGlobal, version) {
   const runtimeVersions = Object.values(runtimes).map(r => r.packageVersion).filter(Boolean);
   const minVersion = runtimeVersions.reduce((min, v) => compareVersions(v, min) < 0 ? v : min, version);
 
+  // Backfill configuredAt from config.json mtime for projects that predate the field
+  let configuredAt = existing.configuredAt;
+  let configuredAtCommit = existing.configuredAtCommit;
+  if (!configuredAt) {
+    const configFile = path.join(dataDir, 'config.json');
+    if (fs.existsSync(configFile)) {
+      try {
+        configuredAt = fs.statSync(configFile).mtime.toISOString();
+      } catch (e) {}
+    }
+  }
+
   const versionData = {
     packageVersion: minVersion,
     installedAt: existing.installedAt || now,
     lastUpdated: now,
     installationType: existing.installationType || (isGlobal ? 'global' : 'local'),
+    ...(configuredAt && { configuredAt }),
+    ...(configuredAtCommit && { configuredAtCommit }),
     manifest: runtimes[activeRuntime].manifest,
     runtimes
   };

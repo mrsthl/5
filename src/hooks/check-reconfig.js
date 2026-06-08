@@ -38,11 +38,19 @@ function checkReconfigure(workspaceDir) {
     process.exit(0);
   }
 
-  const { configuredAt, configuredAtCommit } = versionData;
+  let { configuredAt, configuredAtCommit } = versionData;
 
-  // No configure data yet - skip (user hasn't run /5:configure)
+  // Fall back to config.json mtime when configuredAt was never recorded
   if (!configuredAt) {
-    process.exit(0);
+    const configFile = path.join(workspaceDir, '.5', 'config.json');
+    if (!fs.existsSync(configFile)) {
+      process.exit(0);
+    }
+    try {
+      configuredAt = fs.statSync(configFile).mtime.toISOString();
+    } catch (e) {
+      process.exit(0);
+    }
   }
 
   // Calculate days elapsed

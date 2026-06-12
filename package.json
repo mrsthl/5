@@ -1,6 +1,6 @@
 {
   "name": "foifi",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A dev-workflow for Claude Code and Codex",
   "bin": {
     "foifi": "bin/install.js"

@@ -1,5 +1,37 @@
 # Release Notes
 
+## v2.0.4
+
+**Release Date:** 2026-06-12
+
+### Commit Command, Reconfigure Fix, and Statusline Cleanup
+
+v2.0.4 ships the new `/5:commit` command for guided conventional commits, fixes the reconfigure reminder that was silently skipping pre-existing projects, and removes the stale off-peak indicator from the statusline.
+
+**What's New**
+- New `/5:commit [short-description]` command (`src/commands/5/commit.md`): generates a commit message following `git.commitMessage.pattern` from project config, stages changes, and creates the commit — works for both Claude Code and Codex via `$5-commit`
+
+**Bug Fixes**
+- Reconfigure reminder (`src/hooks/check-reconfig.js`) no longer silently skips projects configured before the `configuredAt` field was introduced; falls back to `config.json` mtime as a proxy and backfills the field during updates
+
+**Improvements**
+- Off-peak indicator removed from the statusline (`src/hooks/statusline.js`); the feature was unused and added unnecessary noise
+
+**Affected files:**
+- `src/commands/5/commit.md` (new)
+- `src/hooks/check-reconfig.js` (modified)
+- `src/hooks/statusline.js` (modified)
+- `bin/install.js` (modified)
+- `src/templates/AGENTS.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/skills/configure-docs-index/SKILL.md` (modified)
+- `docs/workflow-guide.md` (modified)
+- `AGENTS.md` (modified)
+- `README.md` (modified)
+- `test/test-update-system.sh` (modified)
+
+---
+
 ## v2.0.3
 
 **Release Date:** 2026-06-05

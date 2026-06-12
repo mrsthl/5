@@ -1026,6 +1026,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-split                     - Split plan into smaller plans');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
+    log.info('  $5-commit                    - Create a templated git commit');
     log.info('  $5-address-review-findings   - Decide review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
@@ -1038,6 +1039,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:split                     - Split plan into smaller plans');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
+    log.info('  /5:commit                    - Create a templated git commit');
     log.info('  /5:address-review-findings   - Decide review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');

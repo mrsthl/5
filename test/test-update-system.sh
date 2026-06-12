@@ -42,6 +42,12 @@ else
   echo "✗ Split command missing"
   exit 1
 fi
+if [ -f ".claude/commands/5/commit.md" ]; then
+  echo "✓ Commit command installed"
+else
+  echo "✗ Commit command missing"
+  exit 1
+fi
 if [ -f ".claude/bin/sync-agents.js" ]; then
   echo "✓ Sync helper installed"
 else
@@ -106,7 +112,7 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
-if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/split.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ]; then
+if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/split.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ -f ".claude/commands/5/commit.md" ]; then
   echo "✓ New v2 commands installed for legacy upgrade"
 else
   echo "✗ New v2 commands missing after legacy upgrade"
@@ -219,6 +225,12 @@ else
   echo "✗ Codex split skill not created"
   exit 1
 fi
+if [ -f ".codex/skills/5-commit/SKILL.md" ]; then
+  echo "✓ Commit command converted to Codex skill"
+else
+  echo "✗ Codex commit skill not created"
+  exit 1
+fi
 if [ -f ".codex/bin/sync-agents.js" ]; then
   echo "✓ Sync helper installed"
 else
@@ -297,7 +309,7 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-for skill in 5-plan 5-split 5-implement 5-review; do
+for skill in 5-plan 5-split 5-implement 5-review 5-commit; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"
     exit 1

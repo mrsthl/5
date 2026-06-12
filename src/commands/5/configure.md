@@ -403,7 +403,7 @@ Analyze the codebase and generate focused documentation capturing only non-deriv
 - Fill `{PROJECT_DOCUMENTATION_LINKS}` with whichever `.5/` documentation files were created
 - Fill `{CODEBASE_INDEX_LINKS}` with `.5/index/README.md`, generated index files, and `.5/index/rebuild-index.sh`
 - Fill `{CUSTOM_DOCUMENTATION}` with preserved user-authored sections under `## Custom Documentation`; remove the placeholder if there is no custom content
-- Preserve static template sections exactly as written, including skill usage, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness
+- Preserve static template sections exactly as written, including skill usage, commit messages, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness
 
 **Create CLAUDE.md shim:**
 - Contains only `@AGENTS.md` (Claude Code include syntax)

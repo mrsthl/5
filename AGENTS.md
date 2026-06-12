@@ -56,6 +56,7 @@ Helpers:
 
 - `/5:discuss-feature {name}` refines an existing `plan.md`.
 - `/5:split {name}` splits an existing `plan.md` into smaller linked plans.
+- `/5:commit [short-description]` creates a git commit using `git.commitMessage.pattern`.
 - `/5:address-review-findings {name}` applies approved review findings.
 - `/5:configure` writes config and the CONFIGURE plan.
 - `/5:reconfigure`, `/5:update`, `/5:eject`, `/5:unlock`, and `/5:synchronize-agents` are maintenance commands.

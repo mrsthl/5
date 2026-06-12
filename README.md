@@ -93,6 +93,7 @@ Verification runs at the end of `/5:implement` and records concise results in `s
 | `/5:split` / `$5-split` | Split an existing plan into smaller linked plans for separate implementation |
 | `/5:implement` / `$5-implement` | Derive `state.json`, execute steps with agents, and verify inline |
 | `/5:review` / `$5-review` | Review code changes and save findings |
+| `/5:commit` / `$5-commit` | Create a git commit using the configured commit message template |
 | `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply approved fixes and PR comments |
 | `/5:reconfigure` / `$5-reconfigure` | Refresh docs, index, skills, and rules |
 | `/5:update` / `$5-update` | Upgrade installed workflow files |

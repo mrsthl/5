@@ -151,7 +151,7 @@ Placeholder mapping:
 - `{CODEBASE_INDEX_LINKS}` → links to `.5/index/README.md`, generated index files, and `.5/index/rebuild-index.sh`
 - `{CUSTOM_DOCUMENTATION}` → preserved user-authored sections under `## Custom Documentation`; remove the placeholder entirely if there is no custom content
 
-Preserve the static template sections exactly as written, including skill usage, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness.
+Preserve the static template sections exactly as written, including skill usage, commit messages, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness.
 
 ### A5. Migrate and Preserve Existing Content
 

@@ -178,6 +178,7 @@ v2.0.0 removes old commands during upgrade:
 | `/5:discuss-feature` | Refine existing plan |
 | `/5:implement` | Implement and verify |
 | `/5:review` | Review changes |
+| `/5:commit` | Create a templated git commit |
 | `/5:address-review-findings` | Apply approved findings |
 | `/5:configure` | Create project config and CONFIGURE plan |
 | `/5:reconfigure` | Refresh generated project context |

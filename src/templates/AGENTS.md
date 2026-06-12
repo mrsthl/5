@@ -12,6 +12,10 @@ Before implementing changes, always check the available skills for relevant impl
 
 Use skills to understand project-specific workflows, commands, testing expectations, and implementation conventions before editing code.
 
+## Commit Messages
+
+Use the `/5:commit` command or `$5-commit` skill when creating commits. It reads `.5/config.json` and applies the configured `git.commitMessage.pattern`, including ticket IDs from branch names when configured.
+
 ## Workflow Rules
 
 When running `/5:` workflow commands, follow the command instructions exactly as written.

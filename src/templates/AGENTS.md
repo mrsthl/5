@@ -33,6 +33,19 @@ Each phase produces a specific artifact - do not create artifacts belonging to o
 
 ## Simplicity First
 
+Before writing code, walk this decision hierarchy and stop at the first step that solves the problem:
+
+1. **Does this need to exist at all?** If the requirement is speculative, don't build it (YAGNI).
+2. Does the **language or standard library** already solve it?
+3. Is there a **native platform or framework** feature for it?
+4. Does an **already-installed dependency** cover it? Don't add a new dependency for this.
+5. Can it be a **single, clear expression** instead of a new abstraction?
+6. Only then: write the **minimum viable implementation**.
+
+Non-negotiable regardless of the above: security, data integrity, correctness, and accessibility.
+
+Then apply these rules:
+
 - No features beyond what was asked.
 - No abstractions for single-use code.
 - No flexibility or configurability that was not requested.

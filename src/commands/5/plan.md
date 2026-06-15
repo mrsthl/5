@@ -122,6 +122,8 @@ Discuss naturally until you can articulate:
 
 Ask only useful questions. Prefer proposing a concrete understanding and letting the user correct it.
 
+Apply a necessity gate to every component before it enters the plan. For each one, ask "does this need to exist?" and prefer the simplest approach that meets the acceptance criteria: reuse the standard library, a native platform/framework feature, or an already-installed dependency before adding anything new. Push speculative or "might need later" work to `[DEFERRED]`. Do not plan abstractions, flexibility, or configurability that no acceptance criterion requires.
+
 ## Step 5: Write `plan.md`
 
 Determine a short kebab-case feature folder name. If a ticket ID is known, use `{ticket-id}-{feature-name}`. Sanitize folder names to alphanumeric, dash, and underscore only.
@@ -153,6 +155,7 @@ Verify:
 - Acceptance criteria are checkboxes.
 - Decisions are labeled `[DECIDED]`, `[FLEXIBLE]`, or `[DEFERRED]`.
 - Every component traces to scope or acceptance criteria.
+- No component adds abstraction, flexibility, or configurability beyond what an acceptance criterion requires.
 - No implementation code or pseudo-code is present.
 
 Output exactly:

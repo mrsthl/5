@@ -51,7 +51,8 @@ Process:
 4. For medium-risk files, read targeted symbols or nearby changed sections plus direct imports only when needed.
 5. For low-risk mechanical/docs/config changes, review the diff without reading full files unless something looks inconsistent.
 6. Review for bugs, security, performance, code quality, API design, and missing tests.
-7. Categorize findings as Fixable, Questions, or Manual.
+7. Review for over-engineering: unnecessary abstractions, single-use indirection, unused flexibility or configurability, speculative generality, and reinventing standard-library or existing-dependency behavior. Report clear cases as Fixable and judgment calls as Questions.
+8. Categorize findings as Fixable, Questions, or Manual.
 
 Output:
 Status: success | failed

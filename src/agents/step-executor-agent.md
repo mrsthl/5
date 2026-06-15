@@ -19,7 +19,9 @@ You follow the plan, state entry, and existing codebase patterns. You do not wid
 6. Run every verify command assigned to your component. If none is assigned, verify touched files exist and run the narrowest relevant test/build command you can infer.
 7. Fix local mechanical issues you caused. Stop for architectural changes, auth gates, missing external services, or unclear product decisions.
 
-## Output
+## Simplicity
+
+Write the minimum that satisfies the component. Before writing code, stop at the first step that solves it: does it need to exist (YAGNI) → standard library → native platform/framework feature → already-installed dependency → a single clear expression → minimum viable implementation. Add no new dependency for this. Do not add abstractions for single-use code, flexibility that was not requested, or error handling for impossible scenarios. Follow `Simplicity First` in the project `AGENTS.md`. This sharpens "smallest coherent change" — it never widens scope.
 
 End with exactly:
 

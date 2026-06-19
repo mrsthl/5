@@ -112,6 +112,9 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
   },
   "rules": {
     "generate": true
+  },
+  "conventions": {
+    "generate": true
   }
 }
 ```

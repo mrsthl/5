@@ -262,6 +262,12 @@ If no patterns/commands detected:
     1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
     2. "No, track in git" — useful if you want to share specs and plans with your team
 
+**2n. Code Conventions:**
+- "Generate `.5/CONVENTIONS.md` with coding conventions for this project? It will include a default set of strict rules (typing, code structure, naming, error handling, testing, and documentation standards) plus project-specific conventions derived from your codebase."
+  - Options:
+    1. "Yes (recommended)" → `conventions.generate: true`
+    2. "Skip" → `conventions.generate: false`
+
 ### Step 2.5: Write config.json
 
 Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
@@ -274,7 +280,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2k2). Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2k2 and `conventions.generate` from step 2n). Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 
@@ -350,6 +356,7 @@ Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-s
 - [ ] `.5/ARCHITECTURE.md` exists when architecture knowledge was found.
 - [ ] `.5/TESTING.md` exists when test knowledge was found.
 - [ ] `.5/CONCERNS.md` exists only if concerns were found.
+- [ ] `.5/CONVENTIONS.md` exists when `conventions.generate` is true.
 - [ ] `.5/index/rebuild-index.sh` exists and rebuilds the index.
 - [ ] `.5/index/README.md` documents generated index files.
 - [ ] `AGENTS.md` references created `.5/` files and the index rebuild rule.
@@ -388,6 +395,7 @@ Analyze the codebase and generate focused documentation capturing only non-deriv
 - `.5/ARCHITECTURE.md` - Architecture pattern, layers & data flow, key abstractions, non-obvious conventions, where to add new code
 - `.5/TESTING.md` - Test organization, patterns, mocking approach, gotchas
 - `.5/CONCERNS.md` - Tech debt, known issues, security/integration/performance notes (**only if concerns found — skip file entirely if nothing detected**)
+- `.5/CONVENTIONS.md` - Default strict coding conventions plus project-specific conventions derived from codebase analysis (**only when `conventions.generate` is true**)
 
 **Create a rebuildable codebase index in `.5/index/`:**
 - Generate a repository-local script at `.5/index/rebuild-index.sh`

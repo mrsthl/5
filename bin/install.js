@@ -354,7 +354,6 @@ const LEGACY_REMOVED_FILES = [
   'agents/step-verifier.md',
   'templates/STACK.md',
   'templates/STRUCTURE.md',
-  'templates/CONVENTIONS.md',
   'templates/INTEGRATIONS.md',
   'commands/5/plan-feature.md',
   'commands/5/plan-implementation.md',
@@ -422,6 +421,7 @@ function getWorkflowManagedFiles() {
       'AGENTS.md',
       'ARCHITECTURE.md',
       'CONCERNS.md',
+      'CONVENTIONS.md',
       'TESTING.md',
       // Workflow output templates
       'workflow/PLAN.md',

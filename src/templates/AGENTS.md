@@ -24,6 +24,8 @@ Each phase produces a specific artifact - do not create artifacts belonging to o
 
 ## Coding Guidelines
 
+{CONVENTIONS_REFERENCE}
+
 1. Prefer explicit types or contracts for public APIs, data transfer shapes, service methods, hooks, and async return values where the language supports them.
 2. Keep comments and docs concise; document constraints and non-obvious behavior, not the obvious.
 3. Keep files focused and bounded; split broad controllers, services, hooks, and components early.

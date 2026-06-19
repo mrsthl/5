@@ -71,6 +71,14 @@ Perform focused analysis to gather data for documentation templates. Only captur
 - Identify non-obvious integration details: auth flows, required env vars not documented elsewhere, webhook contracts, gotchas with external services
 - Look for performance bottlenecks or scaling limits mentioned in comments/docs
 
+**Conventions Analysis** (for CONVENTIONS.md — when `conventions.generate` is true in config.json):
+- Identify the primary language(s) and runtime (TypeScript, Java, Python, Go, etc.) for the summary line
+- **Typing patterns:** Check tsconfig.json for `strict` mode (TypeScript); check mypy.ini or pyproject.toml `[tool.mypy]` for strict settings (Python); scan source files for `any` type usage count, non-null assertion (`!`) patterns, and missing return types
+- **Error handling patterns:** Scan for try/catch structures, custom error classes/types, and patterns of silent catches (empty catch blocks)
+- **Test assertion patterns:** Read 3-5 test files to identify assertion library (Jest `expect`, Chai, JUnit `assertEquals`, etc.), mocking approach, and whether factories/builders exist
+- **Naming patterns:** Observe the dominant casing and naming conventions already established in the codebase
+- **Code structure patterns:** Note average file lengths and any consistent structural patterns across modules
+
 ### A2. Fill Templates
 
 For each template in `.claude/templates/`:
@@ -102,6 +110,29 @@ Write filled templates to `.5/` folder:
    - `.5/ARCHITECTURE.md` — always created
    - `.5/TESTING.md` — always created
    - `.5/CONCERNS.md` — **only if concerns were found** (skip if all sections empty)
+   - `.5/CONVENTIONS.md` — **only when `conventions.generate` is true in config.json** (see A3.1)
+
+### A3.1. Generate CONVENTIONS.md
+
+Skip this section entirely if `conventions.generate` is `false` in `.5/config.json`.
+
+Read `.claude/templates/CONVENTIONS.md` as the source template.
+
+**Placeholder mapping:**
+
+- `{PROJECT_CONVENTIONS_SUMMARY}` → 1 sentence naming the primary language/runtime and any detected strict-mode tooling (e.g., "TypeScript project with `strict: true` in tsconfig." or "Python 3.11 service with mypy strict mode enabled."). Remove the placeholder if nothing useful can be stated.
+- `{PROJECT_TYPING}` → Project-specific findings from Conventions Analysis: detected tsconfig settings, any `any` usage count, non-null assertion patterns, absence of return types. Frame as imperative directives ("Enable `strict: true` in tsconfig — currently disabled." or "49 usages of `any` detected; prioritize removal in new code."). Remove placeholder if nothing project-specific to add.
+- `{PROJECT_STRUCTURE}` → Observed structural patterns or deviations from defaults (e.g., "Files in `src/controllers/` average 380 lines — respect the 300-line default; split controllers that exceed it."). Remove placeholder if no notable findings.
+- `{PROJECT_NAMING}` → Casing or naming patterns specific to this codebase beyond the defaults (e.g., "This project uses `kebab-case` for file names and `PascalCase` for classes — match existing files."). Remove placeholder if defaults already cover it.
+- `{PROJECT_ERROR_HANDLING}` → Detected error-handling patterns or gaps (e.g., "Custom `AppError` class in `src/errors/` — use it for all domain errors." or "3 empty catch blocks found in `src/services/` — always log or rethrow."). Remove placeholder if no notable findings.
+- `{PROJECT_TESTING}` → Project-specific testing directives beyond the defaults: assertion library in use, factory/builder location, any detected weak assertions or disabled tests (e.g., "Use `src/test/factories/` helpers for test data — do not inline objects." or "12 uses of `toBeDefined()` as sole assertion detected — always assert the actual value."). Remove placeholder if defaults already cover it.
+- `{PROJECT_COMMENTS}` → Any documentation patterns or gaps observed (e.g., "Public controllers lack JSDoc — add docblocks to all new public methods."). Remove placeholder if defaults already cover it.
+
+**Rules for filling placeholders:**
+- Write project-specific sections as imperative directives, not observations.
+- Remove (do not leave) any placeholder whose section has nothing project-specific to add.
+- Do not duplicate the default convention text — project sections supplement, not restate, the defaults.
+- Keep each project-specific addition under 5 bullet points.
 
 ### A3.5. Generate Codebase Index Script and Index Files
 
@@ -147,8 +178,9 @@ Use `.claude/templates/AGENTS.md` as the source template.
 Placeholder mapping:
 - `{PROJECT_OVERVIEW}` → 1-2 sentences from README/package.json
 - `{BUILD_RUN_COMMANDS}` → build, test, and other detected commands
-- `{PROJECT_DOCUMENTATION_LINKS}` → links to whichever `.5/` files were created (only list files that exist)
+- `{PROJECT_DOCUMENTATION_LINKS}` → links to whichever `.5/` files were created (only list files that exist — includes CONVENTIONS.md when generated)
 - `{CODEBASE_INDEX_LINKS}` → links to `.5/index/README.md`, generated index files, and `.5/index/rebuild-index.sh`
+- `{CONVENTIONS_REFERENCE}` → when `.5/CONVENTIONS.md` was generated: `"Read \`.5/CONVENTIONS.md\` before writing any code. It defines the full convention set for this project: typing rules, code structure limits, naming, error handling, and testing standards."` — when not generated: remove the placeholder entirely
 - `{CUSTOM_DOCUMENTATION}` → preserved user-authored sections under `## Custom Documentation`; remove the placeholder entirely if there is no custom content
 
 Preserve the static template sections exactly as written, including skill usage, commit messages, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness.
@@ -189,6 +221,7 @@ Component A (Documentation + Index): SUCCESS - Created documentation files, code
   - .5/ARCHITECTURE.md (Pattern: Layered, 4 layers identified)
   - .5/TESTING.md (mocking patterns, gotchas documented)
   - .5/CONCERNS.md (3 TODO items, 1 security note) [or "skipped — no concerns found"]
+  - .5/CONVENTIONS.md (defaults + project-specific typing/testing findings) [or "skipped — conventions.generate is false"]
   - .5/index/rebuild-index.sh (generated index rebuild script)
   - .5/index/*.md (focused codebase index files)
   - AGENTS.md (updated with references)

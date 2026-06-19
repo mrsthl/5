@@ -116,7 +116,7 @@ Use the existing skills in `.claude/skills/` (from Step 2e) as the source of tru
 
 Use `AskUserQuestion` to show a summary and get confirmation. Present:
 
-1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional), `.5/index/rebuild-index.sh`, `.5/index/*.md`, and `AGENTS.md`
+1. **Documentation files that will be rewritten** — list `.5/ARCHITECTURE.md`, `.5/TESTING.md`, `.5/CONCERNS.md` (conditional), `.5/CONVENTIONS.md` (when `conventions.generate` is true), `.5/index/rebuild-index.sh`, `.5/index/*.md`, and `AGENTS.md`
 2. **Skills that will be refreshed** — list ALL skills found in `.claude/skills/` (both workflow-generated and user-created)
 3. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
 4. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
@@ -138,7 +138,7 @@ Write `.5/reconfigure-manifest.json` with the compact decisions needed by refres
 ```json
 {
   "mode": "refresh",
-  "docs": ["ARCHITECTURE.md", "TESTING.md", "CONCERNS.md", "index", "AGENTS.md"],
+  "docs": ["ARCHITECTURE.md", "TESTING.md", "CONCERNS.md", "CONVENTIONS.md", "index", "AGENTS.md"],
   "skills": {
     "refresh": ["skill names"],
     "create": ["new skill names"],
@@ -185,7 +185,7 @@ rm -f .5/.reconfig-reminder .5/.migration-v2
 ### Step 9: Report
 
 Show the user a summary:
-- List of documentation files updated
+- List of documentation files updated (including `.5/CONVENTIONS.md` when applicable)
 - Mention whether the codebase index script and index files were regenerated
 - List of skills refreshed
 - List of new skills created (if any)

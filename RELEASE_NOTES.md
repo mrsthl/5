@@ -1,5 +1,30 @@
 # Release Notes
 
+## v2.0.5
+
+**Release Date:** 2026-06-19
+
+### CONVENTIONS.md, Architecture Skills Column, and Minimalism Hierarchy
+
+v2.0.5 adds generated coding conventions to the configure/reconfigure workflow, links architectural layers to their project-specific skills, and embeds a minimalism decision hierarchy into workflow guidance.
+
+**What's New**
+- **CONVENTIONS.md generation** (`src/templates/CONVENTIONS.md`, `src/skills/configure-docs-index/SKILL.md`): configure and reconfigure now generate `.5/CONVENTIONS.md` with a strict default convention set (typing, code structure, naming, error handling, testing, documentation) plus project-specific findings derived from codebase analysis. A new step 2n in `/5:configure` lets users opt in (default: yes). AGENTS.md gains a `{CONVENTIONS_REFERENCE}` placeholder pointing agents to the file.
+- **Skills column in architecture table** (`src/templates/ARCHITECTURE.md`): the Layers & Data Flow table now includes a Skills column linking each layer to its corresponding project-specific `create-*` skills (e.g., `/controller`, `/service`).
+- **Minimalism decision hierarchy** (`src/templates/AGENTS.md`): the Simplicity First section now includes a step-by-step decision hierarchy agents walk before writing code — stops at the first step that solves the problem, from YAGNI through standard library, platform feature, existing dependency, single expression, and finally minimum viable implementation.
+
+**Affected files:**
+- `src/templates/CONVENTIONS.md` (new)
+- `src/templates/ARCHITECTURE.md` (modified)
+- `src/templates/AGENTS.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/skills/configure-docs-index/SKILL.md` (modified)
+- `src/references/configure-tables.md` (modified)
+- `bin/install.js` (modified)
+
+---
+
 ## v2.0.4
 
 **Release Date:** 2026-06-12

@@ -8,9 +8,9 @@
 
 ## Layers & Data Flow
 
-| Layer | Location | Depends On | Notes |
-|-------|----------|------------|-------|
-| {Layer} | `{path}` | {Dependencies} | {Key responsibility or constraint} |
+| Layer | Location | Depends On | Notes | Skills |
+|-------|----------|------------|-------|--------|
+| {Layer} | `{path}` | {Dependencies} | {Key responsibility or constraint} | {skill links} |
 
 ## Key Abstractions
 

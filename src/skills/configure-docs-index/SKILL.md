@@ -94,6 +94,7 @@ ARCHITECTURE.md:
 - `{Pattern name}` → "Layered Architecture" or "MVC" or "Modular Monolith"
 - `{Layer}` → "Controllers", "Services", "Repositories"
 - `{path}` → "src/controllers/", "src/services/"
+- `{skill links}` → slash-command links to project-specific skills installed in `.claude/skills/` that correspond to this layer (e.g., `/controller`, `/service`). Check which `create-*` skills exist for this layer's pattern. If none exist, use "—".
 
 TESTING.md:
 - Describe actual patterns observed, not framework names/versions (those are in config files)

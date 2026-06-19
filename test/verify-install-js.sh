@@ -103,6 +103,57 @@ function compareLists(category, repoList, installList) {
 const managed = getManagedFiles();
 let errors = 0;
 
+function verifyReviewReplyContract() {
+  console.log('=== Review Reply Contract ===');
+  console.log('');
+
+  const addressCommand = fs.readFileSync('src/commands/5/address-review-findings.md', 'utf8');
+  const replyCommand = fs.readFileSync('src/commands/5/reply-pr-comments.md', 'utf8');
+  const summaryTemplate = fs.readFileSync('src/templates/workflow/REVIEW-SUMMARY.md', 'utf8');
+  const required = [
+    {
+      label: 'address-review invokes reply helper',
+      ok: addressCommand.includes('Invoke `/5:reply-pr-comments {feature}`')
+    },
+    {
+      label: 'address-review parses reply result block',
+      ok: addressCommand.includes('---PR-REPLIES---')
+    },
+    {
+      label: 'address-review forbids silent reply omission',
+      ok: addressCommand.includes('silent omission of the reply step is not allowed')
+    },
+    {
+      label: 'reply helper posts inline replies',
+      ok: replyCommand.includes('/pulls/{number}/comments/{comment_id}/replies')
+    },
+    {
+      label: 'reply helper posts general PR replies',
+      ok: replyCommand.includes('/issues/{number}/comments')
+    },
+    {
+      label: 'reply helper fails on missing decisions',
+      ok: replyCommand.includes('If it is missing or invalid')
+    },
+    {
+      label: 'summary records PR replies',
+      ok: summaryTemplate.includes('## PR Comment Replies')
+    }
+  ];
+
+  let failures = 0;
+  for (const check of required) {
+    if (check.ok) {
+      console.log(`${GREEN}✓ ${check.label}${NC}`);
+    } else {
+      console.log(`${RED}✗ ${check.label}${NC}`);
+      failures += 1;
+    }
+  }
+  console.log('');
+  return failures > 0 ? 1 : 0;
+}
+
 errors += compareLists(
   'Commands',
   listEntries('src/commands', { directoriesOnly: true }),
@@ -144,6 +195,8 @@ errors += compareLists(
   listEntries('bin', { filesOnly: true }).filter(file => file === 'sync-agents.js'),
   [...(managed.binHelpers || [])].sort()
 );
+
+errors += verifyReviewReplyContract();
 
 console.log('========================================');
 if (errors === 0) {

@@ -42,9 +42,12 @@ This is the stable entrypoint after `/5:review`.
    - Invoke `/5:apply-review-findings {feature} --decisions .5/features/{feature}/review-decisions-{timestamp}.json` to apply approved local fixes.
 3. GitHub mode or user-approved PR handling:
    - Invoke `/5:triage-pr-comments {feature}` to fetch and classify compact PR comments.
+   - Parse the `---PR-TRIAGE---` block. If triage succeeded, continue even when there are zero actionable comments because duplicate, declined, or deferred comments may still need replies.
    - Ask the user for decisions on actionable/manual comments.
    - Invoke `/5:apply-review-findings {feature} --pr-approved` for approved PR fixes.
    - Invoke `/5:reply-pr-comments {feature}` to post PR replies.
+   - Parse the `---PR-REPLIES---` block and include `POSTED`, `FAILED`, and `ERRORS` in the review summary.
+   - Do not proceed to final output in GitHub mode until `/5:reply-pr-comments` has either posted replies or returned an explicit `---PR-REPLIES---` failure/partial result. Reply failures are non-fatal, but silent omission of the reply step is not allowed.
 4. Run post-fix verification. This is mandatory after any approved fix is applied.
    - Read `.5/config.json`, project run skills, and common project manifests such as `package.json`, `Makefile`, `pyproject.toml`, `Cargo.toml`, and Gradle files only as needed to identify configured commands.
    - Run every available configured command in these categories: `build`, `test`, `e2e`/`test:e2e`, and `lint`.
@@ -91,6 +94,7 @@ Review findings addressed: {yes/no}
 
 Local findings: {summary}
 PR comments: {summary}
+PR replies: {posted/failed/skipped with reason}
 Post-fix verification: {passed/failed}
 Build: {passed/failed/skipped}
 Tests: {passed/failed/skipped}

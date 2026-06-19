@@ -20,17 +20,19 @@ You are a PR Reply Poster. You post concise replies from recorded decisions and 
 
 ## Process
 
-1. Read decisions and skip comments categorized as `skip`.
-2. Resolve `{owner}`, `{repo}`, and PR number.
-3. Build concise reply text:
+1. Read `.5/features/{feature}/pr-comment-decisions.json`. If it is missing or invalid, end with `STATUS: failed`, `POSTED: 0`, and a compact error. Do not claim success.
+2. Skip only comments categorized as `skip`.
+3. Resolve `{owner}`, `{repo}`, and PR number.
+4. Build concise reply text:
    - `fix`: `Applied fix: {description}. Will be included in the next push.` plus optional note.
    - `wont_fix`: `Reviewed - not addressing: {user_note or "will handle separately"}`
    - `wait`: `Noted for later: {user_note or "deferring for now"}`
    - `duplicate`: `Covered by local review findings - {local_decision}`
-4. Post replies:
+5. Post replies:
    - Inline: `gh api repos/{owner}/{repo}/pulls/{number}/comments/{comment_id}/replies --method POST --field body="{reply text}"`
    - General: `gh api repos/{owner}/{repo}/issues/{number}/comments --method POST --field body="{reply text}"`
-5. Log failures and continue. Do not abort for reply failures.
+6. Log individual post failures and continue. Do not abort for reply failures.
+7. If there are no non-skip decisions, return `STATUS: success`, `POSTED: 0`, `FAILED: 0`, and `ERRORS: none; no replyable decisions`.
 
 ## Output
 

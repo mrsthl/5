@@ -38,6 +38,13 @@
 
 - {file-path} ({N} fixes applied)
 
+## PR Comment Replies
+
+- **Posted:** {N}
+- **Failed:** {N}
+- **Skipped:** {N} - {reason}
+- **Errors:** {none-or-summary}
+
 ## Post-Fix Verification
 
 - **Build:** {passed/failed/skipped} - `{command-or-none}` - {one-line summary}

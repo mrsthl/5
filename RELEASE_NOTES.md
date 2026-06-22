@@ -1,5 +1,27 @@
 # Release Notes
 
+## v2.0.6
+
+**Release Date:** 2026-06-22
+
+### Commit Command Improvements and Hardened PR Reply Flow
+
+v2.0.6 tightens the `/5:commit` command and makes the PR review reply flow more reliable.
+
+**Improvements**
+- **Commit config injected at load time** (`src/commands/5/commit.md`): branch name, commit message pattern, ticket pattern, and extract-from-branch flag are now resolved via shell injections (`!` prefix) when the skill loads rather than being read at runtime. The `Read` tool is removed from the allowed-tools list for this command. The commit body now includes the reason for the change when it is known from chat history.
+- **Hardened PR reply flow** (`src/commands/5/reply-pr-comments.md`, `src/commands/5/address-review-findings.md`): `reply-pr-comments` now guards against a missing or invalid `pr-comment-decisions.json` and returns an explicit failure instead of silently succeeding. A zero-decisions case is handled with a clear `POSTED: 0` result. `address-review-findings` enforces that the reply step must complete (or explicitly fail) before the command produces final output — silent omission is now a protocol violation.
+- **PR replies section in review summary** (`src/templates/workflow/REVIEW-SUMMARY.md`): the review summary template gains a PR Comment Replies block tracking posted, failed, skipped, and error counts.
+
+**Affected files:**
+- `src/commands/5/commit.md` (modified)
+- `src/commands/5/reply-pr-comments.md` (modified)
+- `src/commands/5/address-review-findings.md` (modified)
+- `src/templates/workflow/REVIEW-SUMMARY.md` (modified)
+- `test/verify-install-js.sh` (modified)
+
+---
+
 ## v2.0.5
 
 **Release Date:** 2026-06-19

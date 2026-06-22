@@ -86,10 +86,9 @@ Apply the configured pattern:
 Build a commit body from the staged diff when useful:
 
 - Include 1-5 bullet points summarizing meaningful changes.
+- If you know the reason for the change, for example based on the chat history, include the reason in the body.
 - Skip the body for very small or self-explanatory commits.
 - Do not include raw diff excerpts.
-
-Show the final commit message and ask for confirmation before committing.
 
 ## Step 5: Commit
 

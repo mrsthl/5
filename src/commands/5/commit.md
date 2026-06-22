@@ -1,7 +1,7 @@
 ---
 name: 5:commit
 description: Create a git commit using the configured commit message template from .5/config.json.
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Bash, AskUserQuestion
 user-invocable: true
 model: haiku
 argument-hint: [short-description]
@@ -17,12 +17,11 @@ You do NOT modify files. You do NOT stage unrelated changes. After reporting the
 ## Inputs
 
 - Optional short description from the command argument.
-- Configuration from `.5/config.json`:
-  - `ticket.pattern`
-  - `ticket.extractFromBranch`
-  - `git.commitMessage.pattern` (default: `{ticket-id} {short-description}`)
 
 Current branch: !`git branch --show-current 2>/dev/null || echo ""`
+Commit message pattern: !`node -e "try{const c=JSON.parse(require('fs').readFileSync('.5/config.json','utf8'));console.log(c?.git?.commitMessage?.pattern||'{ticket-id} {short-description}')}catch(e){console.log('{ticket-id} {short-description}')}" 2>/dev/null`
+Ticket pattern: !`node -e "try{const c=JSON.parse(require('fs').readFileSync('.5/config.json','utf8'));const p=c?.ticket?.pattern;console.log(p!=null?p:'(none)')}catch(e){console.log('(none)')}" 2>/dev/null`
+Extract ticket from branch: !`node -e "try{const c=JSON.parse(require('fs').readFileSync('.5/config.json','utf8'));console.log(c?.ticket?.extractFromBranch!==false)}catch(e){console.log(true)}" 2>/dev/null`
 
 ## Step 1: Inspect Changes
 
@@ -47,17 +46,15 @@ git diff --cached --name-only
 
 If nothing is staged, tell the user "No staged changes to commit." and stop.
 
-## Step 2: Load Commit Template
+## Step 2: Resolve Ticket ID
 
-Read `.5/config.json` if it exists.
+Use the injected values from the Inputs section:
 
-Determine:
+- `pattern` = injected commit message pattern.
+- `ticketPattern` = injected ticket pattern (`(none)` means no pattern configured).
+- `extractFromBranch` = injected extract-ticket-from-branch flag.
 
-1. `pattern` = `git.commitMessage.pattern`, defaulting to `{ticket-id} {short-description}`.
-2. `ticketPattern` = `ticket.pattern`, defaulting to null.
-3. `extractFromBranch` = `ticket.extractFromBranch`, defaulting to true.
-
-If `extractFromBranch` is true and `ticketPattern` is set, match `ticketPattern` against the current branch to get `{ticket-id}`. If no ticket is found, use an empty string.
+If `extractFromBranch` is true and `ticketPattern` is not `(none)`, match `ticketPattern` against the injected current branch to get `{ticket-id}`. If no match, use an empty string.
 
 ## Step 3: Get Short Description
 

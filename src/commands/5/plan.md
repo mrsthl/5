@@ -81,7 +81,7 @@ Do not ask technical follow-ups yet.
 
 If `.5/index/` exists, check the `Generated:` timestamp in `.5/index/README.md`. If the index is more than one day old, run `.5/index/rebuild-index.sh` to refresh it before spawning the Explore agent.
 
-Spawn one Explore agent. In Codex, use `agent_type: explorer`, `model: gpt-5.4-mini`, and `reasoning_effort: low`.
+Spawn one Explore agent.
 
 ```text
 Analyze the codebase for a unified workflow plan.

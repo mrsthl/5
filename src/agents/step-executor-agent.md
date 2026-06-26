@@ -21,7 +21,7 @@ You follow the plan, state entry, and existing codebase patterns. You do not wid
 
 ## Simplicity
 
-Write the minimum that satisfies the component. Before writing code, stop at the first step that solves it: does it need to exist (YAGNI) → standard library → native platform/framework feature → already-installed dependency → a single clear expression → minimum viable implementation. Add no new dependency for this. Do not add abstractions for single-use code, flexibility that was not requested, or error handling for impossible scenarios. Follow `Simplicity First` in the project `AGENTS.md`. This sharpens "smallest coherent change" — it never widens scope.
+Write the minimum that satisfies the component (the "smallest coherent change"): prefer the standard library, a native framework feature, or an already-installed dependency over anything new. Add no new dependency, no abstraction for single-use code, no unrequested flexibility, and no error handling for impossible cases. Follow `Simplicity First` in the project `AGENTS.md`.
 
 End with exactly:
 
@@ -40,12 +40,8 @@ Keep the result block concise. Do not include command logs, diffs, or long expla
 
 ## Deviation Rules
 
-| Trigger | Action |
-|---------|--------|
-| Missing import, type mismatch, lint failure caused by your change | Fix and note in deviations |
-| Existing nearby convention contradicts the plan | Follow the convention and note it |
-| Required dependency or package is absent | Stop and report |
-| Database/schema/auth/API contract change not listed in plan | Stop and report |
-| Verify command fails from pre-existing unrelated failures | Report the exact evidence |
+**Fix and note** in deviations: imports, type mismatches, or lint you caused; a nearby existing convention that contradicts the plan (follow the convention).
+
+**Stop and report** as failed: a required dependency/package is absent; a database/schema/auth/API contract change not in the plan; verify fails from pre-existing unrelated issues (report the exact evidence).
 
 Do not make more than three attempts on the same failing issue.

@@ -388,6 +388,11 @@ function getWorkflowManagedFiles() {
       'verification-agent.md'
     ],
 
+    // Workflows: Claude Code only (Workflow tool). Not installed for Codex.
+    workflows: [
+      '5-implement.js'
+    ],
+
     // Skills: specific skill directories
     skills: [
       'configure-docs-index',
@@ -449,6 +454,13 @@ function getFileManifest() {
   // Agents are files
   for (const agent of managed.agents) {
     manifest.push(`agents/${agent}`);
+  }
+
+  // Workflows are files (Claude Code only)
+  if (managed.workflows) {
+    for (const wf of managed.workflows) {
+      manifest.push(`workflows/${wf}`);
+    }
   }
 
   // Skills are directories
@@ -557,7 +569,19 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Glob\` | \`glob\` / \`list_directory\` |
 | \`Grep\` | \`grep\` / \`search\` |
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
+| \`Workflow\` | Not available — run the command's prose fallback loop instead |
 | \`EnterPlanMode\` | Not available — use structured output instead |
+
+## Model Mapping (single source of truth)
+When a skill, plan, or \`state.json\` component names a model, map it to Codex as:
+
+| Named model | Codex model | reasoning_effort |
+|-------------|-------------|------------------|
+| \`haiku\` (or unset) | \`gpt-5.4-mini\` | \`low\` |
+| \`sonnet\` | \`gpt-5.4\` | \`medium\` |
+| Explore / explorer agent | \`gpt-5.4-mini\` (\`agent_type: explorer\`) | \`low\` |
+
+This table is authoritative — skill bodies do not repeat per-call model mappings.
 
 ## Codex Token Budget
 - Default to \`gpt-5.4-mini\` with \`reasoning_effort: low\` for exploration, orchestration, simple implementation, and mechanical file edits.
@@ -694,6 +718,23 @@ function selectiveUpdate(targetPath, sourcePath) {
       }
     }
     log.success('Updated agents/ (workflow files only)');
+  }
+
+  // Update workflow scripts (Claude Code only — Workflow tool)
+  if (managed.workflows && managed.workflows.length > 0) {
+    const workflowsSrc = path.join(sourcePath, 'workflows');
+    const workflowsDest = path.join(targetPath, 'workflows');
+    if (!fs.existsSync(workflowsDest)) {
+      fs.mkdirSync(workflowsDest, { recursive: true });
+    }
+    for (const wf of managed.workflows) {
+      const src = path.join(workflowsSrc, wf);
+      const dest = path.join(workflowsDest, wf);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+      }
+    }
+    log.success('Updated workflows/ (workflow files only)');
   }
 
   // Update specific skills
@@ -1059,8 +1100,8 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
     log.success(`Created ${targetPath}`);
   }
 
-  // Copy directories
-  const dirs = ['commands', 'agents', 'skills', 'hooks', 'templates', 'references'];
+  // Copy directories (workflows is Claude Code only; performCodexFreshInstall never copies it)
+  const dirs = ['commands', 'agents', 'workflows', 'skills', 'hooks', 'templates', 'references'];
   for (const dir of dirs) {
     const src = path.join(sourcePath, dir);
     const dest = path.join(targetPath, dir);
@@ -1667,6 +1708,17 @@ function uninstall() {
     }
   }
   log.success('Removed workflow agents (preserved user-created agents)');
+
+  // Remove only workflow-managed workflow scripts (Claude Code only)
+  if (managed.workflows) {
+    for (const wf of managed.workflows) {
+      const wfPath = path.join(targetPath, 'workflows', wf);
+      if (fs.existsSync(wfPath)) {
+        fs.unlinkSync(wfPath);
+      }
+    }
+    log.success('Removed workflow scripts');
+  }
 
   // Remove only workflow-managed skills
   for (const skill of managed.skills) {

@@ -167,6 +167,12 @@ errors += compareLists(
 );
 
 errors += compareLists(
+  'Workflows',
+  listEntries('src/workflows', { filesOnly: true }),
+  [...(managed.workflows || [])].sort()
+);
+
+errors += compareLists(
   'Skills',
   listEntries('src/skills', { directoriesOnly: true }),
   [...(managed.skills || [])].sort()

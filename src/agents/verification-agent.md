@@ -48,7 +48,7 @@ Update `state.json`:
   "verificationResults": {
     "completeness": "passed|partial|failed",
     "infrastructure": "passed|failed",
-    "acceptanceCriteria": "passed|partial|failed|skipped",
+    "acceptanceCriteria": "satisfied/total",
     "quality": "passed|partial|failed",
     "commands": [
       {

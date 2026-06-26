@@ -22,6 +22,7 @@ bin/
 src/
   commands/5/         workflow commands (Claude Code)
   agents/             reusable agent instructions
+  workflows/          Workflow-tool scripts (Claude Code only; e.g. 5-implement.js)
   hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, plan-guard, config-guard)
   skills/             setup and project-skill generators
   templates/workflow/ workflow artifact templates
@@ -35,6 +36,8 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Concern | Claude Code | Codex |
 |---|---|---|
 | Commands | `/5:*` slash commands | `$5-*` skills (auto-converted by installer) |
+| Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
+| Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
 | Hooks | `src/hooks/*.js` via `settings.json` | Embedded as instructions in skill adapter preamble |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
@@ -49,7 +52,7 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 Primary commands:
 
 1. `/5:plan` / `$5-plan` — writes `.5/features/{name}/plan.md` and `codebase-scan.md`
-2. `/5:implement {name}` / `$5-implement {name}` — derives `state.json`, executes components, verifies inline
+2. `/5:implement {name}` / `$5-implement {name}` — derives `state.json`, executes components in parallel waves, verifies inline. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
 3. `/5:review` / `$5-review` — reviews code and writes review findings
 
 Helpers:

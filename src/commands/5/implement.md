@@ -1,99 +1,97 @@
 ---
 name: 5:implement
-description: Executes a unified plan by spawning step-orchestrator-agent, per-step executor agents, and verification-agent.
-allowed-tools: Agent, Read, Write, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList
+description: Executes a unified plan. Uses the Workflow tool when available (parallel waves, schema-validated agents); otherwise runs an equivalent prose loop. Codex always uses the prose loop.
+allowed-tools: Agent, Read, Write, Glob, Grep, Bash, Workflow, TaskCreate, TaskUpdate, TaskList
 user-invocable: true
 argument-hint: [feature-name]
 ---
 
 <role>
-You are an Implementation Orchestrator. You keep your context lean, delegate all code edits, and use `.5/features/{name}/state.json` as source of truth.
-You do NOT write source code yourself.
+You are an Implementation Orchestrator. Keep your context lean, delegate all code edits, and use `.5/features/{name}/state.json` as the durable source of truth for cross-session resume. You do NOT write source code yourself.
 </role>
 
 # Implement
 
-## Process
+## Step 1: Load Artifacts & Decide Path
 
-### Step 1: Load Artifacts
-
-Read `.5/features/{feature-name}/state.json` first if it exists.
-
-Then read only the artifacts needed for the current path:
+Read `.5/features/{feature-name}/state.json` first if it exists. Then read only what the current path needs:
 
 - Resume existing state: `.5/config.json` if needed for baseline, verification, or auto-commit.
 - New state or restart: `plan.md`, `codebase-scan.md` if it exists, and `.5/config.json` if it exists.
-- Final verification: `plan.md`, `state.json`, `.5/config.json` if present, and `codebase-scan.md` only if verification needs missing context.
 
-If `plan.md` is missing, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}` with the created feature folder name.
+If `plan.md` is missing, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}`.
 
-If state exists:
+State machine, if state exists:
 
-- `completed`: tell the user it is already implemented and verification already ran.
-- `in-progress`: resume from `currentStep`.
+- `completed`: tell the user it is already implemented and verified; stop.
+- `in-progress`: resume from `currentStep` (only run components not in `completedComponents`).
 - `failed`: ask whether to resume or restart.
 
-### Step 2: Orchestrate Plan Into State
+A plan is **compact** when `plan.md` frontmatter has `planFormat: compact` (1-2 components, no data migration, no security/auth change, no public API change).
 
-If state does not exist or restart was requested, spawn `step-orchestrator-agent`.
+Remove `.5/.planning-active` once you have a valid plan to execute.
 
-In Codex, use `model: gpt-5.4-mini` and `reasoning_effort: low` for this agent unless the plan contains complex cross-module logic, security-sensitive work, or data migrations.
+## Step 2: Establish Baseline
 
-Prompt:
+Run build/test commands from `.5/config.json` (or an explicit baseline block in `state.json`). Skip commands set to `none`. If `state.json.baseline` already records the same commands for this run/resume, reuse it.
 
-```text
-Read `.claude/agents/step-orchestrator-agent.md` for your role and output contract.
-
-Feature: {feature-name}
-Plan: .5/features/{feature-name}/plan.md
-Codebase scan: .5/features/{feature-name}/codebase-scan.md
-Config: .5/config.json if present
-
-Create `.5/features/{feature-name}/state.json`.
-Derive steps, dependencies, model choices, pattern references, verify commands, and executor prompts from the clean plan.
-Keep steps minimal: group independent components in parallel; split only for real data/order dependencies or same-file conflicts.
-```
-
-Read back `state.json` and verify:
-
-- `status` is `in-progress`
-- `steps` is non-empty
-- each pending component has `step`, `mode`, `model`, `patternRefs` or legacy `patternFiles`, and `verifyCommands`
-
-Remove `.5/.planning-active` after state is valid.
-
-### Step 3: Establish Baseline
-
-Run build/test commands from `.5/config.json` by default. If `state.json` defines an explicit baseline command block, prefer that block. Skip commands explicitly set to `none`.
-
-If `state.json.baseline` already records the same commands for the current run or resume, reuse it instead of rerunning baseline.
-
-Record compact command results in `state.json.baseline`: command, status, and a one-line summary only. Append full command history to `state-events.jsonl`. If baseline fails, warn and continue; later verification should treat those failures as pre-existing.
-
-Command event shape:
+Record compact results in `state.json.baseline` (command, status, one-line summary). Append full history to `state-events.jsonl`. If baseline fails, warn and continue; verification treats those as pre-existing.
 
 ```json
 {"type":"command","timestamp":"{ISO}","step":0,"component":null,"status":"passed|failed|skipped","summary":"one line","details":{"command":"{command}","phase":"baseline"}}
 ```
 
-### Step 4: Execute Steps
+## Step 3: Run
 
-For each step from `currentStep`:
+**If the `Workflow` tool is available, use the Workflow engine (preferred).** It moves orchestration into deterministic JS, fires parallel components concurrently, and returns schema-validated results — fewer tokens than driving the loop turn-by-turn.
 
-1. Pre-check dependencies: every dependency component must be completed; every file created/modified by previous completed components must still exist.
-2. Create/update progress tasks for the step.
-3. Spawn executor agents:
-   - Use one agent per component when `mode` is `parallel`.
-   - Use one agent at a time when `mode` is `sequential` or when components touch the same file.
-   - Give each executor the inline contract below instead of making it read `.claude/agents/step-executor-agent.md`.
-   - In Codex, map each component model before spawning:
-     - `haiku` -> `model: gpt-5.4-mini`, `reasoning_effort: low`
-     - `sonnet` -> `model: gpt-5.4`, `reasoning_effort: medium`
-     - missing model -> `model: gpt-5.4-mini`, `reasoning_effort: low`
-4. Give each executor only its component block from `state.json`, relevant global notes, required pattern references, verify commands, and this inline contract:
+1. Build `args` for the workflow:
+
+```json
+{
+  "feature": "{feature-name}",
+  "paths": {"plan": ".5/features/{feature-name}/plan.md", "scan": ".5/features/{feature-name}/codebase-scan.md", "config": ".5/config.json"},
+  "isCompact": true,
+  "components": [{"name": "...", "action": "create|modify|delete|rename", "file": "...", "sourceFile": null, "description": "...", "dependsOn": []}],
+  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
+  "resume": null
+}
+```
+
+- For a **compact** plan, set `isCompact: true` and parse `components` from the plan's Component Checklist (the workflow builds a trivial single step with no orchestrator agent).
+- For a **full** plan, set `isCompact: false` and omit `components` — the workflow's orchestrate phase derives steps itself.
+- `baseline` is the array you recorded in Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
+- `resume` is `null` for a fresh run. To resume, pass `{"completedComponents": [...], "steps": [...], "pendingComponents": [...]}` copied verbatim from the existing `state.json`, so the workflow reuses the original steps rather than re-deriving them (re-derivation is non-deterministic and could rename components, breaking resume matching).
+- The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
+
+2. Call `Workflow({name: "5-implement", args})`.
+3. When it returns, **persist its result** (Step 4): write the returned `steps`, `components`, and `verification` into `state.json`, and **merge** (never replace) the returned `completedComponents` and per-component `results` into the existing arrays — a resumed run reports only the components it ran this invocation, so earlier-session history must be preserved. Append events to `state-events.jsonl`. The workflow does not touch the filesystem itself.
+4. Auto-commit per step (Step 5), then report (Step 6).
+
+> Cross-session resume stays durable via `state.json`, but the Workflow path persists **only after the workflow returns** — if a run is interrupted mid-way, this session's progress is not yet saved. On the next `/5:implement`, resume reconciles against the persisted `completedComponents` (only components recorded there are skipped), so re-running a partially-applied step is possible; the executor's smallest-coherent-change contract makes a re-touch safe but not free. Workflow's own in-session resume is a bonus; you are the one who persists state after it returns.
+
+**Otherwise, run the prose loop (fallback).** It produces the same `state.json` outcome:
+
+### 3a. Orchestrate into state
+
+- **Compact plan:** build `state.json` inline from the Component Checklist — one step, `mode: "parallel"` unless components share a file or have a dependency (then `sequential`), `model: "haiku"`. **Do not spawn `step-orchestrator-agent`.**
+- **Full plan:** spawn `step-orchestrator-agent` with `plan.md`, `codebase-scan.md`, and config; it writes `state.json` with steps, dependencies, model choices, `patternRefs` (line ranges/symbols), and verify commands.
+
+Verify `state.json`: `status: in-progress`, non-empty `steps`, each pending component has `step`, `mode`, `model`, `patternRefs` (or legacy `patternFiles`), and `verifyCommands`.
+
+### 3b. Execute steps in waves
+
+For each step from `currentStep`, skipping components already in `completedComponents`:
+
+1. Pre-check: every dependency component is completed and its files still exist.
+2. Update progress tasks for the step.
+3. Spawn executors:
+   - **Parallel step: emit all of the step's executor Agent calls in a single message so they run concurrently.**
+   - Sequential step (same-file or dependency): one executor at a time.
+   - Give each executor only its component block, required `patternRefs`, verify commands, and the inline contract below — do not make it read `step-executor-agent.md`. (For legacy `patternFiles`, tell it to read only the smallest relevant sections.)
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -106,97 +104,50 @@ ERROR: none | {error description}
 ---END---
 ```
 
-If a component has legacy `patternFiles`, tell the executor to read only the smallest relevant sections.
-5. Parse only the `---RESULT---` block from each response.
-6. Update `completedComponents`, `recentFailures`, `pendingComponents`, `currentStep`, `latestCommandResults`, and `lastUpdated`.
-   - Append `component_result`, `retry`, and `command` events to `state-events.jsonl`.
-   - Keep only the most recent compact summaries in `state.json`.
-7. Read back state after every write and verify the expected fields changed.
-
-Retry failed components up to two times. Upgrade retries to `sonnet`; in Codex this means `model: gpt-5.4`, `reasoning_effort: medium`. Never fix code in the orchestrator context.
-
-Component and retry event shapes:
+4. Parse only the `---RESULT---` block from each executor.
+5. **Once per wave** (not per component), update `completedComponents`, `recentFailures`, `pendingComponents`, `currentStep`, `latestCommandResults`, `lastUpdated`, and append `component_result` / `retry` / `command` events to `state-events.jsonl`. Trust the executor's report — do not re-read files you did not change to confirm them.
 
 ```json
 {"type":"component_result","timestamp":"{ISO}","step":1,"component":"{name}","status":"success|failed","summary":"one line","details":{"filesCreated":[],"filesModified":[],"verify":"passed|failed|skipped"}}
 {"type":"retry","timestamp":"{ISO}","step":1,"component":"{name}","status":"failed","summary":"retry reason","details":{"attempt":2,"model":"sonnet"}}
 ```
 
-### Step 5: Auto-commit Completed Step
+Retry failed components up to twice, escalating to `sonnet`. Never fix code in the orchestrator context.
 
-After each step completes successfully, check `.5/config.json` for `git.autoCommit`.
+### 3c. Verify
 
-If `git.autoCommit` is `true`:
-
-1. Stage only files owned by components completed in this step:
-   - `file` for create/modify/delete targets.
-   - both `sourceFile` and `file` for rename targets.
-   - files reported in executor `FILES_CREATED` and `FILES_MODIFIED`.
-2. Do not stage unrelated working tree changes.
-3. Build the commit message from `git.commitMessage.pattern`:
-   - Replace `{ticket-id}` with `state.ticket` or an empty string.
-   - Replace `{short-description}` with `step {number}: {step-name}`.
-   - Trim redundant whitespace and punctuation if ticket ID is empty.
-4. Commit the staged files.
-5. Append a detailed entry to `state-events.jsonl` and a compact latest entry to `state.json.latestCommitResults`:
-
-```json
-{
-  "type": "commit",
-  "timestamp": "{ISO-timestamp}",
-  "step": 1,
-  "component": null,
-  "status": "committed|skipped|failed",
-  "summary": "{commit-message-or-reason}",
-  "details": {
-    "commit": "{sha-or-null}",
-    "files": ["path/to/file"],
-    "error": null
-  }
-}
-```
-
-If there are no changed files for the step, skip the commit and record `status: "skipped"`. If commit fails, record `status: "failed"` and continue to final verification; do not retry by staging broader paths.
-
-If `git.autoCommit` is missing or `false`, do not commit.
-
-### Step 6: Final Verification
-
-After all steps complete, spawn `verification-agent`.
-
-In Codex, use `model: gpt-5.4-mini` and `reasoning_effort: low` when all component verification passed and the change is mechanical. Use `model: gpt-5.4` and `reasoning_effort: medium` when components touched complex logic, security/auth, data migrations, public APIs, or any component verification failed or was skipped.
-
-Prompt:
+- **Fast path:** when every component reported `success` with `verify` `passed` or `skipped`, and no component was planned as **or escalated to** `sonnet` (i.e. a mechanical change), verify inline — run the configured build/test once (reuse fresh baseline/component results), set the verification fields directly, and skip `verification-agent`.
+- **Otherwise:** spawn `verification-agent` with `plan.md`, `state.json`, and config (and `codebase-scan.md` only if needed). It reuses fresh `baseline`/component/`latestCommandResults` instead of rerunning identical passing commands, then updates `state.json` verification fields and returns:
 
 ```text
-Read `.claude/agents/verification-agent.md` for your role and output contract.
-
-Verify feature `{feature-name}` using:
-- .5/features/{feature-name}/plan.md
-- .5/features/{feature-name}/state.json
-- .5/config.json if present
-- .5/features/{feature-name}/codebase-scan.md only if plan/state are insufficient to judge acceptance criteria, patterns, or risks
-
-Verify that the implementation is complete and correct, the project builds, tests run, everything from the plan is implemented, and tests are written for the implemented feature where appropriate.
-Reuse `state.json.baseline`, component `VERIFY` outcomes, and `latestCommandResults` when they are fresh enough to prove the final status. Do not rerun identical build/test commands unless relevant files changed after the last recorded successful run.
-Update `.5/features/{feature-name}/state.json` verification fields.
-Do not write a verification report.
-Do not implement fixes.
+---VERIFICATION---
+STATUS: passed | partial | failed
+COMPLETENESS: passed | partial | failed
+INFRASTRUCTURE: passed | failed
+ACCEPTANCE_CRITERIA: satisfied/total
+QUALITY: passed | partial | failed
+ERRORS: none | {summary}
+---END_VERIFICATION---
 ```
 
-Parse only the `---VERIFICATION---` block from the response.
+## Step 4: Persist Verification Result
 
-If final verification passes, set state `status` to `completed`. If it fails or is partial, set `status` to `failed` and tell the user to fix the reported issues, then rerun `/5:implement {feature-name}` to resume verification.
+Set `state.json` `status` to `completed` when verification passed; otherwise `failed`, and tell the user to fix the reported issues and rerun `/5:implement {feature-name}` to resume.
 
-### Step 7: Report
+## Step 5: Auto-commit
 
-Report:
+If `.5/config.json` `git.autoCommit` is `true`, commit once per completed step:
 
-- Completed component count
-- Failed component count
-- Verification status
-- Path to `state.json`
-- Auto-commit count and any failed commit attempts, if `git.autoCommit` is true
-- Failed commands, missing tests, or unmet acceptance criteria, if any
+1. Stage only files owned by that step's components: `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executor's reported `FILES_CREATED`/`FILES_MODIFIED`. Do not stage unrelated changes.
+2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with `state.ticket` (or empty) and `{short-description}` with `step {number}: {step-name}`; trim redundant whitespace/punctuation when the ticket is empty.
+3. Commit, and record a compact entry in `state.json.latestCommitResults` plus a detailed `commit` event:
 
-Stop.
+```json
+{"type":"commit","timestamp":"{ISO}","step":1,"component":null,"status":"committed|skipped|failed","summary":"{message-or-reason}","details":{"commit":"{sha-or-null}","files":["path"],"error":null}}
+```
+
+No changed files → `status: "skipped"`. Commit error → `status: "failed"`, continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.
+
+## Step 6: Report
+
+Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Then stop.

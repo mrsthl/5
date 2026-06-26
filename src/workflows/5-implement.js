@@ -154,26 +154,36 @@ Intent: ${c.description || ''}
 Read only these pattern references (ranges/symbols), plus the target file for modify/rename:
 ${refs}
 
-Rules: smallest coherent change; mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions.
+Rules: smallest coherent change; mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
 
 Then run: ${verify}
 
 Return structured output: status, filesCreated, filesModified, verify, deviations (none or brief), error (none or description). Keep it concise — no logs or diffs unless failed.`
 }
 
-function verifyPrompt(a, results) {
-  const summary = results.flatMap(s => s.items.map(i =>
-    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'missing'} (verify ${i.result ? i.result.verify : '?'})`)).join('\n')
+function verifyPrompt(a, results, resumeDone) {
+  const ran = results.flatMap(s => s.items.map(i =>
+    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to sonnet]' : ''}`))
+  const prior = [...(resumeDone || [])]
+    .filter(n => !results.some(s => s.items.some(i => i.component.name === n)))
+    .map(n => `  ${n}: completed in a prior session`)
+  const summary = [...ran, ...prior].join('\n') || '  (no components ran this invocation)'
+  const baseline = (a.baseline && a.baseline.length)
+    ? a.baseline.map(b => `  ${b.command || b.details && b.details.command || '?'}: ${b.status}${b.summary ? ` — ${b.summary}` : ''}`).join('\n')
+    : '  (none recorded)'
   return `You are a Verification Agent. Verify only; do not implement fixes.
 
 Feature: ${a.feature}
 Plan: ${a.paths.plan}
 Config: ${a.paths.config} (read only if present)
 
+Baseline (pre-change) command results — treat any failure listed here as PRE-EXISTING, not caused by this change:
+${baseline}
+
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse fresh results when available — do not rerun identical passing commands); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists). Prefer changed files over broad scanning.
+Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists). Prefer changed files over broad scanning.
 
 Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, commands[], failures[].`
 }
@@ -202,8 +212,9 @@ function compactSteps(components) {
   const hasDep = norm.some(c => c.dependsOn && c.dependsOn.length)
   const mode = (fileConflict || hasDep) ? 'sequential' : 'parallel'
   norm.forEach(c => { c.mode = mode })
+  const stepModel = norm.some(c => c.model === 'sonnet') ? 'sonnet' : 'haiku'
   return {
-    steps: [{ number: 1, name: 'implement', mode, model: 'haiku', components: norm.map(c => c.name) }],
+    steps: [{ number: 1, name: 'implement', mode, model: stepModel, components: norm.map(c => c.name) }],
     pendingComponents: norm
   }
 }
@@ -228,13 +239,17 @@ async function runStep(step, components, a) {
     }
   }
 
-  // Retry failed components up to twice, escalating to sonnet.
+  // Retry failed OR crashed (null) components up to twice, escalating to sonnet.
+  // A crashed agent (null result) is retried too — an infra error should not be
+  // treated more harshly than a clean structured failure.
   for (const wr of waveResults) {
     let attempt = 1
-    while (wr.result && wr.result.status === 'failed' && attempt <= 2) {
+    while ((wr.result == null || wr.result.status === 'failed') && attempt <= 2) {
       log(`retry ${wr.component.name} (attempt ${attempt + 1}) on sonnet`)
-      wr.result = await agent(executorPrompt(wr.component, a, { retry: true }),
-        { label: `retry:${wr.component.name}`, phase: 'Execute', model: 'sonnet', schema: RESULT_SCHEMA }).catch(() => wr.result)
+      wr.escalated = true
+      const retried = await agent(executorPrompt(wr.component, a, { retry: true }),
+        { label: `retry:${wr.component.name}`, phase: 'Execute', model: 'sonnet', schema: RESULT_SCHEMA }).catch(() => null)
+      if (retried) wr.result = retried
       attempt++
     }
   }
@@ -245,11 +260,18 @@ async function runStep(step, components, a) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const a = args || {}
-const resumeDone = new Set((a.resume && a.resume.completedComponents) || [])
+const resume = a.resume || {}
+const resumeDone = new Set(resume.completedComponents || [])
 
 phase('Orchestrate')
 let plan
-if (a.isCompact && Array.isArray(a.components) && a.components.length) {
+if (Array.isArray(resume.steps) && resume.steps.length && Array.isArray(resume.pendingComponents) && resume.pendingComponents.length) {
+  // Resume: reuse the steps/components derived in the original run (stored in state.json).
+  // Re-deriving via the orchestrator agent is non-deterministic and could rename components,
+  // breaking name-based resume matching — so never re-orchestrate on resume.
+  log(`resume: reusing ${resume.steps.length} prior step(s); ${resumeDone.size} component(s) already complete`)
+  plan = { steps: resume.steps, pendingComponents: resume.pendingComponents }
+} else if (a.isCompact && Array.isArray(a.components) && a.components.length) {
   log(`compact plan: ${a.components.length} component(s), no orchestrator agent`)
   plan = compactSteps(a.components)
 } else {
@@ -270,27 +292,36 @@ for (const step of steps) {
 phase('Verify')
 const allItems = results.flatMap(s => s.items)
 const allPassed = allItems.length > 0 && allItems.every(i => i.result && i.result.status === 'success' && i.result.verify !== 'failed')
-const mechanical = !components.some(c => (c.model || 'haiku') === 'sonnet')
+// Non-mechanical when a component was planned as sonnet OR needed a sonnet retry to pass —
+// either signals reasoning-level work that warrants the full verification agent.
+const usedSonnet = components.some(c => (c.model || 'haiku') === 'sonnet') || allItems.some(i => i.escalated)
 let verification
-if (allPassed && mechanical) {
-  log('all components passed + mechanical change — inline verify, no verification agent')
-  verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', quality: 'passed', failures: [], inline: true }
+if (allPassed && !usedSonnet) {
+  log('all components passed + mechanical (no sonnet, no escalation) — inline verify, no verification agent')
+  verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', acceptanceCriteria: 'n/a', quality: 'passed', commands: [], failures: [], inline: true }
 } else {
-  verification = await agent(verifyPrompt(a, results), {
-    label: 'verify', phase: 'Verify', model: mechanical ? 'haiku' : 'sonnet', schema: VERIFICATION_SCHEMA
+  if (!allItems.length) log('no components ran this invocation (resume) — verifying the already-completed feature against the plan')
+  verification = await agent(verifyPrompt(a, results, resumeDone), {
+    label: 'verify', phase: 'Verify', model: usedSonnet ? 'sonnet' : 'haiku', schema: VERIFICATION_SCHEMA
   })
 }
 
+// Union prior + newly-succeeded so the command can MERGE (not replace) completed history on resume.
+const newlyCompleted = allItems.filter(i => i.result && i.result.status === 'success').map(i => i.component.name)
+const completedComponents = [...new Set([...resumeDone, ...newlyCompleted])]
+
 // Returned to the /5:implement command, which persists state.json + state-events.jsonl and auto-commits.
+// steps + components are returned so a later resume can pass them back (deterministic, no re-orchestration).
 return {
   feature: a.feature,
   steps,
   components,
+  completedComponents,
   results: results.map(s => ({
     step: s.step,
     name: s.name,
     mode: s.mode,
-    items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, result: i.result }))
+    items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, escalated: !!i.escalated, result: i.result }))
   })),
   verification,
   status: verification.status === 'passed' ? 'completed' : 'failed'

@@ -50,23 +50,25 @@ Record compact results in `state.json.baseline` (command, status, one-line summa
 ```json
 {
   "feature": "{feature-name}",
-  "paths": {"plan": ".5/features/{name}/plan.md", "scan": ".5/features/{name}/codebase-scan.md", "config": ".5/config.json"},
+  "paths": {"plan": ".5/features/{feature-name}/plan.md", "scan": ".5/features/{feature-name}/codebase-scan.md", "config": ".5/config.json"},
   "isCompact": true,
   "components": [{"name": "...", "action": "create|modify|delete|rename", "file": "...", "sourceFile": null, "description": "...", "dependsOn": []}],
-  "config": {"build": "...", "test": "...", "lint": "...", "e2e": "...", "autoCommit": false, "commitPattern": "...", "ticket": "..."},
-  "resume": {"currentStep": 2, "completedComponents": ["..."]}
+  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
+  "resume": null
 }
 ```
 
 - For a **compact** plan, set `isCompact: true` and parse `components` from the plan's Component Checklist (the workflow builds a trivial single step with no orchestrator agent).
 - For a **full** plan, set `isCompact: false` and omit `components` — the workflow's orchestrate phase derives steps itself.
-- `resume` mirrors current `state.json` progress, or `null` for a fresh run.
+- `baseline` is the array you recorded in Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
+- `resume` is `null` for a fresh run. To resume, pass `{"completedComponents": [...], "steps": [...], "pendingComponents": [...]}` copied verbatim from the existing `state.json`, so the workflow reuses the original steps rather than re-deriving them (re-derivation is non-deterministic and could rename components, breaking resume matching).
+- The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
 
 2. Call `Workflow({name: "5-implement", args})`.
-3. When it returns, **persist its result** (Step 4): write the returned `steps`, `components`, per-component results, and `verification` into `state.json`; append events to `state-events.jsonl`. The workflow does not touch the filesystem itself.
+3. When it returns, **persist its result** (Step 4): write the returned `steps`, `components`, and `verification` into `state.json`, and **merge** (never replace) the returned `completedComponents` and per-component `results` into the existing arrays — a resumed run reports only the components it ran this invocation, so earlier-session history must be preserved. Append events to `state-events.jsonl`. The workflow does not touch the filesystem itself.
 4. Auto-commit per step (Step 5), then report (Step 6).
 
-> Cross-session resume stays durable via `state.json`. Workflow's own in-session resume is a bonus; you are the one who persists state after it returns.
+> Cross-session resume stays durable via `state.json`, but the Workflow path persists **only after the workflow returns** — if a run is interrupted mid-way, this session's progress is not yet saved. On the next `/5:implement`, resume reconciles against the persisted `completedComponents` (only components recorded there are skipped), so re-running a partially-applied step is possible; the executor's smallest-coherent-change contract makes a re-touch safe but not free. Workflow's own in-session resume is a bonus; you are the one who persists state after it returns.
 
 **Otherwise, run the prose loop (fallback).** It produces the same `state.json` outcome:
 
@@ -89,7 +91,7 @@ For each step from `currentStep`, skipping components already in `completedCompo
    - Give each executor only its component block, required `patternRefs`, verify commands, and the inline contract below — do not make it read `step-executor-agent.md`. (For legacy `patternFiles`, tell it to read only the smallest relevant sections.)
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -114,7 +116,7 @@ Retry failed components up to twice, escalating to `sonnet`. Never fix code in t
 
 ### 3c. Verify
 
-- **Fast path:** when every component reported `success` with `verify: passed` and no component used `model: sonnet` (i.e. mechanical change), verify inline — run the configured build/test once (reuse fresh baseline/component results), set the verification fields directly, and skip `verification-agent`.
+- **Fast path:** when every component reported `success` with `verify` `passed` or `skipped`, and no component was planned as **or escalated to** `sonnet` (i.e. a mechanical change), verify inline — run the configured build/test once (reuse fresh baseline/component results), set the verification fields directly, and skip `verification-agent`.
 - **Otherwise:** spawn `verification-agent` with `plan.md`, `state.json`, and config (and `codebase-scan.md` only if needed). It reuses fresh `baseline`/component/`latestCommandResults` instead of rerunning identical passing commands, then updates `state.json` verification fields and returns:
 
 ```text

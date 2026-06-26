@@ -42,6 +42,8 @@ Keep the result block concise. Do not include command logs, diffs, or long expla
 
 **Fix and note** in deviations: imports, type mismatches, or lint you caused; a nearby existing convention that contradicts the plan (follow the convention).
 
-**Stop and report** as failed: a required dependency/package is absent; a database/schema/auth/API contract change not in the plan; verify fails from pre-existing unrelated issues (report the exact evidence).
+**Stop and report** as failed: a required dependency/package is absent; a database/schema/auth/API contract change not in the plan.
+
+**Report the exact evidence, but do not mark the component failed**, when verify fails only from pre-existing unrelated issues (your change is complete and correct; record the failure as a deviation so verification can treat it as pre-existing).
 
 Do not make more than three attempts on the same failing issue.

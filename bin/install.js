@@ -732,6 +732,8 @@ function selectiveUpdate(targetPath, sourcePath) {
       const dest = path.join(workflowsDest, wf);
       if (fs.existsSync(src)) {
         fs.copyFileSync(src, dest);
+      } else {
+        log.warn(`Workflow source missing, skipped: ${wf}`);
       }
     }
     log.success('Updated workflows/ (workflow files only)');

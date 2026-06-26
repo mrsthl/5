@@ -1,5 +1,35 @@
 # Release Notes
 
+## v3.0.0-beta-1
+
+**Release Date:** 2026-06-26
+
+> Beta release. Install with `npm install -g foifi@beta`.
+
+### Workflow-tool `/5:implement` with parallel waves
+
+v3.0.0-beta-1 modernizes `/5:implement` on Claude Code to run through the native Workflow tool when it is available, executing components in parallel waves with inline verification. The prose loop in `implement.md` remains the fallback for Claude Code and the only path for Codex, preserving full runtime parity.
+
+**New**
+- **Workflow orchestration** (`src/workflows/5-implement.js`): a new Workflow-tool script drives the implement loop — the orchestrator, executor, and verifier prompts in this script are the schema-validated form of `src/agents/*-agent.md` and are kept in sync. Components run in parallel waves and are verified inline.
+- **Installer support** (`bin/install.js`): the new `src/workflows/` directory is tracked as a workflow-managed file and installed to `.claude/workflows/5-implement.js` for Claude Code.
+
+**Hardening**
+- **Verify-gating, retry, and resume** (`src/workflows/5-implement.js`, `src/commands/5/implement.md`, `src/agents/step-executor-agent.md`, `src/agents/verification-agent.md`): the Workflow path now gates on verification before completion, retries failed steps, and resumes cleanly from existing `state.json`.
+
+**Affected files:**
+- `src/workflows/5-implement.js` (new)
+- `src/commands/5/implement.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/agents/step-orchestrator-agent.md` (modified)
+- `src/agents/verification-agent.md` (modified)
+- `src/commands/5/plan.md` (modified)
+- `bin/install.js` (modified)
+- `AGENTS.md` (modified)
+- `test/verify-install-js.sh` (modified)
+
+---
+
 ## v2.0.6
 
 **Release Date:** 2026-06-22

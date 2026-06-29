@@ -2,8 +2,9 @@
 name: release
 description: Create a GitHub release from the latest release notes
 allowed-tools: Bash, Read, Grep, AskUserQuestion
-context: fork
+model: haiku
 user-invocable: true
+
 ---
 
 # Create GitHub Release

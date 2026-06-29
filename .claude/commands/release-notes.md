@@ -2,7 +2,7 @@
 name: release-notes
 description: Generate release notes from commits since the last release
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
-context: fork
+model: haiku
 user-invocable: true
 ---
 

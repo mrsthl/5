@@ -109,8 +109,21 @@ function verifyReviewReplyContract() {
 
   const addressCommand = fs.readFileSync('src/commands/5/address-review-findings.md', 'utf8');
   const replyCommand = fs.readFileSync('src/commands/5/reply-pr-comments.md', 'utf8');
+  const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
   const summaryTemplate = fs.readFileSync('src/templates/workflow/REVIEW-SUMMARY.md', 'utf8');
   const required = [
+    {
+      label: 'review delegates to the built-in code-review skill',
+      ok: reviewCommand.includes('Skill(skill: "code-review"')
+    },
+    {
+      label: 'review keeps a fallback path for runtimes without the skill',
+      ok: reviewCommand.includes('**Fallback path**')
+    },
+    {
+      label: 'review no longer references CodeRabbit',
+      ok: !/coderabbit/i.test(reviewCommand)
+    },
     {
       label: 'address-review invokes reply helper',
       ok: addressCommand.includes('Invoke `/5:reply-pr-comments {feature}`')

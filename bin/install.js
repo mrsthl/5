@@ -570,6 +570,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Grep\` | \`grep\` / \`search\` |
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`Workflow\` | Not available — run the command's prose fallback loop instead |
+| \`Skill(skill="code-review")\` | Not available — run the command's prose fallback loop instead |
 | \`EnterPlanMode\` | Not available — use structured output instead |
 
 ## Model Mapping (single source of truth)

@@ -85,10 +85,6 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
     }
   },
   "tools": {
-    "coderabbit": {
-      "available": false,
-      "authenticated": false
-    },
     "ide": {
       "available": false,
       "type": null
@@ -100,7 +96,6 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
       "available": false
     }
   },
-  "reviewTool": "native",
   "git": {
     "autoCommit": false,
     "commitMessage": {

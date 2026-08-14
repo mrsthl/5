@@ -71,14 +71,6 @@ fi
 **1d. Detect available tools:**
 
 ```bash
-# CodeRabbit CLI
-if command -v coderabbit &> /dev/null; then
-  coderabbit_available=true
-  if coderabbit auth status | grep -q "authenticated"; then
-    coderabbit_authenticated=true
-  fi
-fi
-
 # IDE MCP (JetBrains) - check if MCP tools are available
 
 # Context7 - up-to-date documentation MCP server
@@ -165,20 +157,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     3. "Custom pattern" → free text
 - Note: "Body will automatically include bullet points of changes."
 
-**2h. Review tool preference:**
-- "Which code review tool would you like to use?"
-  - Options:
-    1. "Native (built-in agent review, no setup needed)" — always available, works with any AI coding tool
-    2. "CodeRabbit CLI (requires installation)" — external tool
-    3. "None (skip automated review)"
-- If user selects CodeRabbit and it was not detected in Step 1d:
-  - Inform: "CodeRabbit CLI is not installed. You can install it later:"
-    - macOS: `brew install --cask coderabbit`
-    - Other: `curl -fsSL https://cli.coderabbit.ai/install.sh | sh`
-    - Then: `coderabbit auth login`
-  - Record the preference as `coderabbit` regardless (will prompt at review time if still missing)
-
-**2i. Context7 documentation plugin:**
+**2h. Context7 documentation plugin:**
 
 Context7 provides up-to-date, version-specific documentation and code examples directly in your prompts. It solves a common problem with LLMs: outdated training data leading to hallucinated APIs and deprecated code patterns.
 
@@ -191,7 +170,7 @@ Context7 provides up-to-date, version-specific documentation and code examples d
     2. "Skip"
   - If user selects "Install now": execute the install command
 
-**2j. skill-creator plugin:**
+**2i. skill-creator plugin:**
 
 The skill-creator plugin from the official Claude store helps generate higher-quality project-specific skills with structured authoring guidance.
 
@@ -206,16 +185,16 @@ The skill-creator plugin from the official Claude store helps generate higher-qu
   - If user selects "Install now": execute the install command, then set `tools.skillCreator.available = true` in the config
   - If user selects "Skip": `tools.skillCreator.available` remains `false`
 
-**2k. Confirm AGENTS.md generation:**
+**2j. Confirm AGENTS.md generation:**
 - "Generate/update AGENTS.md? This will analyze your codebase to document structure and conventions. (A CLAUDE.md shim will also be created for Claude Code compatibility.)"
   - Options: "Yes (recommended)", "Skip"
 
-**2k2. Confirm rules generation:**
+**2j2. Confirm rules generation:**
 - "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when the agent works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
   - Options: "Yes (recommended)", "Skip"
 - Note: Rules complement AGENTS.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
 
-**2l. Review detected patterns for skill generation:**
+**2k. Review detected patterns for skill generation:**
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
 
@@ -256,13 +235,13 @@ If no patterns/commands detected:
 - Inform user: "No common patterns detected. Would you like to specify patterns manually?"
 - Allow manual entry of pattern names/locations or command names
 
-**2m. Git-ignore `.5/features/` folder:**
+**2l. Git-ignore `.5/features/` folder:**
 - "The `.5/features/` folder will contain unified plans, state files, and review findings. Would you like to add it to `.gitignore`?"
   - Options:
     1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
     2. "No, track in git" — useful if you want to share specs and plans with your team
 
-**2n. Code Conventions:**
+**2m. Code Conventions:**
 - "Generate `.5/CONVENTIONS.md` with coding conventions for this project? It will include a default set of strict rules (typing, code structure, naming, error handling, testing, and documentation standards) plus project-specific conventions derived from your codebase."
   - Options:
     1. "Yes (recommended)" → `conventions.generate: true`
@@ -280,7 +259,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2k2 and `conventions.generate` from step 2n). Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2j2 and `conventions.generate` from step 2m). Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 

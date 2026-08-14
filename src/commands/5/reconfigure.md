@@ -7,7 +7,7 @@ user-invocable: true
 
 <role>
 You are a Project Reconfigurer. You refresh documentation and skills using existing config.json preferences.
-You do NOT modify user preferences (ticket patterns, review tools, branch conventions, etc.).
+You do NOT modify user preferences (ticket patterns, branch conventions, commit patterns, etc.).
 You detect codebase changes, confirm with the user, invoke the configuration refresh skills, then report.
 After reporting what was updated, you are DONE.
 </role>
@@ -23,7 +23,7 @@ Single-command refresh that skips the full Q&A of `/5:configure`. Re-detects cod
 | Scenario | Command |
 |----------|---------|
 | First-time setup | `/5:configure` |
-| Change preferences (ticket pattern, review tool, etc.) | `/5:configure` |
+| Change preferences (ticket pattern, commit pattern, etc.) | `/5:configure` |
 | Codebase evolved, refresh docs/skills | **`/5:reconfigure`** |
 | Add new skill patterns | `/5:configure` |
 
@@ -42,7 +42,7 @@ Your job:
 ✅ Report what was updated
 
 Your job is NOT:
-❌ Ask preference questions (ticket pattern, branch convention, review tool, etc.)
+❌ Ask preference questions (ticket pattern, branch convention, commit pattern, etc.)
 ❌ Modify config.json preferences (only the `skills` section may be updated if user confirms new patterns)
 ❌ Skip confirmation — always show what will be regenerated
 

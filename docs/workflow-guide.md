@@ -102,13 +102,13 @@ Run:
 /5:review
 ```
 
-Review can use native agent review or CodeRabbit if configured. Native review triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. It saves findings to:
+On Claude Code, review delegates to the built-in `code-review` skill. Effort defaults to `high`; pass `/5:review low|medium|high|max` to override. Where that skill is unavailable (Codex), a built-in review agent triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. Either way it saves findings to:
 
 ```text
 .5/features/{feature-name}/review-findings-{timestamp}.md
 ```
 
-Then apply approved findings:
+When findings exist, `/5:review` asks whether to address them right away and hands off automatically if you say yes. To pick it up later instead:
 
 ```text
 /5:address-review-findings {feature-name}

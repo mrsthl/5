@@ -215,7 +215,78 @@ errors += compareLists(
   [...(managed.binHelpers || [])].sort()
 );
 
+function verifyPlanModeContract() {
+  console.log('=== Plan Mode Contract ===');
+  console.log('');
+
+  const planCommand = fs.readFileSync('src/commands/5/plan.md', 'utf8');
+  const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
+  const orchestratorAgent = fs.readFileSync('src/agents/step-orchestrator-agent.md', 'utf8');
+  const settings = fs.readFileSync('src/settings.json', 'utf8');
+  const workflow = fs.readFileSync('src/workflows/5-implement.js', 'utf8');
+
+  const required = [
+    {
+      label: 'plan delegates to native plan mode',
+      ok: planCommand.includes('EnterPlanMode')
+    },
+    {
+      label: 'plan keeps a fallback path for runtimes without plan mode',
+      ok: planCommand.includes('## Fallback path')
+    },
+    {
+      label: 'plan handles refine mode (absorbed discuss-feature)',
+      ok: /refine mode/i.test(planCommand) && planCommand.includes('## Discussion History')
+    },
+    {
+      label: 'plan branches the handoff on plan format',
+      ok: planCommand.includes('planFormat: compact') && planCommand.includes('/5:implement {name}')
+    },
+    {
+      label: 'plan can implement compact plans inline (needs Edit)',
+      ok: /^allowed-tools:.*\bEdit\b/m.test(planCommand)
+    },
+    {
+      label: 'implement tolerates a compact plan already done inline',
+      ok: /implements compact plans inline/i.test(implementCommand)
+    },
+    {
+      label: 'plan-guard hook is gone from settings.json',
+      ok: !settings.includes('plan-guard')
+    },
+    {
+      label: 'no source file references the planning-active marker',
+      ok: !planCommand.includes('.planning-active') && !implementCommand.includes('.planning-active')
+    },
+    {
+      label: 'state.json no longer carries an event log',
+      ok: !implementCommand.includes('state-events') && !orchestratorAgent.includes('state-events')
+    },
+    {
+      label: 'orchestrator pins component names to the plan checklist',
+      ok: /verbatim/i.test(orchestratorAgent) && /VERBATIM/i.test(workflow)
+    },
+    {
+      label: 'workflow resumes on completedComponents alone',
+      ok: workflow.includes('a.completedComponents') && !workflow.includes('resume.pendingComponents')
+    }
+  ];
+
+  let failures = 0;
+  for (const check of required) {
+    if (check.ok) {
+      console.log(`${GREEN}✓ ${check.label}${NC}`);
+    } else {
+      console.log(`${RED}✗ ${check.label}${NC}`);
+      failures += 1;
+    }
+  }
+  console.log('');
+  return failures > 0 ? 1 : 0;
+}
+
 errors += verifyReviewReplyContract();
+errors += verifyPlanModeContract();
 
 console.log('========================================');
 if (errors === 0) {

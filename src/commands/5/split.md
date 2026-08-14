@@ -13,55 +13,15 @@ You do NOT implement code. You do NOT modify source files. You write only child 
 
 # Split Plan
 
-Use this command when an existing plan is too large and should become multiple independently implementable plans.
+## Step 1: Locate the Parent Plan
 
-## Goals
+Resolve `{feature-name}` to `.5/features/{feature-name}/plan.md`. Given only a ticket ID or prefix, glob `.5/features/{prefix}*/plan.md`. Given nothing, use the most recently modified `.5/features/*/plan.md`, asking the user to choose between several plausible recent ones. If no parent plan exists, stop and tell the user to run `/5:plan` first.
 
-- Help the user decide how to split the parent plan.
-- Suggest good split points based on implementation independence.
-- Create child feature folders, each with its own `plan.md` and `codebase-scan.md`.
-- Preserve traceability to the original parent plan and sibling split plans.
+Read the parent `plan.md` and its `codebase-scan.md` if it exists. Do not read source files unless those two are insufficient to identify safe split boundaries; if they are, use targeted Glob/Grep or one read-only Explore agent.
 
-## Process
+## Step 2: Agree on the Split
 
-### Step 1: Locate Parent Plan
-
-1. If `{feature-name}` was provided, use `.5/features/{feature-name}/plan.md`.
-2. If only a ticket ID or prefix was provided, glob `.5/features/{prefix}*/plan.md`.
-3. If no feature was provided:
-   - Find `.5/features/*/plan.md`.
-   - Prefer the most recently modified plan.
-   - If there are multiple plausible recent plans, ask the user to choose.
-4. If no parent plan exists, stop and tell the user to run `/5:plan` first.
-
-Read:
-
-- Parent `.5/features/{feature}/plan.md`
-- Parent `.5/features/{feature}/codebase-scan.md` if it exists
-- `.5/config.json` only if needed for ticket naming conventions
-
-Do not read source files unless the parent plan and scan are insufficient to identify safe split boundaries. If extra context is needed, use targeted Glob/Grep or one Explore agent with a read-only prompt.
-
-### Step 2: Analyze Split Boundaries
-
-Extract from the parent plan:
-
-- Overview and desired outcome
-- Scope in/out
-- Acceptance criteria
-- Decisions
-- Existing patterns
-- Module impact
-- Component checklist
-- Technical notes and constraints
-
-Suggest 2-5 split options optimized for independently running `/5:implement`:
-
-- Prefer components that touch different target files or modules.
-- Keep each child plan with coherent acceptance criteria.
-- Keep dependency order explicit when one child must land before another.
-- Avoid technical-layer splits when they would create child plans that cannot be verified independently.
-- Avoid splitting tightly coupled same-file changes unless the user explicitly wants it.
+Propose 2-5 boundaries optimized for running `/5:implement` on each child independently: prefer components touching different files or modules, keep each child's acceptance criteria coherent and independently verifiable, and make dependency order explicit when one child must land first. Avoid technical-layer splits that produce children nobody can verify alone, and avoid splitting tightly coupled same-file changes unless the user asks for it.
 
 Present the recommendation compactly:
 
@@ -73,44 +33,15 @@ Recommended split:
 Dependency order: {none | child A before child B because ...}
 ```
 
-Then ask the user:
+Agree with the user on the boundaries, each child's scope and folder slug, and which components go where. Show the final split summary and get confirmation before writing anything.
 
-- How many child plans should be created?
-- Which suggested boundaries should be used or changed?
+Folder naming: `{parent-feature}-{nn}-{child-slug}`, with `nn` a 2-digit index starting at `01` and the slug sanitized to lowercase kebab-case (alphanumeric, dash, underscore). If a folder already exists, ask whether to choose a new slug or stop — never overwrite an existing child folder without explicit approval.
 
-Use AskUserQuestion for concrete choices. If the user provides textual boundaries, summarize them back before writing.
+## Step 3: Write Child Artifacts
 
-### Step 3: Confirm Each Child Plan
+For each confirmed child, write `.5/features/{child-feature}/plan.md` using `.claude/templates/workflow/PLAN.md`, or `PLAN-COMPACT.md` when the child clearly has only 1-2 low-risk components. Copy only the parent context relevant to that child. Keep decisions labeled `[DECIDED]` / `[FLEXIBLE]` / `[DEFERRED]`, acceptance criteria as independently verifiable checkboxes, and the component checklist lean (component, action, target path, intent — no step/model/pattern/verify columns, no code).
 
-For each child plan, ask or confirm:
-
-- Child title
-- Child folder slug
-- Scope in
-- Scope out
-- Acceptance criteria
-- Component checklist rows copied or adapted from the parent
-- Dependencies on sibling child plans
-
-Folder naming:
-
-- Use `{parent-feature}-{nn}-{child-slug}`.
-- `nn` is 2-digit, starting at `01`.
-- Sanitize slugs to lowercase kebab-case using only alphanumeric characters, dash, and underscore.
-- If the folder already exists, ask whether to choose a new slug or stop. Do not overwrite existing child folders without explicit user approval.
-
-Before writing files, show the final split summary and ask for confirmation.
-
-### Step 4: Write Child Artifacts
-
-For each confirmed child folder, create:
-
-- `.5/features/{child-feature}/plan.md`
-- `.5/features/{child-feature}/codebase-scan.md`
-
-Use `.claude/templates/workflow/PLAN.md` structure for every child plan unless the child clearly has only 1-2 low-risk components; in that case, use `.claude/templates/workflow/PLAN-COMPACT.md`.
-
-Each child `plan.md` must include a `## Split Metadata` section after the overview:
+Each child plan carries this section after its overview:
 
 ```markdown
 ## Split Metadata
@@ -123,27 +54,9 @@ Each child `plan.md` must include a `## Split Metadata` section after the overvi
 - Dependency order: {none | sibling names and reason}
 ```
 
-Child plan content rules:
+Also write `.5/features/{child-feature}/codebase-scan.md` with the parent scan's patterns, target paths, test/build setup, risks, and unknowns that apply to that child. If there is no parent scan, write `# Codebase Scan` followed by `No parent codebase scan was available when this plan was split.`
 
-- Copy only parent context relevant to that child.
-- Keep decisions labeled `[DECIDED]`, `[FLEXIBLE]`, or `[DEFERRED]`.
-- Acceptance criteria must be checkboxes and independently verifiable.
-- Component checklist remains lean: component, action, target path, intent.
-- Do not add step/model/pattern/verify columns.
-- Do not include implementation code or pseudo-code.
-
-Child `codebase-scan.md` rules:
-
-- If the parent scan exists, copy only relevant patterns, likely target paths, test/build setup, risks, and unknowns for the child.
-- If no parent scan exists, write:
-
-```markdown
-# Codebase Scan
-
-No parent codebase scan was available when this plan was split.
-```
-
-### Step 5: Write Split Manifest
+## Step 4: Write the Split Manifest
 
 Write `.5/features/{parent-feature}/split-manifest-{YYYYMMDD-HHmmss}.json`:
 
@@ -166,25 +79,8 @@ Write `.5/features/{parent-feature}/split-manifest-{YYYYMMDD-HHmmss}.json`:
 }
 ```
 
-Keep the parent `plan.md` unchanged.
+Leave the parent `plan.md` unchanged.
 
-### Step 6: Report
+## Step 5: Report
 
-Output:
-
-```text
-Plan split complete.
-
-Parent: .5/features/{parent-feature}/plan.md
-Manifest: .5/features/{parent-feature}/split-manifest-{timestamp}.json
-
-Child plans:
-- .5/features/{child-1}/plan.md
-- .5/features/{child-2}/plan.md
-
-Implement separately with:
-/5:implement {child-1}
-/5:implement {child-2}
-```
-
-Stop immediately.
+Output the parent path, the manifest path, each child plan path, and the `/5:implement {child}` command for each. Then stop.

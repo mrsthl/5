@@ -1,7 +1,7 @@
 export const meta = {
   name: '5-implement',
   description: 'Execute a unified plan: derive steps, run executors in parallel waves, verify. Claude Code only; Codex uses the prose loop.',
-  whenToUse: 'Invoked by the /5:implement command when the Workflow tool is available. Reads args from the command, returns final state for the command to persist to state.json.',
+  whenToUse: 'Invoked by the /5:implement command when the Workflow tool is available. Reads args from the command, returns the run result for the command to persist to the slim state.json.',
   phases: [
     { title: 'Orchestrate', detail: 'derive steps + components (agent for non-trivial plans, inline for compact)' },
     { title: 'Execute', detail: 'one executor agent per component; parallel components fire together per step' },
@@ -15,8 +15,12 @@ export const meta = {
 // the canonical human-readable contract; keep these prompts in sync with them.
 //
 // This script has NO filesystem access. It orchestrates agents and RETURNS the
-// final state object. The /5:implement command (which has Write) persists
-// state.json + state-events.jsonl and runs auto-commit after this returns.
+// final result. The /5:implement command (which has Write) persists the slim
+// state.json and runs auto-commit after this returns.
+//
+// The execution graph (steps/components) is derived fresh on every run and is
+// NOT persisted. Resume works because component names are copied verbatim from
+// the plan's Component Checklist, so re-derivation is stable by name.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESULT_SCHEMA = {
@@ -128,6 +132,7 @@ Codebase scan: ${a.paths.scan} (read only if present)
 Config: ${a.paths.config} (read only if present)
 
 Turn the lean component checklist in the plan into steps + components:
+- COPY EVERY COMPONENT NAME VERBATIM from the plan's Component Checklist. Resume matches components by name across runs, so a renamed or reformatted name makes completed work run twice.
 - Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same file, one imports another, or there is an explicit dependency.
 - Prefer fewer steps. Tests run after the components they validate.
 - model "haiku" by default (mechanical, UI, tests, docs, config, single-file). model "sonnet" only for complex logic, cross-module, security/auth, migrations, or public API.
@@ -260,18 +265,12 @@ async function runStep(step, components, a) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const a = args || {}
-const resume = a.resume || {}
-const resumeDone = new Set(resume.completedComponents || [])
+const resumeDone = new Set(a.completedComponents || [])
 
 phase('Orchestrate')
+if (resumeDone.size) log(`resume: ${resumeDone.size} component(s) already complete, matched by name`)
 let plan
-if (Array.isArray(resume.steps) && resume.steps.length && Array.isArray(resume.pendingComponents) && resume.pendingComponents.length) {
-  // Resume: reuse the steps/components derived in the original run (stored in state.json).
-  // Re-deriving via the orchestrator agent is non-deterministic and could rename components,
-  // breaking name-based resume matching — so never re-orchestrate on resume.
-  log(`resume: reusing ${resume.steps.length} prior step(s); ${resumeDone.size} component(s) already complete`)
-  plan = { steps: resume.steps, pendingComponents: resume.pendingComponents }
-} else if (a.isCompact && Array.isArray(a.components) && a.components.length) {
+if (a.isCompact && Array.isArray(a.components) && a.components.length) {
   log(`compact plan: ${a.components.length} component(s), no orchestrator agent`)
   plan = compactSteps(a.components)
 } else {
@@ -310,8 +309,9 @@ if (allPassed && !usedSonnet) {
 const newlyCompleted = allItems.filter(i => i.result && i.result.status === 'success').map(i => i.component.name)
 const completedComponents = [...new Set([...resumeDone, ...newlyCompleted])]
 
-// Returned to the /5:implement command, which persists state.json + state-events.jsonl and auto-commits.
-// steps + components are returned so a later resume can pass them back (deterministic, no re-orchestration).
+// Returned to the /5:implement command, which persists the slim state.json and auto-commits.
+// steps + components are returned for reporting and per-step staging only — they are NOT persisted;
+// the next run re-derives them, and resume matches on completedComponents by name.
 return {
   feature: a.feature,
   steps,

@@ -6,18 +6,18 @@
 
 **Project setup** — The `/5:configure` command detects your stack, generates a `CLAUDE.md` / `AGENTS.md` tailored to your project, writes a `.5/index/` knowledge base, and installs project-specific skills and rules. This gives every AI session the right context from the start rather than letting the model guess.
 
-**Status line** — foifi installs an informative Claude Code status line that surfaces the active feature, current workflow phase, and relevant state directly in the terminal footer. No more digging through files to remember where you left off.
+**Status line** — foifi installs a Claude Code status line that surfaces the installed version, available updates, and pending reconfigure/migration reminders directly in the terminal footer.
 
 **Structured implementation workflow** — Instead of asking Claude or Codex to "just implement this," foifi enforces a three-phase loop:
-1. **Plan** (`/5:plan`) — writes a single human-reviewed `plan.md` with scope, acceptance criteria, component checklist, and decisions.
-2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph (`state.json`), then delegates each component to a focused executor agent. A verification agent checks completeness, correctness, and test coverage at the end of every run.
-3. **Review** (`/5:review`) — triages changed files, produces structured findings, and feeds them into `/5:address-review-findings` for interactive fix decisions and PR replies.
+1. **Plan** (`/5:plan`) — wraps Claude Code's native plan mode and persists the approved result as a single human-reviewed `plan.md` with scope, acceptance criteria, component checklist, and decisions. Run it again on the same feature to refine that plan. Small plans are implemented right there on approval; larger ones hand off to step 2.
+2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph, then delegates each component to a focused executor agent, firing independent components in parallel waves. A verification agent checks completeness, correctness, and test coverage at the end of every run.
+3. **Review** (`/5:review`) — wraps Claude Code's built-in `code-review` skill, produces structured findings, and feeds them into `/5:address-review-findings` for interactive fix decisions and PR replies.
 
-This separation keeps planning readable, implementation mechanical, and review structured.
+This separation keeps planning readable, implementation mechanical, and review structured. Where Claude Code ships a native capability, foifi wraps it rather than reimplementing it — what foifi adds is the durable repo-local artifact and the ticket/config conventions around it.
 
 **Code review and findings** — `/5:review` triages changed files and produces structured `review-findings-*.md`. `/5:address-review-findings` presents each finding interactively, records `fix`/`wont_fix`/`wait` decisions, applies approved local fixes, handles PR comment replies, and keeps a decision log — all without losing context between sessions.
 
-**Plan management helpers** — `/5:discuss-feature` refines an existing plan in conversation. `/5:split` breaks a large plan into smaller linked child plans. `/5:unlock` clears a stale planning lock. `/5:reconfigure` refreshes docs and skills when the project evolves.
+**Plan management helpers** — `/5:split` breaks a large plan into smaller linked child plans. `/5:reconfigure` refreshes docs and skills when the project evolves.
 
 **Codex support** — Every command has a `$5-*` Codex equivalent. Codex runs are token-budgeted: simple steps use a lighter model and low reasoning, complex or security-sensitive steps escalate automatically.
 
@@ -81,24 +81,22 @@ $5-review
 $5-address-review-findings {feature-name}
 ```
 
-Verification runs at the end of `/5:implement` and records concise results in `state.json`.
+Verification runs at the end of `/5:implement` and records a concise result in `state.json`.
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
 | `/5:configure` / `$5-configure` | Detect project settings and write the CONFIGURE plan |
-| `/5:plan` / `$5-plan` | Create one unified `plan.md` from requirements, codebase exploration, and user decisions |
-| `/5:discuss-feature` / `$5-discuss-feature` | Refine an existing `plan.md` |
+| `/5:plan` / `$5-plan` | Create one unified `plan.md` from requirements, codebase exploration, and user decisions — or refine an existing one |
 | `/5:split` / `$5-split` | Split an existing plan into smaller linked plans for separate implementation |
-| `/5:implement` / `$5-implement` | Derive `state.json`, execute steps with agents, and verify inline |
+| `/5:implement` / `$5-implement` | Derive the execution graph, execute steps with agents, and verify inline |
 | `/5:review` / `$5-review` | Review code changes and save findings |
 | `/5:commit` / `$5-commit` | Create a git commit using the configured commit message template |
 | `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply approved fixes and PR comments |
 | `/5:reconfigure` / `$5-reconfigure` | Refresh docs, index, skills, and rules |
 | `/5:update` / `$5-update` | Upgrade installed workflow files |
 | `/5:eject` / `$5-eject` | Stop workflow-managed updates |
-| `/5:unlock` / `$5-unlock` | Remove a stale planning guard lock |
 | `/5:synchronize-agents` / `$5-synchronize-agents` | Sync user content between Claude Code and Codex |
 
 ## Artifacts
@@ -107,8 +105,7 @@ Each feature lives under `.5/features/{feature-name}/`:
 
 - `plan.md` - single human-reviewed planning artifact
 - `codebase-scan.md` - cached discovery used to reduce repeated scanning
-- `state.json` - enriched execution state derived by `step-orchestrator-agent`
-- `state-events.jsonl` - detailed execution history for retries, commands, commits, and verification
+- `state.json` - small resume record: status, completed components, verification result
 - `split-manifest-*.json` - parent feature record for child plans created by `/5:split`
 - `review-findings-*.md` - review output for `/5:address-review-findings`
 - `review-decisions-*.json` - interactive fix/wont-fix/wait decisions for local findings
@@ -116,11 +113,13 @@ Each feature lives under `.5/features/{feature-name}/`:
 
 ## Design
 
-Planning stays human-readable. `plan.md` contains scope, acceptance criteria, decisions, module impact, and a clean component checklist. Small low-risk changes can use the compact plan template. Plans intentionally do not ask the planner to fill model choices, verify commands, step grouping, or pattern-file wiring.
+Planning stays human-readable. Claude Code's native plan mode does the exploring, the asking, and the approval gate; `/5:plan` contributes the ticket lookup, the feature folder convention, and the artifact schema, then persists the approved plan. `plan.md` contains scope, acceptance criteria, decisions, module impact, and a clean component checklist. Small low-risk changes can use the compact plan template. Plans intentionally do not ask the planner to fill model choices, verify commands, step grouping, or pattern-file wiring.
 
-Implementation is mechanical. `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md`, derives the execution graph into compact `state.json`, then `/5:implement` delegates each component to `step-executor-agent` with an inline executor contract. Pattern context is passed as targeted references instead of broad file lists so executors can read only the relevant ranges. Detailed history is appended to `state-events.jsonl`. This reduces planning token cost and avoids brittle prompt-table metadata.
+Delegation is matched to the size of the job. Approving a plan means you want it built, so `/5:plan` finishes compact plans itself — for one or two files, the already-warm session beats anything an orchestrator can set up. Full plans go to `/5:implement`, where the cost is repaid: `step-orchestrator-agent` reads `plan.md` and `codebase-scan.md` and returns an execution graph, then each component goes to a `step-executor-agent` with an inline executor contract, independent components firing in parallel. Pattern context is passed as targeted references instead of broad file lists so executors read only the relevant ranges, and mechanical components run on a cheaper model than the ones that need reasoning.
 
-Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end and records a concise final status in `state.json` without generating an extra report.
+State is kept to what is actually read. The execution graph is derived fresh on every run and never written to disk; `state.json` persists only the status, the completed component names, and the verification result, which is all a resume needs. Component names are copied verbatim from the plan's checklist, so a re-derived graph still matches what already ran. Live progress comes from the task list, not from a file.
+
+Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end, passing it the pre-change baseline so pre-existing failures are not blamed on the change, and records a concise final status without generating an extra report.
 
 Review delegates to Claude Code's built-in `code-review` skill (default effort `high`, override with `/5:review {low|medium|high|max}`) and maps its findings into the workflow's findings file. Where that skill is unavailable — Codex, for example — a built-in review agent takes over and triages changed files by risk instead. `/5:address-review-findings` presents each finding one by one with a recommendation, records `fix`/`wont_fix`/`wait` decisions, then coordinates narrower helpers for approved local fixes, PR comment triage, and PR replies so the common path stays compact.
 

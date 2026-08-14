@@ -372,7 +372,14 @@ const LEGACY_REMOVED_FILES = [
   'skills/5-verify-implementation',
   'skills/5-review-code',
   'skills/5-quick-implement',
-  'skills/configure-project'
+  'skills/configure-project',
+  // v2.2: native plan mode replaces the plan guard; /5:plan absorbed discuss-feature
+  'hooks/plan-guard.js',
+  'commands/5/unlock.md',
+  'commands/5/discuss-feature.md',
+  'templates/workflow/STATE.json',
+  'skills/5-unlock',
+  'skills/5-discuss-feature'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -406,7 +413,6 @@ function getWorkflowManagedFiles() {
       'statusline.js',
       'check-updates.js',
       'check-reconfig.js',
-      'plan-guard.js',
       'config-guard.js'
     ],
 
@@ -431,7 +437,6 @@ function getWorkflowManagedFiles() {
       // Workflow output templates
       'workflow/PLAN.md',
       'workflow/PLAN-COMPACT.md',
-      'workflow/STATE.json',
       'workflow/REVIEW-FINDINGS.md',
       'workflow/REVIEW-SUMMARY.md',
       'workflow/FIX-PLAN.md'
@@ -571,10 +576,10 @@ This skill was authored for Claude Code. Map these tool references:
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`Workflow\` | Not available — run the command's prose fallback loop instead |
 | \`Skill(skill="code-review")\` | Not available — run the command's prose fallback loop instead |
-| \`EnterPlanMode\` | Not available — use structured output instead |
+| \`EnterPlanMode\` | Not available — run the command's prose fallback loop instead |
 
 ## Model Mapping (single source of truth)
-When a skill, plan, or \`state.json\` component names a model, map it to Codex as:
+When a skill, plan, or execution-graph component names a model, map it to Codex as:
 
 | Named model | Codex model | reasoning_effort |
 |-------------|-------------|------------------|
@@ -590,11 +595,13 @@ This table is authoritative — skill bodies do not repeat per-call model mappin
 - Use stronger models only when a previous cheaper attempt failed for reasoning reasons.
 - Keep the parent skill context lean: delegate read-heavy exploration to explorer agents and pass only compact findings, target paths, pattern references, and command summaries between agents.
 
-## Guard Rules (replaces plan-guard hook)
-During the planning phase ($5-plan):
+## Guard Rules (Codex has no plan mode)
+Claude Code enforces these at the harness level via native plan mode. Codex has no equivalent, so honour them yourself while running \`$5-plan\`, **until the user approves the plan**:
 - Do NOT write to any file outside \`.5/\`
 - Do NOT write source code — only the unified plan and scan cache
 - Do NOT spawn implementation agents — only Explore/research agents
+
+After approval, \`$5-plan\` implements compact plans inline and hands larger ones to \`$5-implement\`.
 
 ## Update & Migration Notices (replaces statusline hooks)
 At the very start of this skill, before doing anything else, read these two files if they exist:
@@ -1066,7 +1073,7 @@ function checkExistingInstallation(targetPath) {
 function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
-    log.info('  $5-plan                      - Create unified plan');
+    log.info('  $5-plan                      - Create or refine a unified plan');
     log.info('  $5-split                     - Split plan into smaller plans');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
@@ -1075,11 +1082,10 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
-    log.info('  $5-unlock                    - Remove planning guard lock');
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
-    log.info('  /5:plan                      - Create unified plan');
+    log.info('  /5:plan                      - Create or refine a unified plan');
     log.info('  /5:split                     - Split plan into smaller plans');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
@@ -1088,7 +1094,6 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');
-    log.info('  /5:unlock                    - Remove planning guard lock');
     log.info('  /5:synchronize-agents        - Sync user content between runtimes');
   }
   log.info('');
@@ -1187,6 +1192,38 @@ function removeContextForkFromSkills(targetPath) {
   } catch (e) {}
 }
 
+// Remove the plan-guard PreToolUse hook entry from an existing settings.json.
+// Native plan mode enforces read-only planning at the harness level, so the hook
+// is gone. Claude Code only — Codex never had a settings.json.
+function removePlanGuardHook(targetPath) {
+  const settingsFile = path.join(targetPath, 'settings.json');
+  if (!fs.existsSync(settingsFile)) return;
+  try {
+    const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+    const pre = settings.hooks && settings.hooks.PreToolUse;
+    if (!Array.isArray(pre)) return;
+    const kept = pre.filter(entry =>
+      !(entry.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('plan-guard.js')));
+    if (kept.length === pre.length) return;
+    if (kept.length) settings.hooks.PreToolUse = kept;
+    else delete settings.hooks.PreToolUse;
+    if (settings.hooks && !Object.keys(settings.hooks).length) delete settings.hooks;
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+    log.info('Removed plan-guard hook from settings.json (native plan mode replaces it)');
+  } catch (e) {}
+}
+
+// Delete the stale .5/.planning-active marker. It only existed to drive plan-guard.
+function removePlanningActiveMarker(dataDir) {
+  try {
+    const marker = path.join(dataDir, '.planning-active');
+    if (fs.existsSync(marker)) {
+      fs.unlinkSync(marker);
+      log.info('Removed stale .5/.planning-active marker');
+    }
+  } catch (e) {}
+}
+
 // Perform update (preserves user-created files, updates .5/ data directory)
 function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   log.header(`Updating from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
@@ -1207,6 +1244,10 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // Strip `context: fork` from generated skills — caused infinite loops
   removeContextForkFromSkills(targetPath);
+
+  // Native plan mode replaces the plan-guard hook and its marker file
+  removePlanGuardHook(targetPath);
+  removePlanningActiveMarker(dataDir);
 
   // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
@@ -1257,14 +1298,13 @@ The workflow provides structured feature development:
 All workflow state lives in \`.5/\` at the project root:
 - \`.5/config.json\` — Project configuration
 - \`.5/features/{name}/plan.md\` — Unified plan
-- \`.5/features/{name}/state.json\` — Implementation state
+- \`.5/features/{name}/state.json\` — Implementation resume state
 
 ## Guard Rules
 
-During the planning phase ($5-plan):
+During the planning phase ($5-plan), until the user approves the plan:
 - Do NOT write files outside \`.5/\`
 - Do NOT write source code — only the unified plan and scan cache
-- The \`.5/.planning-active\` marker indicates planning is in progress
 
 ## Configuration
 
@@ -1460,6 +1500,9 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // Rename create-* skill dirs to bare pattern names (create-dto → dto)
   renameCreateSkills(targetPath);
+
+  // The plan-guard marker is shared .5/ state; Codex has no settings.json hook to remove
+  removePlanningActiveMarker(dataDir);
 
   // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;

@@ -36,10 +36,11 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Concern | Claude Code | Codex |
 |---|---|---|
 | Commands | `/5:*` slash commands | `$5-*` skills (auto-converted by installer) |
+| Planning engine | Native plan mode via `EnterPlanMode`, which also enforces read-only planning at the harness level | prose fallback in `plan.md` + the "Guard Rules" block in `getCodexSkillAdapterHeader()` (no plan mode) |
 | Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
 | Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md` | prose fallback only (no `Skill` tool) |
 | Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
-| Hooks | `src/hooks/*.js` via `settings.json` | Embedded as instructions in skill adapter preamble |
+| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `config-guard`) | Embedded as instructions in skill adapter preamble |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
@@ -52,18 +53,18 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 
 Primary commands:
 
-1. `/5:plan` / `$5-plan` — writes `.5/features/{name}/plan.md` and `codebase-scan.md`
-2. `/5:implement {name}` / `$5-implement {name}` — derives `state.json`, executes components in parallel waves, verifies inline. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
+1. `/5:plan` / `$5-plan` — resolves the ticket and feature name, hands exploration, Q&A, and the approval gate to native plan mode, then writes `.5/features/{name}/plan.md` and `codebase-scan.md`. Re-running it on an existing feature refines that plan. Codex uses the prose fallback in `plan.md`.
+   On approval it branches: a **compact** plan is implemented inline in the same session (warm context beats orchestration for 1-2 files) and gets its `state.json` written there; a **full** plan is handed to `/5:implement`, where parallel waves and model routing pay for a fresh run.
+2. `/5:implement {name}` / `$5-implement {name}` — derives the execution graph, executes components in parallel waves, verifies inline. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
 3. `/5:review [low|medium|high|max]` / `$5-review` — reviews code and writes review findings. On Claude Code it delegates to the built-in `code-review` skill (default effort `high`) and maps its reported findings onto `REVIEW-FINDINGS.md`; Codex uses the condensed prose fallback in `review.md`.
 
 Helpers:
 
-- `/5:discuss-feature {name}` refines an existing `plan.md`.
 - `/5:split {name}` splits an existing `plan.md` into smaller linked plans.
 - `/5:commit [short-description]` creates a git commit using `git.commitMessage.pattern`.
 - `/5:address-review-findings {name}` applies approved review findings.
 - `/5:configure` writes config and the CONFIGURE plan.
-- `/5:reconfigure`, `/5:update`, `/5:eject`, `/5:unlock`, and `/5:synchronize-agents` are maintenance commands.
+- `/5:reconfigure`, `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.
 
 All commands have `$5-*` Codex equivalents unless noted otherwise.
 
@@ -88,19 +89,38 @@ Generated skills must not include `context: fork` — this causes skills to loop
 - component checklist
 - technical notes and next steps
 
-The component checklist stays intentionally lean: component, action, target path, intent. `step-orchestrator-agent` derives execution details into `state.json`.
+The component checklist stays intentionally lean: component, action, target path, intent. `step-orchestrator-agent` derives execution details from it.
+
+## Execution State
+
+The execution graph — steps, component wiring, model choices, `patternRefs`, verify commands — is derived fresh on every `/5:implement` run and never persisted. `.5/features/{name}/state.json` holds only what resume needs:
+
+```json
+{
+  "feature": "{name}",
+  "status": "in-progress|completed|failed",
+  "completedComponents": ["component-name"],
+  "verification": {"status": "passed|partial|failed", "summary": "one line"},
+  "startedAt": "{ISO}",
+  "lastUpdated": "{ISO}"
+}
+```
+
+Resume matches components by name across runs, which is only sound because **component names are copied verbatim from the plan's Component Checklist**. That rule lives in `step-orchestrator-agent.md` and in `orchestratorPrompt()` in `5-implement.js` — keep both. In-run progress the user sees comes from `TaskCreate` / `TaskUpdate`, not from a file.
 
 ## Agents
 
-- `step-orchestrator-agent.md` reads `plan.md` and `codebase-scan.md`, then writes enriched `state.json`.
+- `step-orchestrator-agent.md` reads `plan.md` and `codebase-scan.md`, then returns the execution graph.
 - `step-executor-agent.md` implements assigned components and reports a strict `---RESULT---` block.
-- `verification-agent.md` verifies completeness, correctness, build/tests, acceptance criteria, and test coverage, then records concise status in `state.json`.
+- `verification-agent.md` verifies completeness, correctness, build/tests, acceptance criteria, and test coverage, then returns a `---VERIFICATION---` block.
+
+None of the three writes `state.json`; `/5:implement` owns every write.
 
 Usage examples:
 
-- `step-orchestrator-agent.md`: input `plan.md` + `codebase-scan.md` -> output `state.json` with numbered steps.
+- `step-orchestrator-agent.md`: input `plan.md` + `codebase-scan.md` -> output steps + components.
 - `step-executor-agent.md`: input one assigned component -> output `---RESULT--- STATUS: success ...`.
-- `verification-agent.md`: input `plan.md` + `state.json` -> update `state.json` and output `---VERIFICATION---`.
+- `verification-agent.md`: input `plan.md` + component results + baseline -> output `---VERIFICATION---`.
 
 ## Installer Rules
 

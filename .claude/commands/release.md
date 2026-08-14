@@ -61,6 +61,7 @@ Use `gh` to create the release. Pass the release notes body via a temp file to a
 
 1. Write the extracted release notes to a temp file
 2. Run: `gh release create {version} --title "{version}" --notes-file {temp-file}`
+   - If `{version}` contains a hyphen it is a semver prerelease (e.g. `3.0.0-beta-2`) — add `--prerelease` to that command. This command creates the release before the publish workflow does, so the workflow's own prerelease flag never applies; if it is missed here, a beta is published as a normal release.
 3. Remove the temp file
 
 This creates a git tag and GitHub release. The tag push triggers the GitHub workflow which automatically bumps `package.json` and publishes to npm.

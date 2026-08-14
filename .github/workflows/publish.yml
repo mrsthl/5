@@ -31,13 +31,34 @@ jobs:
           TAG=${GITHUB_REF#refs/tags/}
           VERSION=${TAG#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Publishing version: $VERSION"
+
+          # npm publish defaults to the `latest` dist-tag and does NOT special-case
+          # semver prereleases. Publishing 3.0.0-beta-N without an explicit --tag
+          # would serve the beta to every `npx foifi` and to `/5:update`, which runs
+          # `npx foifi@latest --upgrade`. Derive the tag from the version instead.
+          if [[ "$VERSION" == *-* ]]; then
+            echo "dist_tag=beta" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "Publishing PRERELEASE $VERSION to dist-tag 'beta'"
+          else
+            echo "dist_tag=latest" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "Publishing $VERSION to dist-tag 'latest'"
+          fi
 
       - name: Update package.json version
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          # Update package.json with the new version
+          # Needed locally so `npm publish` ships the tagged version
           npm version $VERSION --no-git-tag-version --allow-same-version
+
+          # Only sync the bump back to main for stable releases. A prerelease must
+          # not move main's version off the stable line — that is what forced the
+          # "reset version to 2.0.6" walk-back after 3.0.0-beta-1.
+          if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
+            echo "Prerelease — leaving main's package.json untouched"
+            exit 0
+          fi
 
           # Commit the version change back to the repository
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -53,7 +74,7 @@ jobs:
           fi
 
       - name: Publish to npm (foifi)
-        run: npm publish --access public --provenance
+        run: npm publish --tag ${{ steps.version.outputs.dist_tag }} --access public --provenance
 
       # MIGRATION: also publish under the legacy package name so existing users
       # receive the update transparently. Remove this step after v2.0.0 stable.
@@ -66,7 +87,7 @@ jobs:
             pkg.name = '5-phase-workflow';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
-          npm publish --access public --provenance
+          npm publish --tag ${{ steps.version.outputs.dist_tag }} --access public --provenance
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -80,6 +101,7 @@ jobs:
           script: |
             const version = '${{ steps.version.outputs.version }}';
             const tag = context.ref.replace('refs/tags/', '');
+            const prerelease = '${{ steps.version.outputs.prerelease }}' === 'true';
 
             try {
               await github.rest.repos.createRelease({
@@ -89,7 +111,7 @@ jobs:
                 name: `v${version}`,
                 body: `Release version ${version}`,
                 draft: false,
-                prerelease: false
+                prerelease
               });
             } catch (error) {
               if (error.status === 422) {

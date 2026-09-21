@@ -1,5 +1,62 @@
 # Release Notes
 
+## v3.0.0
+
+**Release Date:** 2026-09-21
+
+### Wrap Native Capabilities Instead of Reimplementing Them
+
+foifi was built when Claude Code had no plan mode, no task tracking, and no review skill, so it carried hand-rolled equivalents. Those capabilities now exist and are better than the substitutes. v3.0 delegates to them and keeps only what foifi genuinely adds: the durable repo-local artifact, the ticket and config conventions, and the delegation strategy for large plans.
+
+This release stabilizes `3.0.0-beta-1` and `3.0.0-beta-2`, which were only available via `npx foifi@beta`. It is now published to the npm `latest` dist-tag and is what `npx foifi` and `/5:update` serve. Net effect versus 2.1.0: **-628 lines** of workflow prose and hook code.
+
+**What's New**
+- **`/5:plan` wraps native plan mode** (`src/commands/5/plan.md`): resolves the ticket and feature name, hands exploration, Q&A and the approval gate to `EnterPlanMode`, then persists the approved plan as `.5/features/{name}/plan.md` + `codebase-scan.md`. The `--github` / `--jira` lookup, folder convention, PLAN.md schema, and necessity gate stay. Codex keeps a prose fallback.
+- **Approval now implies execution**: a **compact** plan (1-2 low-risk components) is implemented inline in the session that planned it — the warm context beats orchestration at that size — and writes its own `state.json`. **Full** plans hand off to `/5:implement`, where parallel waves and per-component model routing repay a fresh run.
+- **`/5:review` wraps the built-in `code-review` skill** (`src/commands/5/review.md`): default effort `high`, overridable via `/5:review [low|medium|high|max]`. Findings are mapped onto the unchanged `REVIEW-FINDINGS.md` template, so everything downstream is untouched. Codex uses a condensed prose fallback.
+- **`/5:plan {name}` is the refine entrypoint**, absorbing `/5:discuss-feature`.
+
+**Improvements**
+- **Deterministic resume** (`src/workflows/5-implement.js`, `src/agents/step-orchestrator-agent.md`): component names are now pinned verbatim to the plan's Component Checklist. The execution graph used to be persisted precisely because re-deriving it could rename components and break resume matching; fixing the cause lets resume match on `completedComponents` alone.
+- **Prerelease-aware publishing** (`.github/workflows/publish.yml`): `npm publish` defaults to the `latest` dist-tag and does not special-case semver prereleases. Betas now derive `--tag beta`, mark the GitHub Release as a prerelease, and no longer push a version bump to `main`. This is the mechanism that let `3.0.0-beta-1` and `3.0.0-beta-2` ship safely without disturbing the stable line, and now promotes this release to `latest`.
+- **Leaner helpers**: `/5:split` 190 → 60 lines and `/5:commit` 112 → 40 lines, keeping the naming conventions and config-driven message logic.
+- **Contract tests** (`test/verify-install-js.sh`): a Plan Mode Contract block with 11 assertions guards the wrap, the fallback, the refine mode, and the state shape.
+
+### ⚠️ Breaking Changes
+
+- **`/5:unlock` removed.** It existed only to clear the planning-guard lock. Native plan mode enforces read-only planning at the harness level, so `plan-guard.js` and `.5/.planning-active` are gone with it. Codex keeps a prose guard in its skill adapter, scoped to pre-approval.
+- **`/5:discuss-feature` removed.** Use `/5:plan {name}` on an existing feature instead.
+- **`state.json` reduced to six fields**: `feature`, `status`, `completedComponents`, `verification`, `startedAt`, `lastUpdated`. The execution graph is derived fresh each run and never persisted. Dropped: `steps`, `pendingComponents`, `baseline`, `latestCommandResults`, `latestCommitResults`, `recentFailures`, `verificationResults`, `eventLog`, `currentStep`, `totalSteps`, `ticket`.
+- **`state-events.jsonl` is no longer written.** Nothing read it. Existing files are left on disk and ignored.
+- **`templates/workflow/STATE.json` removed.**
+- **CodeRabbit support dropped**: the `tools.coderabbit` and `reviewTool` config keys are gone and `/5:review` always reviews.
+
+Finish any in-progress v2.x feature before upgrading. A feature mid-implementation under the old `state.json` will not resume — re-run `/5:implement {name}` to rebuild from `plan.md`.
+
+**Affected files:**
+- `src/commands/5/plan.md` (rewritten)
+- `src/commands/5/review.md` (rewritten)
+- `src/commands/5/implement.md` (modified)
+- `src/commands/5/split.md` (modified)
+- `src/commands/5/commit.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/commands/5/discuss-feature.md` (removed)
+- `src/commands/5/unlock.md` (removed)
+- `src/hooks/plan-guard.js` (removed)
+- `src/templates/workflow/STATE.json` (removed)
+- `src/agents/step-orchestrator-agent.md` (modified)
+- `src/agents/verification-agent.md` (modified)
+- `src/workflows/5-implement.js` (modified)
+- `src/settings.json` (modified)
+- `src/references/configure-tables.md` (modified)
+- `bin/install.js` (modified)
+- `.github/workflows/publish.yml` (modified)
+- `test/verify-install-js.sh` (modified)
+- `AGENTS.md`, `README.md`, `docs/workflow-guide.md` (modified)
+
+---
+
 ## v3.0.0-beta-2
 
 **Release Date:** 2026-08-14

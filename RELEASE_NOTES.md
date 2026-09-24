@@ -1,5 +1,51 @@
 # Release Notes
 
+## v3.0.1
+
+**Release Date:** 2026-09-24
+
+### Scope Discipline Against Drift
+
+Claude tends to build more than it was asked for. This release adapts the anti-drift ideas from [ponytail](https://github.com/dietrichgebert/ponytail) without depending on it, and applies them in every session, not only inside `/5:plan` → `/5:implement` → `/5:review`.
+
+**What's New**
+- **`/5:lean-check` / `$5-lean-check`** (`src/commands/5/lean-check.md`): checks any diff, with or without a plan, against what was requested. It reports scope drift, new dependencies, code that re-implements something already in the codebase or the standard library, and speculative abstractions, one line per finding, ending with `net: -N lines, -M dependencies possible`. On request it reverts the drift or applies all cuts. With a feature name or no argument it diffs against the branch base, so commits made by `git.autoCommit` are included.
+- **`dependency-guard` Stop hook** (`src/hooks/dependency-guard.js`, Claude Code): whenever Claude finishes, the hook compares the dependencies declared in changed manifests with `HEAD`. Supported manifests: `package.json`, `composer.json`, `requirements*.txt`, `pyproject.toml`, `Pipfile`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle` and `*.csproj`. If a dependency was added, Claude must justify it or remove it, once per session and dependency set. Config edits and version bumps of existing packages don't trigger it. On Codex, the same rule is part of the generated `instructions.md` as "Scope Discipline".
+
+**Improvements**
+- **Generated `AGENTS.md`** (`src/templates/AGENTS.md`):
+  - The Simplicity First ladder gains a "reuse what already exists in this codebase" step.
+  - New rules: fix bugs at the root cause; for a large or ambiguous request, ship the smallest version and ask about the rest; list deliberate omissions as `skipped: X — add when Y`.
+  - Before reporting done, check your own diff and revert what doesn't trace to the request.
+- **`/5:implement` reports scope**:
+  - Executors must report `skipped` and the verifier must report `scope: passed | drift`. Both fields are schema-enforced in the Workflow path.
+  - On the mechanical fast path, no verifier runs, so `/5:implement` runs the scope check itself. Scope checks also read untracked files, which `git diff HEAD` leaves out.
+  - Drift is informational only. It never changes the verification status or `state.json`.
+- **Compact plans** implemented inline by `/5:plan` check their scope before `state.json` is written.
+
+**Bug Fixes**
+- **Existing user hooks survive updates**: the installer now merges `Stop`, `SubagentStop` and `UserPromptSubmit` hook arrays. Previously, a user's hook under one of these events was dropped when the installer added its own entry for the same event.
+
+Existing projects receive the new `AGENTS.md` rules after running `/5:reconfigure`.
+
+**Affected files:**
+- `src/commands/5/lean-check.md` (new)
+- `src/hooks/dependency-guard.js` (new)
+- `test/test-dependency-guard.sh` (new)
+- `src/templates/AGENTS.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/agents/verification-agent.md` (modified)
+- `src/commands/5/implement.md` (modified)
+- `src/commands/5/plan.md` (modified)
+- `src/workflows/5-implement.js` (modified)
+- `src/settings.json` (modified)
+- `bin/install.js` (modified)
+- `package.json` (modified — test script)
+- `README.md` (modified)
+- `AGENTS.md` (modified)
+
+---
+
 ## v3.0.0
 
 **Release Date:** 2026-09-21

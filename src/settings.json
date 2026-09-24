@@ -37,6 +37,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/dependency-guard.js",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

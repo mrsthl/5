@@ -8,6 +8,7 @@ This repository publishes the `foifi` npm package for Claude Code and Codex.
 npm test
 bash test/verify-install-js.sh
 bash test/test-check-updates-hook.sh
+bash test/test-dependency-guard.sh
 bash test/test-update-system.sh
 ```
 
@@ -23,7 +24,7 @@ src/
   commands/5/         workflow commands (Claude Code)
   agents/             reusable agent instructions
   workflows/          Workflow-tool scripts (Claude Code only; e.g. 5-implement.js)
-  hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, plan-guard, config-guard)
+  hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, config-guard, dependency-guard)
   skills/             setup and project-skill generators
   templates/workflow/ workflow artifact templates
 test/                 shell verification scripts
@@ -40,7 +41,7 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
 | Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md` | prose fallback only (no `Skill` tool) |
 | Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
-| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `config-guard`) | Embedded as instructions in skill adapter preamble |
+| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `config-guard`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
@@ -117,7 +118,7 @@ Resume matches components by name across runs, which is only sound because **com
 
 None of the three writes `state.json`; `/5:implement` owns every write.
 
-The scope contract is shared across runtimes and workflows: executors report deliberate omissions under `SKIPPED`, the verifier reports `SCOPE: passed | drift`, and outside the workflow the same rules live in the generated project `AGENTS.md` ("Simplicity First", "Surgical Changes") plus `/5:lean-check`. Keep the simplicity ladder in `src/templates/AGENTS.md`, `step-executor-agent.md`, `executorPrompt()` in `5-implement.js`, and the executor contract in `implement.md` in sync.
+The scope contract is shared across runtimes and workflows: executors report deliberate omissions under `SKIPPED`, the verifier reports `SCOPE: passed | drift`, and outside the workflow the same rules live in the generated project `AGENTS.md` ("Simplicity First", "Surgical Changes") plus `/5:lean-check`, plus the `dependency-guard` Stop hook (Claude Code) that makes Claude justify any dependency the uncommitted diff adds, once per session. Keep the simplicity ladder in `src/templates/AGENTS.md`, `step-executor-agent.md`, `executorPrompt()` in `5-implement.js`, and the executor contract in `implement.md` in sync.
 
 Usage examples:
 

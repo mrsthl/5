@@ -413,7 +413,8 @@ function getWorkflowManagedFiles() {
       'statusline.js',
       'check-updates.js',
       'check-reconfig.js',
-      'config-guard.js'
+      'config-guard.js',
+      'dependency-guard.js'
     ],
 
     // References: lookup tables and schemas read on-demand by commands
@@ -890,7 +891,7 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
 // Ensure .5/.gitignore exists and contains transient runtime files
 function ensureDotFiveGitignore(dataDir) {
   const gitignorePath = path.join(dataDir, '.gitignore');
-  const entries = ['.update-cache.json', '.migration-v*', '.reconfig-reminder'];
+  const entries = ['.update-cache.json', '.migration-v*', '.reconfig-reminder', '.dependency-guard.json'];
   if (fs.existsSync(gitignorePath)) {
     let content = fs.readFileSync(gitignorePath, 'utf8');
     for (const entry of entries) {
@@ -1009,7 +1010,7 @@ function mergeHookArrays(targetArr, sourceArr) {
 // Hook event keys that contain arrays of hook entries
 const HOOK_ARRAY_KEYS = new Set([
   'PreToolUse', 'PostToolUse', 'SessionStart', 'SessionEnd',
-  'PreCompact', 'PostCompact'
+  'PreCompact', 'PostCompact', 'Stop', 'SubagentStop', 'UserPromptSubmit'
 ]);
 
 // Deep merge for settings.json
@@ -1077,6 +1078,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-split                     - Split plan into smaller plans');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
+    log.info('  $5-lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  $5-commit                    - Create a templated git commit');
     log.info('  $5-address-review-findings   - Decide review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
@@ -1089,6 +1091,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:split                     - Split plan into smaller plans');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
+    log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  /5:commit                    - Create a templated git commit');
     log.info('  /5:address-review-findings   - Decide review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
@@ -1305,6 +1308,10 @@ All workflow state lives in \`.5/\` at the project root:
 During the planning phase ($5-plan), until the user approves the plan:
 - Do NOT write files outside \`.5/\`
 - Do NOT write source code — only the unified plan and scan cache
+
+## Scope Discipline (replaces the dependency-guard Stop hook)
+
+Before you report any task as done — inside or outside the workflow skills — check the uncommitted diff of dependency manifests (\`package.json\`, \`requirements*.txt\`, \`pyproject.toml\`, \`go.mod\`, \`Cargo.toml\`, \`Gemfile\`, \`composer.json\`, \`pom.xml\`, \`build.gradle\`, \`*.csproj\`). For every added dependency: keep it and name it in your reply if the user asked for it; otherwise remove it with the package manager and use existing code, the standard library, a native platform feature, or an installed dependency instead. For a deeper check, run \`$5-lean-check\`.
 
 ## Configuration
 

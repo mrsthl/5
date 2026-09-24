@@ -69,8 +69,9 @@ Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
 
 2. Call `Workflow({name: "5-implement", args})`.
-3. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
-4. Auto-commit per step (Step 5), then report (Step 6).
+3. If the returned `verification.inline` is `true` (the workflow took the mechanical fast path and no verification agent ran), run the **fast-path scope check** from 3c yourself and set `verification.scope` from it.
+4. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
+5. Auto-commit per step (Step 5), then report (Step 6).
 
 > The Workflow path persists only after the workflow returns — if a run is interrupted mid-way, this session's progress is not saved and those components run again on the next `/5:implement`. The executor's smallest-coherent-change contract makes a re-touch safe but not free.
 
@@ -95,7 +96,7 @@ For each step, skipping components already in `completedComponents`:
    - Give each executor only its component block, required `patternRefs`, verify commands, and the inline contract below — do not make it read `step-executor-agent.md`.
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -104,6 +105,7 @@ FILES_CREATED: [comma-separated paths]
 FILES_MODIFIED: [comma-separated paths]
 VERIFY: passed | failed | skipped
 DEVIATIONS: none | {brief list}
+SKIPPED: none | {what you deliberately did not build — add when ...}
 ERROR: none | {error description}
 ---END---
 ```
@@ -125,9 +127,18 @@ COMPLETENESS: passed | partial | failed
 INFRASTRUCTURE: passed | failed
 ACCEPTANCE_CRITERIA: satisfied/total
 QUALITY: passed | partial | failed
+SCOPE: passed | drift
 ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```
+
+**Fast-path scope check** — the fast path skips `verification-agent`, so run this before Step 4 (on both the Workflow and the prose path):
+
+1. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, or an import site it needs. Anything else is drift.
+2. Changed dependency manifests or lockfiles: a dependency no component requires is drift.
+3. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
+
+Set `SCOPE: passed | drift`. Drift never changes the verification status or `state.json`; it only goes into the report.
 
 ## Step 4: Persist Result
 
@@ -145,4 +156,9 @@ No changed files → skip. Commit error → report it and continue; do not retry
 
 ## Step 6: Report
 
-Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Then stop.
+Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Also list, one line each:
+
+- **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
+- **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.
+
+Then stop.

@@ -21,7 +21,7 @@ You follow the plan, state entry, and existing codebase patterns. You do not wid
 
 ## Simplicity
 
-Write the minimum that satisfies the component (the "smallest coherent change"): prefer the standard library, a native framework feature, or an already-installed dependency over anything new. Add no new dependency, no abstraction for single-use code, no unrequested flexibility, and no error handling for impossible cases. Follow `Simplicity First` in the project `AGENTS.md`.
+Write the minimum that satisfies the component (the "smallest coherent change"): reuse what already exists in this codebase first, then prefer the standard library, a native framework feature, or an already-installed dependency over anything new. Add no new dependency, no abstraction for single-use code, no unrequested flexibility, and no error handling for impossible cases. Touch only the target file and what it strictly needs (its test, an import site). Follow `Simplicity First` in the project `AGENTS.md`.
 
 End with exactly:
 
@@ -32,6 +32,7 @@ FILES_CREATED: [comma-separated paths]
 FILES_MODIFIED: [comma-separated paths]
 VERIFY: passed | failed | skipped
 DEVIATIONS: none | {brief list}
+SKIPPED: none | {what you deliberately did not build — add when ...}
 ERROR: none | {error description}
 ---END---
 ```

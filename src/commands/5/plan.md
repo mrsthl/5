@@ -114,6 +114,7 @@ Approving a plan means the user wants it built. Branch on the plan format you ch
 
 1. Say what you are about to do, then implement the Component Checklist directly. Make the smallest coherent change per component and follow the patterns named in the plan.
 2. Run the verify commands from `.5/config.json`. Skip any set to `none`.
+   Then check scope: `git status --short` must list only the Component Checklist target paths and what they strictly need (their tests, import sites). Revert anything else before continuing, and tell the user in one line what you deliberately left out (`skipped: X — add when Y`).
 3. Write `.5/features/{name}/state.json`:
 
 ```json

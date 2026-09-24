@@ -92,6 +92,7 @@ Verification runs at the end of `/5:implement` and records a concise result in `
 | `/5:split` / `$5-split` | Split an existing plan into smaller linked plans for separate implementation |
 | `/5:implement` / `$5-implement` | Derive the execution graph, execute steps with agents, and verify inline |
 | `/5:review` / `$5-review` | Review code changes and save findings |
+| `/5:lean-check` / `$5-lean-check` | Check any diff for scope drift and over-engineering — works without a plan |
 | `/5:commit` / `$5-commit` | Create a git commit using the configured commit message template |
 | `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply approved fixes and PR comments |
 | `/5:reconfigure` / `$5-reconfigure` | Refresh docs, index, skills, and rules |
@@ -122,6 +123,8 @@ State is kept to what is actually read. The execution graph is derived fresh on 
 Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end, passing it the pre-change baseline so pre-existing failures are not blamed on the change, and records a concise final status without generating an extra report.
 
 Review delegates to Claude Code's built-in `code-review` skill (default effort `high`, override with `/5:review {low|medium|high|max}`) and maps its findings into the workflow's findings file. Where that skill is unavailable — Codex, for example — a built-in review agent takes over and triages changed files by risk instead. `/5:address-review-findings` presents each finding one by one with a recommendation, records `fix`/`wont_fix`/`wait` decisions, then coordinates narrower helpers for approved local fixes, PR comment triage, and PR replies so the common path stays compact.
+
+Scope drift is checked, not just discouraged, and not only inside the workflow. The generated `AGENTS.md` carries a simplicity ladder and a "check your own diff before finishing" rule for every session. `/5:lean-check` checks any diff against the request for drift, new dependencies, and over-engineering. On Claude Code, the `dependency-guard` Stop hook makes Claude justify or remove any dependency the uncommitted diff adds, once per session; Codex gets the same rule through its generated instructions. Inside `/5:implement`, executors report what they deliberately skipped and verification reports `SCOPE: passed | drift`.
 
 Reconfiguration uses a compact `.5/reconfigure-manifest.json` to pass refresh decisions to documentation and skill generation helpers without duplicating long detection summaries in prompts.
 

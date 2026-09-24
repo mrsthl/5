@@ -308,6 +308,7 @@ if (extraFiles.length) log(`scope: ${extraFiles.length} file(s) touched outside 
 let verification
 if (allPassed && !usedSonnet) {
   log('all components passed + mechanical (no sonnet, no escalation) — inline verify, no verification agent')
+  // No git access here: /5:implement runs the fast-path scope check itself when it sees inline: true.
   verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', acceptanceCriteria: 'n/a', quality: 'passed', commands: [], failures: [], inline: true }
 } else {
   if (!allItems.length) log('no components ran this invocation (resume) — verifying the already-completed feature against the plan')

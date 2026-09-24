@@ -69,8 +69,9 @@ Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
 
 2. Call `Workflow({name: "5-implement", args})`.
-3. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
-4. Auto-commit per step (Step 5), then report (Step 6).
+3. If the returned `verification.inline` is `true` (the workflow took the mechanical fast path and no verification agent ran), run the **fast-path scope check** from 3c yourself and set `verification.scope` from it.
+4. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
+5. Auto-commit per step (Step 5), then report (Step 6).
 
 > The Workflow path persists only after the workflow returns — if a run is interrupted mid-way, this session's progress is not saved and those components run again on the next `/5:implement`. The executor's smallest-coherent-change contract makes a re-touch safe but not free.
 
@@ -131,7 +132,13 @@ ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```
 
-  The inline fast path still runs the scope check itself: compare `git status --short` against the planned target paths plus the executors' reported files, and report unexplained files or new dependencies as drift. Drift never changes the verification status or `state.json`; it only goes into the report.
+**Fast-path scope check** — the fast path skips `verification-agent`, so run this before Step 4 (on both the Workflow and the prose path):
+
+1. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, or an import site it needs. Anything else is drift.
+2. Changed dependency manifests or lockfiles: a dependency no component requires is drift.
+3. `git diff HEAD` on the changed files, read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
+
+Set `SCOPE: passed | drift`. Drift never changes the verification status or `state.json`; it only goes into the report.
 
 ## Step 4: Persist Result
 

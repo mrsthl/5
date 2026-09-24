@@ -16,9 +16,11 @@ You only hunt scope drift and complexity. Correctness, security, and performance
 
 ## Step 1: Collect the Diff
 
-- No argument, or a feature name (`.5/features/{argument}/` exists): the working tree against `HEAD` — `git diff HEAD --stat`, `git diff HEAD`, plus untracked files from `git status --short`.
-- Otherwise a base branch (`git rev-parse --verify {argument}` succeeds): `git diff {argument}...HEAD` plus uncommitted changes.
-- Anything else is request text for Step 2.
+Resolve a base, then diff the working tree against it — `git diff {base} --stat` and `git diff {base}` cover committed and uncommitted changes together; add untracked files from `git status --short`.
+
+- A base branch argument (`git rev-parse --verify {argument}` succeeds and `.5/features/{argument}/` does not exist): `base = git merge-base {argument} HEAD`.
+- A feature name (`.5/features/{argument}/` exists) or no argument: `base = git merge-base {default-branch} HEAD`, where `{default-branch}` comes from `git symbolic-ref --short refs/remotes/origin/HEAD` (fall back to `main`, then `master`). This includes commits already made by `/5:implement` with `git.autoCommit`. When `HEAD` is the default branch itself, `base = HEAD` (uncommitted changes only).
+- Any other argument is request text for Step 2.
 
 No changes → say `Nothing to check.` and stop.
 

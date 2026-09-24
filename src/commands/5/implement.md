@@ -136,7 +136,7 @@ ERRORS: none | {summary}
 
 1. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, or an import site it needs. Anything else is drift.
 2. Changed dependency manifests or lockfiles: a dependency no component requires is drift.
-3. `git diff HEAD` on the changed files, read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
+3. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
 
 Set `SCOPE: passed | drift`. Drift never changes the verification status or `state.json`; it only goes into the report.
 

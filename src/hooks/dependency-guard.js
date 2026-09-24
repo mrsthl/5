@@ -5,53 +5,113 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const JSON_MANIFESTS = { 'package.json': ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'], 'composer.json': ['require', 'require-dev'] };
-const LINE_MANIFESTS = /^(requirements.*\.txt|pyproject\.toml|Pipfile|go\.mod|Cargo\.toml|Gemfile|pom\.xml|build\.gradle(\.kts)?|.*\.csproj)$/;
+// Each extractor returns the dependency identities a manifest declares. The hook compares
+// those sets with HEAD, so config edits and version bumps of existing packages never count.
+const pep508Name = spec => (spec.trim().match(/^([A-Za-z0-9][A-Za-z0-9._-]*)/) || [])[1];
+const normalizePy = name => name && name.toLowerCase().replace(/[_.]+/g, '-');
+const jsonKeys = sections => text => { const json = JSON.parse(text); return sections.flatMap(s => Object.keys(json[s] || {})); };
+const matchAll = (text, re, pick) => [...text.matchAll(re)].map(pick);
 
-// Comments, brackets, section headers, and package metadata — not dependencies.
-const IGNORED_LINE = /^(#|\/\/|<!--|[[\](){}])|^(version|name|description|edition|authors)\s*=|^(module|go|toolchain)\s|\($/;
+function requirementsDeps(text) {
+  return text.split('\n')
+    .map(l => l.replace(/#.*/, '').trim())
+    .filter(l => l && !l.startsWith('-'))
+    .map(l => normalizePy(pep508Name(l)))
+    .filter(Boolean);
+}
+
+// Minimal TOML walk for Cargo.toml, Pipfile, and pyproject.toml (PEP 621, PEP 735, Poetry).
+function tomlDeps(text) {
+  const deps = [];
+  let section = '';
+  let inArray = false;
+  // Collects quoted specs; returns true once the array closes (a `]` outside quotes, not in "pkg[extra]").
+  const arrayLine = line => {
+    matchAll(line, /"([^"]+)"|'([^']+)'/g, m => normalizePy(pep508Name(m[1] || m[2]))).forEach(d => d && deps.push(d));
+    return line.replace(/"[^"]*"|'[^']*'/g, '').includes(']');
+  };
+
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/\s#.*$/, '').trim();
+    if (inArray) { inArray = !arrayLine(line); continue; }
+    const header = line.match(/^\[\[?([^\]]+)\]\]?$/);
+    if (header) {
+      section = header[1].trim();
+      const dotted = section.match(/(?:^|\.)(?:dependencies|dev-dependencies|build-dependencies)\.([^.]+)$/);
+      if (dotted) deps.push(dotted[1]); // Cargo: [dependencies.serde]
+      continue;
+    }
+    const key = (line.match(/^"?([A-Za-z0-9_.-]+)"?\s*=/) || [])[1];
+    if (!key) continue;
+    const arrayOfSpecs = (section === 'project' && key === 'dependencies') ||
+      section === 'project.optional-dependencies' || section === 'dependency-groups';
+    if (arrayOfSpecs && line.includes('[')) {
+      inArray = !arrayLine(line.slice(line.indexOf('[') + 1));
+    } else if (/(?:^|\.)(?:dependencies|dev-dependencies|build-dependencies|packages|dev-packages)$/.test(section) && key !== 'python') {
+      deps.push(key);
+    }
+  }
+  return deps;
+}
+
+function goModDeps(text) {
+  const deps = [];
+  let inBlock = false;
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (/^require\s*\($/.test(line)) { inBlock = true; continue; }
+    if (inBlock && line === ')') { inBlock = false; continue; }
+    if (line.includes('// indirect')) continue; // pulled in by tooling, not chosen
+    const spec = inBlock ? line : (line.match(/^require\s+(.+)$/) || [])[1];
+    const mod = spec && spec.split(/\s+/)[0];
+    if (mod && !mod.startsWith('//')) deps.push(mod);
+  }
+  return deps;
+}
+
+const EXTRACTORS = [
+  [/^package\.json$/, jsonKeys(['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'])],
+  [/^composer\.json$/, jsonKeys(['require', 'require-dev'])],
+  [/^requirements.*\.txt$/, requirementsDeps],
+  [/^(pyproject\.toml|Pipfile|Cargo\.toml)$/, tomlDeps],
+  [/^go\.mod$/, goModDeps],
+  [/^Gemfile$/, text => matchAll(text, /^\s*gem\s+['"]([^'"]+)['"]/gm, m => m[1])],
+  [/^pom\.xml$/, text => matchAll(text, /<dependency>([\s\S]*?)<\/dependency>/g, m =>
+    [/<groupId>([^<]+)</, /<artifactId>([^<]+)</].map(re => (m[1].match(re) || [])[1] || '?').join(':'))],
+  [/^build\.gradle(\.kts)?$/, text => matchAll(text,
+    /^\s*(?:implementation|api|compileOnly|runtimeOnly|testImplementation|testRuntimeOnly|annotationProcessor|kapt|ksp|classpath)\s*\(?\s*(?:['"]([^'":]+:[^'":]+)|(libs\.[\w.]+))/gm,
+    m => m[1] || m[2])],
+  [/\.csproj$/, text => matchAll(text, /<PackageReference\s+Include="([^"]+)"/gi, m => m[1])]
+];
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 }
 
-function jsonDeps(text, sections) {
-  const json = JSON.parse(text);
-  return sections.flatMap(s => Object.keys(json[s] || {}));
+function headVersion(root, file) {
+  try { return git(root, ['show', `HEAD:${file}`]); } catch (e) { return null; }
 }
 
-function headVersion(cwd, file) {
-  try { return git(cwd, ['show', `HEAD:${file}`]); } catch (e) { return null; }
-}
-
-function addedDependencies(cwd) {
-  const changed = git(cwd, ['diff', 'HEAD', '--name-only']).split('\n').filter(Boolean);
-  const untracked = git(cwd, ['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean);
+function addedDependencies(root) {
+  const changed = git(root, ['diff', 'HEAD', '--name-only']).split('\n').filter(Boolean);
+  const untracked = git(root, ['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean);
   const found = [];
 
-  for (const file of [...new Set([...changed, ...untracked])]) {
-    const base = path.basename(file);
-    const abs = path.join(cwd, file);
-    if (!fs.existsSync(abs)) continue;
-
-    if (JSON_MANIFESTS[base]) {
-      const before = headVersion(cwd, file);
-      const old = new Set(before ? jsonDeps(before, JSON_MANIFESTS[base]) : []);
-      jsonDeps(fs.readFileSync(abs, 'utf8'), JSON_MANIFESTS[base])
+  for (const file of new Set([...changed, ...untracked])) {
+    const extract = (EXTRACTORS.find(([re]) => re.test(path.basename(file))) || [])[1];
+    const abs = path.join(root, file);
+    if (!extract || !fs.existsSync(abs)) continue;
+    try {
+      const before = headVersion(root, file);
+      const old = new Set(before ? extract(before) : []);
+      extract(fs.readFileSync(abs, 'utf8'))
         .filter(d => !old.has(d))
         .forEach(d => found.push(`${d} (${file})`));
-    } else if (LINE_MANIFESTS.test(base)) {
-      const diff = untracked.includes(file)
-        ? fs.readFileSync(abs, 'utf8').split('\n').map(l => `+${l}`)
-        : git(cwd, ['diff', 'HEAD', '-U0', '--', file]).split('\n');
-      diff
-        .filter(l => l.startsWith('+') && !l.startsWith('+++'))
-        .map(l => l.slice(1).trim())
-        .filter(l => l && !IGNORED_LINE.test(l))
-        .forEach(l => found.push(`${l} (${file})`));
+    } catch (e) {
+      // Unparseable manifest (e.g. mid-edit JSON): skip this file, keep checking the others.
     }
   }
-  return found;
+  return [...new Set(found)];
 }
 
 let input = '';

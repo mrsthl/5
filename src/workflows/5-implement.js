@@ -26,7 +26,7 @@ export const meta = {
 const RESULT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'verify'],
+  required: ['status', 'verify', 'skipped'],
   properties: {
     status: { enum: ['success', 'failed'] },
     filesCreated: { type: 'array', items: { type: 'string' } },
@@ -41,7 +41,7 @@ const RESULT_SCHEMA = {
 const VERIFICATION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'completeness', 'infrastructure', 'quality'],
+  required: ['status', 'completeness', 'infrastructure', 'quality', 'scope'],
   properties: {
     status: { enum: ['passed', 'partial', 'failed'] },
     completeness: { enum: ['passed', 'partial', 'failed'] },
@@ -190,7 +190,7 @@ ${baseline}
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`: every changed file traces to a planned component — its target, its test, or an import site; flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
+Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, or an import site; flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
 Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
 }

@@ -1,6 +1,6 @@
 ---
 name: verification-agent
-description: Verifies a workflow implementation across completeness, correctness, infrastructure, acceptance criteria, and quality. Used by /5:implement.
+description: Verifies a workflow implementation across completeness, correctness, infrastructure, acceptance criteria, quality, and scope. Used by /5:implement.
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -22,6 +22,7 @@ Read `.5/features/{feature-name}/plan.md` and `.5/config.json` if present. Read 
 4. Tests: run the configured test command unless it is `none` or the baseline and component results already prove its status.
 5. Correctness: inspect changed files and executor results to confirm the implementation matches the plan and does not only satisfy file existence. Prefer changed files and targeted imports over broad codebase scanning.
 6. Quality: logic-bearing created or modified components have tests when the project has a test framework.
+7. Scope: run `git status --short` and `git diff HEAD --stat`. Every changed file traces to a planned component (its target, its test, or an import site it needs). Flag files outside the plan, work the plan's Scope marks Out or `[DEFERRED]`, new dependencies no component requires, and abstractions or configurability no acceptance criterion asks for. Report drift only in `SCOPE`; it does not change `STATUS` — the user decides what to revert.
 
 Rerun only the commands whose inputs changed. Do not rerun an identical passing command just to see it pass again.
 
@@ -36,8 +37,9 @@ COMPLETENESS: passed | partial | failed
 INFRASTRUCTURE: passed | failed
 ACCEPTANCE_CRITERIA: satisfied/total
 QUALITY: passed | partial | failed
+SCOPE: passed | drift
 ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```
 
-Keep `ERRORS` to a compact summary. Do not paste command logs or diffs.
+Keep `ERRORS` to a compact summary; list each drift finding there as `drift: {path} — {why}`. Do not paste command logs or diffs.

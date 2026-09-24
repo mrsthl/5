@@ -38,11 +38,14 @@ Each phase produces a specific artifact - do not create artifacts belonging to o
 Before writing code, walk this decision hierarchy and stop at the first step that solves the problem:
 
 1. **Does this need to exist at all?** If the requirement is speculative, don't build it (YAGNI).
-2. Does the **language or standard library** already solve it?
-3. Is there a **native platform or framework** feature for it?
-4. Does an **already-installed dependency** cover it? Don't add a new dependency for this.
-5. Can it be a **single, clear expression** instead of a new abstraction?
-6. Only then: write the **minimum viable implementation**.
+2. Does it **already exist in this codebase**? Search before you write — reuse the helper, util, type, or pattern that is already here instead of re-implementing it.
+3. Does the **language or standard library** already solve it?
+4. Is there a **native platform or framework** feature for it?
+5. Does an **already-installed dependency** cover it? Don't add a new dependency for this.
+6. Can it be a **single, clear expression** instead of a new abstraction?
+7. Only then: write the **minimum viable implementation**.
+
+The hierarchy shortens the solution, never the reading: understand the code the change touches before picking a step.
 
 Non-negotiable regardless of the above: security, data integrity, correctness, and accessibility.
 
@@ -53,6 +56,9 @@ Then apply these rules:
 - No flexibility or configurability that was not requested.
 - No error handling for impossible scenarios.
 - If you write 200 lines and it could be 50, rewrite it.
+- Bug fix = root cause, not symptom: find every caller of the function you touch and fix the shared code path once.
+- Large or ambiguous request: build the smallest version that satisfies it and ask about the rest in the same response instead of building it speculatively.
+- When you finish, name what you deliberately left out in one line each (`skipped: X — add when Y`). No essays defending the simplification.
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
@@ -79,6 +85,8 @@ When your changes create orphans:
 - Do not remove pre-existing dead code unless asked.
 
 The test: Every changed line should trace directly to the user's request.
+
+Before you report a task as done, check your own diff (`git status --short` and `git diff --stat`): revert files and changes that do not trace to the request, and remove new dependencies nobody asked for. For a deeper pass, run `/5:lean-check` (Codex: `$5-lean-check`).
 
 ## Goal-Driven Execution
 

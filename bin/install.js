@@ -1077,6 +1077,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-split                     - Split plan into smaller plans');
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code review');
+    log.info('  $5-lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  $5-commit                    - Create a templated git commit');
     log.info('  $5-address-review-findings   - Decide review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
@@ -1089,6 +1090,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:split                     - Split plan into smaller plans');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code review');
+    log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  /5:commit                    - Create a templated git commit');
     log.info('  /5:address-review-findings   - Decide review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');

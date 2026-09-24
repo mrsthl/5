@@ -61,6 +61,7 @@ Primary commands:
 Helpers:
 
 - `/5:split {name}` splits an existing `plan.md` into smaller linked plans.
+- `/5:lean-check [base-branch|feature-name] [request]` checks any diff — with or without a plan — for scope drift and over-engineering, and can revert the drift.
 - `/5:commit [short-description]` creates a git commit using `git.commitMessage.pattern`.
 - `/5:address-review-findings {name}` applies approved review findings.
 - `/5:configure` writes config and the CONFIGURE plan.
@@ -115,6 +116,8 @@ Resume matches components by name across runs, which is only sound because **com
 - `verification-agent.md` verifies completeness, correctness, build/tests, acceptance criteria, and test coverage, then returns a `---VERIFICATION---` block.
 
 None of the three writes `state.json`; `/5:implement` owns every write.
+
+The scope contract is shared across runtimes and workflows: executors report deliberate omissions under `SKIPPED`, the verifier reports `SCOPE: passed | drift`, and outside the workflow the same rules live in the generated project `AGENTS.md` ("Simplicity First", "Surgical Changes") plus `/5:lean-check`. Keep the simplicity ladder in `src/templates/AGENTS.md`, `step-executor-agent.md`, `executorPrompt()` in `5-implement.js`, and the executor contract in `implement.md` in sync.
 
 Usage examples:
 

@@ -95,7 +95,7 @@ For each step, skipping components already in `completedComponents`:
    - Give each executor only its component block, required `patternRefs`, verify commands, and the inline contract below — do not make it read `step-executor-agent.md`.
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change, run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -104,6 +104,7 @@ FILES_CREATED: [comma-separated paths]
 FILES_MODIFIED: [comma-separated paths]
 VERIFY: passed | failed | skipped
 DEVIATIONS: none | {brief list}
+SKIPPED: none | {what you deliberately did not build — add when ...}
 ERROR: none | {error description}
 ---END---
 ```
@@ -125,9 +126,12 @@ COMPLETENESS: passed | partial | failed
 INFRASTRUCTURE: passed | failed
 ACCEPTANCE_CRITERIA: satisfied/total
 QUALITY: passed | partial | failed
+SCOPE: passed | drift
 ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```
+
+  The inline fast path still runs the scope check itself: compare `git status --short` against the planned target paths plus the executors' reported files, and report unexplained files or new dependencies as drift. Drift never changes the verification status or `state.json`; it only goes into the report.
 
 ## Step 4: Persist Result
 
@@ -145,4 +149,9 @@ No changed files → skip. Commit error → report it and continue; do not retry
 
 ## Step 6: Report
 
-Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Then stop.
+Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Also list, one line each:
+
+- **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
+- **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.
+
+Then stop.

@@ -33,6 +33,7 @@ const RESULT_SCHEMA = {
     filesModified: { type: 'array', items: { type: 'string' } },
     verify: { enum: ['passed', 'failed', 'skipped'] },
     deviations: { type: 'string', description: 'none or a brief list' },
+    skipped: { type: 'string', description: 'none, or what was deliberately not built and when to add it' },
     error: { type: 'string', description: 'none or an error description' }
   }
 }
@@ -47,6 +48,7 @@ const VERIFICATION_SCHEMA = {
     infrastructure: { enum: ['passed', 'failed'] },
     acceptanceCriteria: { type: 'string', description: 'satisfied/total, e.g. "3/3"' },
     quality: { enum: ['passed', 'partial', 'failed'] },
+    scope: { enum: ['passed', 'drift'] },
     commands: {
       type: 'array',
       items: {
@@ -159,11 +161,11 @@ Intent: ${c.description || ''}
 Read only these pattern references (ranges/symbols), plus the target file for modify/rename:
 ${refs}
 
-Rules: smallest coherent change; mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
+Rules: smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
 
 Then run: ${verify}
 
-Return structured output: status, filesCreated, filesModified, verify, deviations (none or brief), error (none or description). Keep it concise — no logs or diffs unless failed.`
+Return structured output: status, filesCreated, filesModified, verify, deviations (none or brief), skipped (none, or what you deliberately did not build — add when ...), error (none or description). Keep it concise — no logs or diffs unless failed.`
 }
 
 function verifyPrompt(a, results, resumeDone) {
@@ -188,9 +190,9 @@ ${baseline}
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists). Prefer changed files over broad scanning.
+Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`: every changed file traces to a planned component — its target, its test, or an import site; flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
-Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, commands[], failures[].`
+Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -294,6 +296,15 @@ const allPassed = allItems.length > 0 && allItems.every(i => i.result && i.resul
 // Non-mechanical when a component was planned as sonnet OR needed a sonnet retry to pass —
 // either signals reasoning-level work that warrants the full verification agent.
 const usedSonnet = components.some(c => (c.model || 'haiku') === 'sonnet') || allItems.some(i => i.escalated)
+// Deterministic scope signal: files an executor touched beyond its planned target(s).
+// Tests and import sites are legitimate, so this is reported for the user, never a failure.
+const extraFiles = allItems.flatMap(i => {
+  const stripDot = f => f.replace(/^\.\//, '')
+  const planned = new Set([i.component.file, i.component.sourceFile].filter(Boolean).map(stripDot))
+  const touched = i.result ? [...(i.result.filesCreated || []), ...(i.result.filesModified || [])].map(stripDot) : []
+  return touched.filter(f => !planned.has(f)).map(f => ({ component: i.component.name, file: f }))
+})
+if (extraFiles.length) log(`scope: ${extraFiles.length} file(s) touched outside planned targets`)
 let verification
 if (allPassed && !usedSonnet) {
   log('all components passed + mechanical (no sonnet, no escalation) — inline verify, no verification agent')
@@ -324,5 +335,6 @@ return {
     items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, escalated: !!i.escalated, result: i.result }))
   })),
   verification,
+  extraFiles,
   status: verification.status === 'passed' ? 'completed' : 'failed'
 }

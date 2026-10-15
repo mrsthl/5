@@ -391,10 +391,37 @@ else
 fi
 echo ""
 
+# Test 13: Orphan Cleanup Stays Inside the Install
+echo "Test 13: Orphan Cleanup Stays Inside the Install"
+echo "------------------------------------------------"
+cd /tmp
+rm -rf test-5phase-5
+mkdir -p test-5phase-5/project test-5phase-5/linked-victim test-5phase-5/escape-victim
+echo "keep" > test-5phase-5/linked-victim/secret
+echo "keep" > test-5phase-5/escape-victim/secret
+cd test-5phase-5/project
+node "$INSTALL_SCRIPT" --local > /dev/null
+ln -s ../../../linked-victim .claude/skills/use-index
+echo '{"packageVersion":"0.9.0","manifest":["skills/use-index","../../escape-victim"]}' > .5/version.json
+node "$INSTALL_SCRIPT" --upgrade > /dev/null
+if [ -f ../linked-victim/secret ] && [ ! -e .claude/skills/use-index ]; then
+  echo "✓ Orphaned symlink removed without touching its target"
+else
+  echo "✗ Orphan cleanup followed a symlink out of the install"
+  exit 1
+fi
+if [ -f ../escape-victim/secret ]; then
+  echo "✓ Manifest entries outside the install are ignored"
+else
+  echo "✗ Orphan cleanup deleted a path outside the install"
+  exit 1
+fi
+echo ""
+
 # Cleanup
 echo "Cleanup"
 echo "-------"
-rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4 /tmp/test-5phase-codex-1 /tmp/test-5phase-codex-legacy
+rm -rf /tmp/test-5phase-1 /tmp/test-5phase-2 /tmp/test-5phase-3 /tmp/test-5phase-4 /tmp/test-5phase-5 /tmp/test-5phase-codex-1 /tmp/test-5phase-codex-legacy
 echo "✓ Cleaned up test directories"
 echo ""
 

@@ -323,23 +323,10 @@ function copyWorkflowHelperBins(targetPath) {
   }
 }
 
-// Remove directory recursively
+// Remove a directory recursively. fs.rmSync removes a symlink itself and never follows it,
+// so a link planted in a checkout cannot redirect the deletion outside the project.
 function removeDir(dir) {
-  if (fs.existsSync(dir)) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        removeDir(fullPath);
-      } else {
-        fs.unlinkSync(fullPath);
-      }
-    }
-
-    fs.rmdirSync(dir);
-  }
+  fs.rmSync(dir, { recursive: true, force: true });
 }
 
 // Files removed from the package over time. Upgrades from installs with a manifest find
@@ -869,9 +856,12 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
 
   if (oldManifest) {
     // Manifest exists: diff old vs current, delete orphans
+    const installRoot = path.resolve(targetPath) + path.sep;
     for (const entry of oldManifest) {
       if (!currentSet.has(entry)) {
-        const fullPath = path.join(targetPath, entry);
+        const fullPath = path.resolve(targetPath, entry);
+        // version.json may come from the checkout, so an entry must stay inside the install dir
+        if (!fullPath.startsWith(installRoot)) continue;
         if (fs.existsSync(fullPath)) {
           const stat = fs.statSync(fullPath);
           if (stat.isDirectory()) {

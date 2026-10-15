@@ -1,3 +1,5 @@
+<!-- Generated from the foifi AGENTS.md template. The repository standards in this file are the "Custom Documentation" section and the files linked under "Standards". All other sections are workflow rules. They rank below the repository standards and the style skills. -->
+
 # Repository Guide
 
 {PROJECT_OVERVIEW}
@@ -22,16 +24,18 @@ When running `/5:` workflow commands, follow the command instructions exactly as
 Do not skip steps, combine phases, or proceed to actions not specified in the current command.
 Each phase produces a specific artifact - do not create artifacts belonging to other phases.
 
-## Coding Guidelines
+## Standards
 
-{CONVENTIONS_REFERENCE}
+These rules decide how code is written here, in this order:
 
-1. Prefer explicit types or contracts for public APIs, data transfer shapes, service methods, hooks, and async return values where the language supports them.
-2. Keep comments and docs concise; document constraints and non-obvious behavior, not the obvious.
-3. Keep files focused and bounded; split broad controllers, services, hooks, and components early.
-4. Extract helpers or classes when logic starts mixing orchestration, parsing, IO, and mapping in one place.
-5. Favor SRP and DRY, but follow surrounding module conventions before introducing new abstractions.
-6. Keep features modular: wire backend providers in feature modules, keep UI state in hooks, and avoid cross-layer shortcuts.
+1. **This repository's own standards always win.** They cover contributing, code style, and conventions:
+
+{REPO_STANDARDS_LINKS}
+
+2. **The workflow's style skills set the baseline** wherever the repository's standards say nothing: `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions`. Follow them when you write or review code. Where a repository standard endorses something a style would flag, the repository standard wins.
+3. **The workflow rules below** (Simplicity First, Testing, Surgical Changes, Goal-Driven Execution) apply as well. When a repository standard asks for more, such as a changelog entry or a test, do what it asks.
+
+Run the `review-style` skill to check a change against all of them.
 
 ## Simplicity First
 
@@ -109,11 +113,5 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Project Documentation
 
 {PROJECT_DOCUMENTATION_LINKS}
-
-## Codebase Index
-
-{CODEBASE_INDEX_LINKS}
-
-Use the `use-index` skill before running broad Glob/Grep scans. It handles freshness checks, file selection by task type, and fallback strategies. If index files are more than one day old, regenerate them by running `.5/index/rebuild-index.sh` before relying on them.
 
 {CUSTOM_DOCUMENTATION}

@@ -130,7 +130,6 @@ function orchestratorPrompt(a) {
 
 Feature: ${a.feature}
 Plan: ${a.paths.plan}
-Codebase scan: ${a.paths.scan} (read only if present)
 Config: ${a.paths.config} (read only if present)
 
 Turn the lean component checklist in the plan into steps + components:
@@ -138,7 +137,7 @@ Turn the lean component checklist in the plan into steps + components:
 - Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same file, one imports another, or there is an explicit dependency.
 - Prefer fewer steps. Tests run after the components they validate.
 - model "haiku" by default (mechanical, UI, tests, docs, config, single-file). model "sonnet" only for complex logic, cross-module, security/auth, migrations, or public API.
-- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads.
+- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan's Existing Patterns to Follow, else find them with Glob/Grep.
 - verifyCommands: narrowest relevant check first, then project build/test.
 - Exclude [DEFERRED] work. Represent every other component once. dependsOn must reference existing component names.
 
@@ -148,6 +147,9 @@ Return an object matching the schema (steps[] and pendingComponents[]).`
 function executorPrompt(c, a, opts) {
   const refs = (c.patternRefs || []).map(r => `  - ${r.file}${r.read ? ` (${r.read})` : ''}${r.reason ? ` — ${r.reason}` : ''}`).join('\n') || '  - none'
   const verify = (c.verifyCommands || []).join(' && ') || 'infer the narrowest relevant test/build command'
+  const standards = a.standards || {}
+  const repoStandards = (standards.repo || []).map(f => `  - ${f}`).join('\n') || '  - none found'
+  const styles = (standards.styles || []).map(f => `  - ${f}`).join('\n') || '  - none found'
   const retry = opts && opts.retry
     ? '\nThis is a RETRY of a failed attempt — read the error context carefully and correct the root cause.'
     : ''
@@ -160,6 +162,12 @@ Intent: ${c.description || ''}
 
 Read only these pattern references (ranges/symbols), plus the target file for modify/rename:
 ${refs}
+
+Standards — read the parts that apply to your target and follow them. Repository standards win over the style skills.
+Repository standards:
+${repoStandards}
+Style skills:
+${styles}
 
 Rules: smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
 
@@ -175,6 +183,7 @@ function verifyPrompt(a, results, resumeDone) {
     .filter(n => !results.some(s => s.items.some(i => i.component.name === n)))
     .map(n => `  ${n}: completed in a prior session`)
   const summary = [...ran, ...prior].join('\n') || '  (no components ran this invocation)'
+  const repoStandards = ((a.standards && a.standards.repo) || []).join(', ') || 'none found'
   const baseline = (a.baseline && a.baseline.length)
     ? a.baseline.map(b => `  ${b.command || b.details && b.details.command || '?'}: ${b.status}${b.summary ? ` — ${b.summary}` : ''}`).join('\n')
     : '  (none recorded)'
@@ -183,6 +192,7 @@ function verifyPrompt(a, results, resumeDone) {
 Feature: ${a.feature}
 Plan: ${a.paths.plan}
 Config: ${a.paths.config} (read only if present)
+Repository standards: ${repoStandards}
 
 Baseline (pre-change) command results — treat any failure listed here as PRE-EXISTING, not caused by this change:
 ${baseline}
@@ -190,7 +200,7 @@ ${baseline}
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, or an import site; flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
+Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
 Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
 }

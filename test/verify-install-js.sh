@@ -215,12 +215,35 @@ errors += compareLists(
   [...(managed.binHelpers || [])].sort()
 );
 
+function verifySyncAgentsSkills() {
+  console.log('=== sync-agents.js Managed Skills ===');
+  console.log('');
+
+  const source = fs.readFileSync('bin/sync-agents.js', 'utf8');
+  const match = source.match(/const WORKFLOW_MANAGED_SKILLS = new Set\(\[([\s\S]*?)\]\)/);
+  const syncSkills = match ? [...match[1].matchAll(/'([^']+)'/g)].map(m => m[1]).sort() : [];
+  const installSkills = [...(managed.skills || [])].sort();
+
+  if (syncSkills.join('\n') === installSkills.join('\n')) {
+    console.log(`${GREEN}✓ WORKFLOW_MANAGED_SKILLS matches install.js skills${NC}`);
+    console.log('');
+    return 0;
+  }
+  console.log(`${RED}✗ WORKFLOW_MANAGED_SKILLS differs from install.js skills${NC}`);
+  console.log(`  sync-agents.js: ${syncSkills.join(', ') || '(none found)'}`);
+  console.log(`  install.js:     ${installSkills.join(', ')}`);
+  console.log('');
+  return 1;
+}
+
 function verifyPlanModeContract() {
   console.log('=== Plan Mode Contract ===');
   console.log('');
 
   const planCommand = fs.readFileSync('src/commands/5/plan.md', 'utf8');
   const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
+  const configureCommand = fs.readFileSync('src/commands/5/configure.md', 'utf8');
+  const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
   const orchestratorAgent = fs.readFileSync('src/agents/step-orchestrator-agent.md', 'utf8');
   const settings = fs.readFileSync('src/settings.json', 'utf8');
   const workflow = fs.readFileSync('src/workflows/5-implement.js', 'utf8');
@@ -235,8 +258,28 @@ function verifyPlanModeContract() {
       ok: planCommand.includes('## Fallback path')
     },
     {
-      label: 'plan handles refine mode (absorbed discuss-feature)',
-      ok: /refine mode/i.test(planCommand) && planCommand.includes('## Discussion History')
+      label: 'plan handles refine mode and replaces the refined plan file',
+      ok: /refine mode/i.test(planCommand) && planCommand.includes('delete the plan file this plan replaces')
+    },
+    {
+      label: 'native plan mode file is the only planning artifact',
+      ok: planCommand.includes('.5/planning') && !planCommand.includes('codebase-scan') && !workflow.includes('paths.scan')
+    },
+    {
+      label: 'configure points plan mode at .5/planning',
+      ok: configureCommand.includes('`plansDirectory`') && configureCommand.includes('".5/planning"')
+    },
+    {
+      label: 'implement finds plans by their feature frontmatter',
+      ok: implementCommand.includes('`feature: {argument}`')
+    },
+    {
+      label: 'plan and implement review the change with review-style',
+      ok: planCommand.includes('Skill(skill: "review-style"') && implementCommand.includes('Skill(skill: "review-style"')
+    },
+    {
+      label: 'review records review-style findings without fixing them',
+      ok: reviewCommand.includes('Skill(skill: "review-style"') && reviewCommand.includes('report only')
     },
     {
       label: 'plan branches the handoff on plan format',
@@ -286,6 +329,7 @@ function verifyPlanModeContract() {
 }
 
 errors += verifyReviewReplyContract();
+errors += verifySyncAgentsSkills();
 errors += verifyPlanModeContract();
 
 console.log('========================================');

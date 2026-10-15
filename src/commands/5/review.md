@@ -1,6 +1,6 @@
 ---
 name: 5:review
-description: Reviews code changes via the built-in code-review skill. Categorizes findings and saves them for /5:address-review-findings.
+description: Reviews code changes for correctness via the built-in code-review skill and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 argument-hint: [low|medium|high|max]
 user-invocable: true
@@ -38,6 +38,14 @@ Skill(skill: "code-review", args: "{target} {effort}")
 
 Derive `{target}` from the scope answer: options 1-3 review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
 
+**Standards review** — then invoke `review-style` in report-only mode. It checks the same changes against the repository's own standards and the style skills it lists, and repository standards win:
+
+```text
+Skill(skill: "review-style", args: "{mode} report only")
+```
+
+Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, and option 4 `{base-branch} committed only`.
+
 **Fallback path** — on Codex, or when the `code-review` skill is unavailable, spawn one review agent instead:
 
 ```text
@@ -61,6 +69,8 @@ Manual Review:
 - file: {path}, line: {N}, description: {what}, severity: {level}
 ```
 
+On Codex, or when the `review-style` skill cannot be invoked, read `.claude/skills/review-style/SKILL.md` and follow it with the same arguments.
+
 ## Step 3: Save Findings
 
 Determine feature name from the most recent `.5/features/*/state.json`, or ask the user.
@@ -82,6 +92,17 @@ When the findings come from the `code-review` skill, map its reported fields ont
 | `failure_scenario` | **Original Reviewer Message:** |
 
 Findings from the fallback path map directly: Fixable Issues, Questions, and Manual Review become their matching categories.
+
+Findings from `review-style` map like this. Leave out its Suppressed findings; a repository standard overrides them.
+
+| Reported finding | Template field |
+|---|---|
+| ⛔️ hard breach of a repository standard | **Category:** `Fixable`, **Severity:** `error` |
+| ⚠️ judgement call | **Category:** `Fixable`, **Severity:** `suggestion` |
+| `path:line` | **File:**, **Line:** |
+| ID, title, and what is wrong | **Description:** |
+| the `→` fix | **Suggested Fix:** |
+| the cited standards and rules | **Original Reviewer Message:** |
 
 Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` will present each finding interactively and record decisions separately.
 

@@ -26,9 +26,14 @@ const log = {
 // ── Workflow-managed file lists (must match install.js) ────────────────────
 
 const WORKFLOW_MANAGED_SKILLS = new Set([
-  'configure-docs-index',
+  'configure-agents-md',
   'configure-skills',
-  'generate-readme'
+  'generate-readme',
+  'review-style',
+  'fowler-code-smells',
+  'cognitive-load',
+  'documentation-style',
+  'baseline-conventions'
 ]);
 
 const WORKFLOW_MANAGED_AGENTS = new Set([

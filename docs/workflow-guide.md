@@ -12,12 +12,14 @@ The package is named `foifi`.
 
 The workflow separates human decisions from mechanical execution.
 
-- `plan.md` is the only planning artifact.
-- `codebase-scan.md` caches discovery so later phases avoid repeated scanning.
+- The plan in `.5/planning/` is the only planning artifact. Claude Code's plan mode saves it there because `/5:configure` sets `plansDirectory`.
+- There is no codebase index or scan cache. What implementation needs, such as the patterns to follow, goes into the plan.
 - The execution graph is derived by `step-orchestrator-agent` on every run and is never written to disk.
 - `state.json` persists only what a resume needs: status, completed component names, and the verification result.
 
 Where Claude Code ships a native capability, the workflow wraps it: `/5:plan` runs inside native plan mode and `/5:review` calls the built-in `code-review` skill. Codex has neither, so both commands keep a prose fallback.
+
+Code quality follows a fixed order. The repository's own standards, such as `CONTRIBUTING.md` or `CODESTYLE.md`, always win. The style skills `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions` set the baseline wherever the repository says nothing. The `review-style` skill checks a change against both.
 
 This keeps planning short and reviewable while still giving implementation agents enough structured data to work reliably.
 
@@ -35,19 +37,20 @@ or:
 $5-plan
 ```
 
-The planner gathers requirements, explores the codebase, asks targeted questions, and writes:
+The planner gathers requirements, explores the codebase, asks targeted questions, and plan mode saves the approved plan as:
 
 ```text
-.5/features/{feature-name}/plan.md
-.5/features/{feature-name}/codebase-scan.md
+.5/planning/{generated-name}.md
 ```
 
-`plan.md` uses either the normal template or `PLAN-COMPACT.md` for small, low-risk changes with 1-2 components and no migration, security/auth, or public API contract change. It contains:
+Plan mode picks the file name. The plan's `feature` frontmatter field ties it to its feature, and `/5:implement {feature-name}` finds it by that field. On Codex the plan is written to `.5/planning/{feature-name}.md`.
+
+The plan uses either the normal template or `PLAN-COMPACT.md` for small, low-risk changes with 1-2 components and no migration, security/auth, or public API contract change. It contains:
 
 - overview
 - what changes
-- existing patterns to follow
-- constraints
+- existing patterns to follow, with a symbol or line range
+- constraints, including what the repository's standards require
 - scope in/out
 - acceptance criteria
 - decisions
@@ -57,7 +60,7 @@ The planner gathers requirements, explores the codebase, asks targeted questions
 
 The component checklist has only four columns: component, action, target path, intent. It does not contain step grouping, model selection, verify commands, or pattern-reference wiring.
 
-Which template gets chosen also decides what happens on approval: a compact plan is implemented immediately in the same session, while a full plan stops after writing the artifacts and points you at `/5:implement`.
+Which template gets chosen also decides what happens on approval: a compact plan is implemented immediately in the same session, while a full plan stops and points you at `/5:implement`.
 
 ## Refining A Plan
 
@@ -65,9 +68,10 @@ Run:
 
 ```text
 /5:plan {feature-name}
+/5:plan {path-to-plan}
 ```
 
-With an existing `plan.md`, `/5:plan` enters refine mode: it seeds plan mode with the current plan, discusses the changes, then overwrites the file and appends a `## Discussion History` entry. Use this when the reviewed plan needs changed scope, additional acceptance criteria, or a corrected component checklist.
+With an existing plan, `/5:plan` enters refine mode: it seeds plan mode with the current plan and discusses the changes. After approval the new plan file replaces the old one. Use this when the reviewed plan needs changed scope, additional acceptance criteria, or a corrected component checklist. Passing a path also turns a plan made in plain plan mode into a workflow plan.
 
 ## Implement
 
@@ -79,13 +83,14 @@ Run:
 /5:implement {feature-name}
 ```
 
-Prefer a fresh context first — `/clear` in Claude Code, a new conversation in Codex. This command needs only `plan.md` and `codebase-scan.md`, and dropping the planning conversation is the point of the handoff. It is a recommendation, not a requirement.
+Prefer a fresh context first — `/clear` in Claude Code, a new conversation in Codex. This command needs only the plan, and dropping the planning conversation is the point of the handoff. It is a recommendation, not a requirement.
 
-Implementation does three things:
+Implementation does four things:
 
-1. Spawns `step-orchestrator-agent` to derive the execution graph from `plan.md` and `codebase-scan.md` — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
-2. Spawns executor agents for each component using an inline executor contract, parallelizing independent work.
+1. Spawns `step-orchestrator-agent` to derive the execution graph from the plan — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
+2. Spawns executor agents for each component using an inline executor contract, parallelizing independent work. Each executor follows the repository standards and style skills that apply to its target.
 3. Spawns `verification-agent` to verify completeness, correctness, build/tests, acceptance criteria, and test coverage.
+4. Runs `review-style` on everything the run changed, then asks which findings to fix.
 
 The graph is transient. `state.json` records only:
 
@@ -108,7 +113,7 @@ Run:
 /5:review
 ```
 
-On Claude Code, review delegates to the built-in `code-review` skill. Effort defaults to `high`; pass `/5:review low|medium|high|max` to override. Where that skill is unavailable (Codex), a built-in review agent triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. Either way it saves findings to:
+On Claude Code, review delegates to the built-in `code-review` skill. Effort defaults to `high`; pass `/5:review low|medium|high|max` to override. Where that skill is unavailable (Codex), a built-in review agent triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. Then `review-style` checks the same changes against the repository's standards and the style skills, in report-only mode. Either way it saves findings to:
 
 ```text
 .5/features/{feature-name}/review-findings-{timestamp}.md
@@ -137,15 +142,15 @@ First-time setup:
 /5:implement CONFIGURE
 ```
 
-`/5:configure` writes `.5/config.json` and a CONFIGURE plan. `/5:implement CONFIGURE` generates documentation, the codebase index, AGENTS.md, CLAUDE.md shim, selected skills, and scoped rules.
+`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, and writes the CONFIGURE plan. `/5:implement CONFIGURE` generates AGENTS.md (linking the repository's own standards), the CLAUDE.md shim, selected skills, and scoped rules.
 
-Refresh generated docs/index/skills later with:
+Refresh AGENTS.md, skills, and rules later with:
 
 ```text
 /5:reconfigure
 ```
 
-`/5:reconfigure` writes `.5/reconfigure-manifest.json` and passes that compact manifest to documentation and skill refresh helpers instead of duplicating long detection summaries in prompts.
+`/5:reconfigure` writes `.5/reconfigure-manifest.json` and passes that compact manifest to the AGENTS.md and skill refresh helpers instead of duplicating long detection summaries in prompts. It is also the upgrade path after a major update: it sets `plansDirectory` and removes the legacy `.5/index/`. Existing `.5/*.md` docs stay untouched.
 
 ## Troubleshooting
 
@@ -174,9 +179,9 @@ v2.0.0 removes old commands during upgrade:
 
 | Command | Purpose |
 |---------|---------|
-| `/5:plan` | Create a unified plan, or refine an existing one |
+| `/5:plan` | Create a plan, or refine an existing one |
 | `/5:implement` | Implement and verify |
-| `/5:review` | Review changes |
+| `/5:review` | Review changes for correctness and standards |
 | `/5:commit` | Create a templated git commit |
 | `/5:address-review-findings` | Apply approved findings |
 | `/5:configure` | Create project config and CONFIGURE plan |

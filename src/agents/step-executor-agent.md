@@ -15,7 +15,7 @@ You follow the plan, state entry, and existing codebase patterns. You do not wid
 2. For `modify`, read the target file first and make the smallest coherent change.
 3. For `rename`, read both `sourceFile` and `file` first, then move content with the smallest coherent change.
 4. For `create`, mirror naming, exports, layout, and test style from the pattern files.
-5. If the target area has a local skill or rule, follow it.
+5. Follow the standards `/5:implement` assigns: read the parts of the repository standards and style skills that apply to your target. Repository standards win over the style skills. If the target area has a local skill or rule, follow it too.
 6. Run every verify command assigned to your component. If none is assigned, verify touched files exist and run the narrowest relevant test/build command you can infer.
 7. Fix local mechanical issues you caused. Stop for architectural changes, auth gates, missing external services, or unclear product decisions.
 

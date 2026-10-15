@@ -323,27 +323,15 @@ function copyWorkflowHelperBins(targetPath) {
   }
 }
 
-// Remove directory recursively
+// Remove a directory recursively. fs.rmSync removes a symlink itself and never follows it,
+// so a link planted in a checkout cannot redirect the deletion outside the project.
 function removeDir(dir) {
-  if (fs.existsSync(dir)) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        removeDir(fullPath);
-      } else {
-        fs.unlinkSync(fullPath);
-      }
-    }
-
-    fs.rmdirSync(dir);
-  }
+  fs.rmSync(dir, { recursive: true, force: true });
 }
 
-// Files removed from the package before manifest tracking existed.
-// This list is frozen — future removals are handled by manifest diffing.
+// Files removed from the package over time. Upgrades from installs with a manifest find
+// removals by manifest diffing; this list covers installs that predate the manifest, and
+// uninstall uses it to clear leftovers.
 const LEGACY_REMOVED_FILES = [
   'agents/feature-planner.md',
   'agents/implementation-planner.md',
@@ -379,7 +367,16 @@ const LEGACY_REMOVED_FILES = [
   'commands/5/discuss-feature.md',
   'templates/workflow/STATE.json',
   'skills/5-unlock',
-  'skills/5-discuss-feature'
+  'skills/5-discuss-feature',
+  // Plans live in .5/planning/; no codebase index, scan cache, generated docs, or split
+  'commands/5/split.md',
+  'skills/5-split',
+  'skills/use-index',
+  'skills/configure-docs-index',
+  'templates/ARCHITECTURE.md',
+  'templates/CONCERNS.md',
+  'templates/CONVENTIONS.md',
+  'templates/TESTING.md'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -402,10 +399,15 @@ function getWorkflowManagedFiles() {
 
     // Skills: specific skill directories
     skills: [
-      'configure-docs-index',
+      'configure-agents-md',
       'configure-skills',
       'generate-readme',
-      'use-index'
+      // Review styles: review-style runs one reviewer per style listed in its SKILL.md
+      'review-style',
+      'fowler-code-smells',
+      'cognitive-load',
+      'documentation-style',
+      'baseline-conventions'
     ],
 
     // Hooks: specific hook files
@@ -429,12 +431,8 @@ function getWorkflowManagedFiles() {
 
     // Templates: specific template files
     templates: [
-      // Project documentation templates
+      // Project instructions template
       'AGENTS.md',
-      'ARCHITECTURE.md',
-      'CONCERNS.md',
-      'CONVENTIONS.md',
-      'TESTING.md',
       // Workflow output templates
       'workflow/PLAN.md',
       'workflow/PLAN-COMPACT.md',
@@ -577,6 +575,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`Workflow\` | Not available — run the command's prose fallback loop instead |
 | \`Skill(skill="code-review")\` | Not available — run the command's prose fallback loop instead |
+| \`Skill(skill="review-style", args="...")\` | Read \`.codex/skills/review-style/SKILL.md\` and follow it with the same arguments |
 | \`EnterPlanMode\` | Not available — run the command's prose fallback loop instead |
 
 ## Model Mapping (single source of truth)
@@ -598,16 +597,16 @@ This table is authoritative — skill bodies do not repeat per-call model mappin
 
 ## Guard Rules (Codex has no plan mode)
 Claude Code enforces these at the harness level via native plan mode. Codex has no equivalent, so honour them yourself while running \`$5-plan\`, **until the user approves the plan**:
-- Do NOT write to any file outside \`.5/\`
-- Do NOT write source code — only the unified plan and scan cache
+- Do NOT write any file — the plan is written only after approval
+- Do NOT write source code
 - Do NOT spawn implementation agents — only Explore/research agents
 
-After approval, \`$5-plan\` implements compact plans inline and hands larger ones to \`$5-implement\`.
+After approval, \`$5-plan\` saves the plan in \`.5/planning/\`, implements compact plans inline, and hands larger ones to \`$5-implement\`.
 
 ## Update & Migration Notices (replaces statusline hooks)
 At the very start of this skill, before doing anything else, read these two files if they exist:
 - \`.5/.update-cache.json\` — if \`latestAvailableVersion\` is set, compare it to \`packageVersion\` in \`.5/version.json\`. If a newer version is available, tell the user: "foifi update available: <version> — run \`npx foifi --codex --upgrade\` to update."
-- \`.5/.migration-v2\` — if this file exists, tell the user: "You upgraded from foifi v1 to v2. Run \`$5-reconfigure\` to update your project configuration."
+- \`.5/.migration-v*\` — if a file such as \`.5/.migration-v4\` exists, tell the user: "You upgraded foifi to a new major version. Run \`$5-reconfigure\` to update your project configuration."
 
 Show each applicable notice once at the top of your response, then continue with the skill normally. Do not abort the skill because of a notice.
 </codex_skill_adapter>`;
@@ -857,9 +856,12 @@ function cleanupOrphanedFiles(targetPath, dataDir) {
 
   if (oldManifest) {
     // Manifest exists: diff old vs current, delete orphans
+    const installRoot = path.resolve(targetPath) + path.sep;
     for (const entry of oldManifest) {
       if (!currentSet.has(entry)) {
-        const fullPath = path.join(targetPath, entry);
+        const fullPath = path.resolve(targetPath, entry);
+        // version.json may come from the checkout, so an entry must stay inside the install dir
+        if (!fullPath.startsWith(installRoot)) continue;
         if (fs.existsSync(fullPath)) {
           const stat = fs.statSync(fullPath);
           if (stat.isDirectory()) {
@@ -1074,28 +1076,26 @@ function checkExistingInstallation(targetPath) {
 function showCommandsHelp(isGlobal) {
   if (activeRuntime === 'codex') {
     log.info('Available skills (invoke with $ prefix in Codex):');
-    log.info('  $5-plan                      - Create or refine a unified plan');
-    log.info('  $5-split                     - Split plan into smaller plans');
+    log.info('  $5-plan                      - Create or refine a plan');
     log.info('  $5-implement                 - Execute implementation + verification');
-    log.info('  $5-review                    - Code review');
+    log.info('  $5-review                    - Code and standards review');
     log.info('  $5-lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  $5-commit                    - Create a templated git commit');
     log.info('  $5-address-review-findings   - Decide review findings & PR comments');
     log.info('  $5-configure                 - Interactive project setup');
-    log.info('  $5-reconfigure               - Refresh docs/skills (no Q&A)');
+    log.info('  $5-reconfigure               - Refresh AGENTS.md/skills/rules (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
     log.info('Available commands:');
-    log.info('  /5:plan                      - Create or refine a unified plan');
-    log.info('  /5:split                     - Split plan into smaller plans');
+    log.info('  /5:plan                      - Create or refine a plan');
     log.info('  /5:implement                 - Execute implementation + verification');
-    log.info('  /5:review                    - Code review');
+    log.info('  /5:review                    - Code and standards review');
     log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  /5:commit                    - Create a templated git commit');
     log.info('  /5:address-review-findings   - Decide review findings & PR comments');
     log.info('  /5:configure                 - Interactive project setup');
-    log.info('  /5:reconfigure               - Refresh docs/skills (no Q&A)');
+    log.info('  /5:reconfigure               - Refresh AGENTS.md/skills/rules (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');
     log.info('  /5:synchronize-agents        - Sync user content between runtimes');
   }
@@ -1141,7 +1141,7 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('This will:');
   log.info('  • Detect your project type and build commands');
   log.info('  • Set up ticket tracking conventions');
-  log.info('  • Generate comprehensive documentation (CLAUDE.md)');
+  log.info('  • Generate AGENTS.md (linked from CLAUDE.md) with your repository standards');
   log.info('  • Create project-specific skills');
   log.info('');
   log.info('Tip: Configure will offer to install helpful plugins like skill-creator');
@@ -1227,6 +1227,25 @@ function removePlanningActiveMarker(dataDir) {
   } catch (e) {}
 }
 
+// Move .5/features/{name}/plan.md to .5/planning/{name}.md. Plans now live where native plan
+// mode saves them, and /5:implement finds them by their `feature` frontmatter. The .5/ data
+// is shared, so performUpdate() and performCodexUpdate() both run this.
+function movePlansToPlanningDir(dataDir) {
+  const featuresDir = path.join(dataDir, 'features');
+  if (!fs.existsSync(featuresDir)) return;
+  const planningDir = path.join(dataDir, 'planning');
+  try {
+    for (const feature of fs.readdirSync(featuresDir)) {
+      const planFile = path.join(featuresDir, feature, 'plan.md');
+      const target = path.join(planningDir, `${feature}.md`);
+      if (!fs.existsSync(planFile) || fs.existsSync(target)) continue;
+      fs.mkdirSync(planningDir, { recursive: true });
+      fs.renameSync(planFile, target);
+      log.info(`Moved plan: features/${feature}/plan.md → planning/${feature}.md`);
+    }
+  } catch (e) {}
+}
+
 // Perform update (preserves user-created files, updates .5/ data directory)
 function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   log.header(`Updating from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
@@ -1251,6 +1270,9 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   // Native plan mode replaces the plan-guard hook and its marker file
   removePlanGuardHook(targetPath);
   removePlanningActiveMarker(dataDir);
+
+  // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
+  movePlansToPlanningDir(dataDir);
 
   // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
@@ -1292,22 +1314,22 @@ the context it needs to run the workflow skills correctly.
 
 The workflow provides structured feature development:
 
-1. **Plan** (\`$5-plan\`) — Requirements, discovery, and unified plan
-2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification
-3. **Review** (\`$5-review\`) — Code review
+1. **Plan** (\`$5-plan\`) — Requirements, discovery, and a plan in \`.5/planning/\`
+2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification and a standards review
+3. **Review** (\`$5-review\`) — Code review and standards review
 
 ## Data Directory
 
 All workflow state lives in \`.5/\` at the project root:
 - \`.5/config.json\` — Project configuration
-- \`.5/features/{name}/plan.md\` — Unified plan
+- \`.5/planning/{name}.md\` — Plans
 - \`.5/features/{name}/state.json\` — Implementation resume state
 
 ## Guard Rules
 
 During the planning phase ($5-plan), until the user approves the plan:
-- Do NOT write files outside \`.5/\`
-- Do NOT write source code — only the unified plan and scan cache
+- Do NOT write any file
+- Do NOT write source code
 
 ## Scope Discipline (replaces the dependency-guard Stop hook)
 
@@ -1354,7 +1376,7 @@ function installCodexSkills(targetPath, sourcePath) {
   }
   log.success(`Installed ${files.length} workflow skills`);
 
-  // Also convert and install original workflow skills (configure-docs-index, configure-skills, generate-readme)
+  // Also convert and install the workflow's own skills (configure-*, generate-readme, review styles)
   const managed = getWorkflowManagedFiles();
   for (const skill of managed.skills) {
     const skillSrc = path.join(sourcePath, 'skills', skill);
@@ -1442,7 +1464,7 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('This will:');
   log.info('  • Detect your project type and build commands');
   log.info('  • Set up ticket tracking conventions');
-  log.info('  • Generate comprehensive documentation');
+  log.info('  • Generate AGENTS.md with your repository standards');
   log.info('  • Create project-specific skills');
 
   showCommandsHelp(isGlobal);
@@ -1510,6 +1532,9 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // The plan-guard marker is shared .5/ state; Codex has no settings.json hook to remove
   removePlanningActiveMarker(dataDir);
+
+  // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
+  movePlansToPlanningDir(dataDir);
 
   // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;

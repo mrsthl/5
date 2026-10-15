@@ -103,9 +103,11 @@ process.stdin.on('end', () => {
         parts.push(`\x1b[35m↻ /5:reconfigure\x1b[0m`);
       }
 
-      const migrationFlag = path.join(dir, '.5', '.migration-v2');
-      if (fs.existsSync(migrationFlag)) {
-        parts.push(`\x1b[31m⚠ v1→v2: /5:reconfigure\x1b[0m`);
+      // The installer writes .migration-v{major} after a major upgrade
+      const migrationFlag = fs.readdirSync(path.join(dir, '.5')).find(f => /^\.migration-v\d+$/.test(f));
+      if (migrationFlag) {
+        const major = migrationFlag.slice('.migration-'.length);
+        parts.push(`\x1b[31m⚠ ${major}: /5:reconfigure\x1b[0m`);
       }
     } catch (e) {}
 

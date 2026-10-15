@@ -1,6 +1,6 @@
 ---
 name: configure-skills
-description: Generates project-specific create-*/run-* skills and scoped rules from the current codebase. Used during /5:implement CONFIGURE.
+description: Generates project-specific pattern and run-* skills and scoped rules from the current codebase. Used during /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, create-skill, scaffold-skill
 model: sonnet
 user-invocable: false
@@ -29,7 +29,7 @@ This skill supports two modes. The skill generation and rule generation logic is
 
 Used by `/5:configure` → `/5:implement CONFIGURE` flow.
 
-- **Input:** Pattern/command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+- **Input:** Pattern/command selections from the CONFIGURE plan (`.5/planning/CONFIGURE.md`)
 - **Behavior:** Creates all selected skills and rules from scratch based on unified plan requirements
 
 ### Refresh Mode
@@ -52,7 +52,7 @@ If `tools.skillCreator.available` is `true` in `.5/config.json`, use the skill-c
 
 If skill-creator is not available, use the existing template-based generation below — no degradation in workflow behavior.
 
-**Reads:** Pattern selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+**Reads:** Pattern selections from the CONFIGURE plan (`.5/planning/CONFIGURE.md`)
 
 **Creates:** SKILL.md files in `.claude/skills/{name}/SKILL.md`
 
@@ -122,7 +122,7 @@ Based on {example-file}, {patterns} should follow:
 
 ## B. Generate Command Skills (run-*)
 
-**Reads:** Command selections from unified plan (`.5/features/CONFIGURE/plan.md`)
+**Reads:** Command selections from the CONFIGURE plan (`.5/planning/CONFIGURE.md`)
 
 **Creates:** SKILL.md files in `.claude/skills/run-{command}/SKILL.md`
 
@@ -194,18 +194,20 @@ Executes the project's {command} command.
 
 If `rules.generate` is `true` in `.5/config.json`, generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
 
-Rules are **concise directives** (15-40 lines each), not documentation. Documentation lives in `.5/*.md` files. Rules tell Claude what to do when working with specific file types.
+Rules are **concise directives** (15-40 lines each), not documentation. Rules tell Claude what to do when working with specific file types.
+
+The repository's own standards win over rules. These are the files `.claude/skills/review-style/SKILL.md` step 2 lists, such as `CONTRIBUTING.md`. A rule never restates or contradicts them.
 
 ### C1. Determine Which Rules to Generate
 
 Based on the codebase analysis results, determine which rules apply:
 
-| Rule File | Generate When | Source Analysis |
+| Rule File | Generate When | What to Analyze |
 |-----------|---------------|-----------------|
-| `code-style.md` | Always (if source files exist) | Conventions Analysis |
-| `testing.md` | Test files detected | Testing Analysis |
-| `api-patterns.md` | Controller/route/handler patterns detected | Architecture Analysis |
-| `dependencies.md` | External integrations detected | Integration Analysis |
+| `code-style.md` | Always (if source files exist) | 2-3 source files: naming, imports, exports, and structure that tooling does not enforce |
+| `testing.md` | Test files detected | 3-5 test files: organization, assertions, mocking, fixtures, setup gotchas |
+| `api-patterns.md` | Controller/route/handler patterns detected | 2-3 handlers: validation, error responses, auth checks |
+| `dependencies.md` | External integrations detected | Clients for external services, env var access, required setup |
 
 **Skip** any rule whose prerequisite patterns were not detected. Do not generate empty or placeholder rule files.
 
@@ -216,7 +218,7 @@ For each applicable rule:
 1. **Derive `paths:` globs** from detected file locations (e.g., if tests are at `src/**/*.test.ts` and `tests/**/*.spec.ts`, use those patterns)
 2. **Convert analysis observations into imperative directives** — "Use X", "Always Y", "Never Z"
 3. **Keep each file 15-40 lines** — be concise and actionable
-4. **Do not repeat** the general guidance sections from `AGENTS.md`
+4. **Do not repeat** the general guidance sections from `AGENTS.md`, the style skills, or the repository's own standards
 
 Write files to `.claude/rules/`:
 
@@ -287,7 +289,7 @@ When running in REFRESH MODE:
 Returns structured results for each component:
 
 ```
-Component B (Pattern Skills): SUCCESS - Generated 3 create-* skills (create-component, create-hook, create-context)
+Component B (Pattern Skills): SUCCESS - Generated 3 pattern skills (component, hook, context)
 Component C (Command Skills): SUCCESS - Generated 2 run-* skills (run-tests, run-lint)
 Component D (Rules): SUCCESS - Generated 3 rule files (code-style, testing, dependencies)
 ```
@@ -309,3 +311,4 @@ Component D (Rules): SKIPPED - rules.generate is false in config
 - DO NOT generate empty or placeholder skill or rule files
 - DO NOT assume command syntax - always read from actual config files (package.json, Makefile, etc.)
 - DO NOT repeat the general guidance sections from `AGENTS.md` in rule files
+- DO NOT restate or contradict the repository's own standards in skills or rules

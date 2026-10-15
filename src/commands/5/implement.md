@@ -173,7 +173,7 @@ No changed files → skip. Commit error → report it and continue; do not retry
 
 ## Step 6: Review the Standards
 
-Invoke `Skill(skill: "review-style", args: "{fixed-point}")` with the fixed point from Step 2. This is its default mode: it reviews everything since the fixed point, committed or not, against the repository's standards and the style skills. It reports numbered findings — ⛔️ for a hard breach of a repository standard, ⚠️ for a style judgement call — and asks which ones to fix. Its fixer leaves the fixes uncommitted.
+Invoke `Skill(skill: "review-style", args: "{fixed-point} files: {run-files}")` with the fixed point from Step 2. `{run-files}` lists the files this run created, modified, or deleted: each component's planned target plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. Changes the user already had before the run stay out of the review and out of its fixes. This is review-style's default mode, limited to those files: it reviews everything since the fixed point, committed or not, against the repository's standards and the style skills. It reports numbered findings — ⛔️ for a hard breach of a repository standard, ⚠️ for a style judgement call — and asks which ones to fix. Its fixer leaves the fixes uncommitted.
 
 Run this on every path, the fast path included. Its findings never change `state.json`.
 

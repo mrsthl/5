@@ -44,7 +44,7 @@ Derive `{target}` from the scope answer: options 1-3 review the current working-
 Skill(skill: "review-style", args: "{mode} report only")
 ```
 
-Derive `{mode}` from the scope answer: options 1-3 pass `uncommitted`; option 4 passes `{base-branch} committed only`.
+Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, and option 4 `{base-branch} committed only`.
 
 **Fallback path** — on Codex, or when the `code-review` skill is unavailable, spawn one review agent instead:
 

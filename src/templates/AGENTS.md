@@ -1,3 +1,5 @@
+<!-- Generated from the foifi AGENTS.md template. The repository standards in this file are the "Custom Documentation" section and the files linked under "Standards". All other sections are workflow rules. They rank below the repository standards and the style skills. -->
+
 # Repository Guide
 
 {PROJECT_OVERVIEW}

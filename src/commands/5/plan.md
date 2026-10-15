@@ -101,7 +101,7 @@ Approving a plan means the user wants it built. Branch on the plan format you ch
 Component names must match the plan's Component Checklist verbatim, so a later `/5:implement` can resume against them. This file is also how `/5:review` finds the feature.
 
 4. If `.5/config.json` `git.autoCommit` is `true`, make one commit for the change using `git.commitMessage.pattern`, staging only the files you touched. Never `git add .` or `git add -A`.
-5. Review the change against the standards: `Skill(skill: "review-style", args: "{fixed-point}")`. It checks everything since the fixed point, committed or not, against the repository's standards and the style skills. It reports the findings and asks which ones to fix.
+5. Review the change against the standards: `Skill(skill: "review-style", args: "{fixed-point} files: {files-you-touched}")`. Naming the files keeps changes the user already had out of the review and its fixes. It checks those files since the fixed point, committed or not, against the repository's standards and the style skills. It reports the findings and asks which ones to fix.
 6. Report what changed, the verification result, the standards findings, and:
 
 ```text

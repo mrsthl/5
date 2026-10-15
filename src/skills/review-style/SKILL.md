@@ -26,16 +26,21 @@ Each path is relative to this skill's base directory. Add a style by adding one 
 
 ### 1. Pin the scope
 
-The caller's words pick one of three modes:
+The caller's words pick one of these modes:
 
 | Mode | Example | Diff |
 |------|---------|------|
 | Since fixed point plus uncommitted (default) | `/review-style master` | `git diff $(git merge-base <fixed-point> HEAD)`, plus untracked files |
 | Committed only | `/review-style master committed only` | `git diff <fixed-point>...HEAD` |
 | Uncommitted only | `/review-style uncommitted` | `git diff HEAD`, plus untracked files |
+| Staged only | `/review-style staged` | `git diff --cached` |
+| Unstaged only | `/review-style unstaged` | `git diff`, plus untracked files |
 
 When the words don't clearly name a mode, ask. When a mode needs a fixed point and none is given, ask for it.
 Offer the merge-base with the default branch (`master` or `main`) as the suggested answer.
+
+When the caller names files, limit the diff to them, for example `git diff <fixed-point> -- <files>`. Other
+changed files stay out of the review and out of the fixes.
 
 Untracked files are those from `git ls-files --others --exclude-standard`. Add each one to the diff as a new
 file whose every line is added.
@@ -53,6 +58,8 @@ Search the repository for every file that documents how code is written:
 - `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `CODESTYLE.md`, `STYLEGUIDE.md`, and docs about style or conventions.
   Look at the repository root, `.github/` and `docs/`.
 - `CLAUDE.md` and `AGENTS.md` at every level, plus every file they link to about code, tests or docs.
+  When one says a workflow generated it from a template, count only the parts it names as repository
+  standards. Its other sections are workflow rules, not repository standards.
 
 Skip linter and formatter configs. Tooling enforces them already.
 

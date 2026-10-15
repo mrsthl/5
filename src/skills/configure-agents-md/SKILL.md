@@ -45,7 +45,7 @@ Placeholder mapping:
 - `{PROJECT_DOCUMENTATION_LINKS}` → one link per existing `.5/*.md` doc. When there are none, remove the whole `## Project Documentation` section.
 - `{CUSTOM_DOCUMENTATION}` → preserved user-authored sections under `## Custom Documentation`. Remove the placeholder when there is no custom content.
 
-Preserve the static template sections exactly as written.
+Preserve the static template sections exactly as written, including the generated-file comment at the top. `review-style` reads that comment to tell the workflow rules apart from the repository's own standards.
 
 ## A3. Migrate and Preserve Existing Content
 

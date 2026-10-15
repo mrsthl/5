@@ -42,8 +42,8 @@ Offer the merge-base with the default branch (`master` or `main`) as the suggest
 When the caller names files, limit the diff to them, for example `git diff <fixed-point> -- <files>`. Other
 changed files stay out of the review and out of the fixes.
 
-Untracked files are those from `git ls-files --others --exclude-standard`. Add each one to the diff as a new
-file whose every line is added.
+Untracked files are those from `git ls-files --others --exclude-standard`. In the modes whose diff says "plus
+untracked files", add each one to the diff as a new file whose every line is added. The other modes leave them out.
 
 Confirm the fixed point resolves with `git rev-parse`. Stop when the diff is empty. Write the diff to one temp
 file, in the scratchpad when there is one. Also note `git log <fixed-point>..HEAD --oneline` when the mode

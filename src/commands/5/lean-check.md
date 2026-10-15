@@ -18,8 +18,10 @@ You only hunt scope drift and complexity. Correctness, security, and performance
 
 Resolve a base, then diff the working tree against it — `git diff {base} --stat` and `git diff {base}` cover committed and uncommitted changes together; add untracked files from `git status --short`.
 
-- A base branch argument (`git rev-parse --verify {argument}` succeeds and `.5/features/{argument}/` does not exist): `base = git merge-base {argument} HEAD`.
-- A feature name (`.5/features/{argument}/` exists) or no argument: `base = git merge-base {default-branch} HEAD`, where `{default-branch}` comes from `git symbolic-ref --short refs/remotes/origin/HEAD` (fall back to `main`, then `master`). This includes commits already made by `/5:implement` with `git.autoCommit`. When `HEAD` is the default branch itself, `base = HEAD` (uncommitted changes only).
+A feature name is an argument that has a `.5/features/{argument}/` folder or a plan in `.5/planning/` with `feature: {argument}` in its frontmatter.
+
+- A base branch argument (`git rev-parse --verify {argument}` succeeds and it is not a feature name): `base = git merge-base {argument} HEAD`.
+- A feature name or no argument: `base = git merge-base {default-branch} HEAD`, where `{default-branch}` comes from `git symbolic-ref --short refs/remotes/origin/HEAD` (fall back to `main`, then `master`). This includes commits already made by `/5:implement` with `git.autoCommit`. When `HEAD` is the default branch itself, `base = HEAD` (uncommitted changes only).
 - Any other argument is request text for Step 2.
 
 No changes → say `Nothing to check.` and stop.
@@ -29,7 +31,7 @@ No changes → say `Nothing to check.` and stop.
 Every finding is judged against what was asked. Take the first that exists:
 
 1. Request text passed as an argument.
-2. `.5/features/{feature-name}/plan.md` when a feature name was passed or the current branch matches a feature — use its Scope (In/Out), Acceptance Criteria, `[DEFERRED]` decisions, and Component Checklist target paths.
+2. The feature's plan — the file in `.5/planning/` with `feature: {feature-name}` in its frontmatter — when a feature name was passed or the current branch matches a feature. Use its Scope (In/Out), Acceptance Criteria, `[DEFERRED]` decisions, and Component Checklist target paths.
 3. The request from this conversation.
 
 None of these → ask the user for one sentence describing what the change should do.

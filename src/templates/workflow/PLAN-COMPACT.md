@@ -7,6 +7,7 @@ planFormat: compact
 
 <!-- PLAN RULES:
 - Use only for low-risk changes with 1-2 components.
+- Plan files get generated names. The `feature` frontmatter field identifies the plan, so keep it exact.
 - Write requirements and implementation intent, not code.
 - Keep the Component Checklist human-readable. Do not add step/model/pattern/verify columns.
 - Decisions must be labeled [DECIDED], [FLEXIBLE], or [DEFERRED].
@@ -33,10 +34,14 @@ planFormat: compact
 
 ## Existing Patterns to Follow
 
-- `{path}` - {what pattern this provides}
+- `{path}` ({symbol or lines}) - {what pattern this provides}
 
 ## Component Checklist
 
 | Component | Action | Target Path | Intent |
 |-----------|--------|-------------|--------|
 | {component-name} | modify | `{path}` | {one-sentence intent} |
+
+## Next Steps
+
+After approval, implement this plan inline in the same session, following the compact hand-off of `/5:plan`.

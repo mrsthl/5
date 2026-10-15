@@ -36,12 +36,20 @@ for helper_command in apply-review-findings triage-pr-comments reply-pr-comments
   fi
 done
 echo "✓ Internal review helper commands installed"
-if [ -f ".claude/commands/5/split.md" ]; then
-  echo "✓ Split command installed"
-else
-  echo "✗ Split command missing"
-  exit 1
-fi
+for style_skill in review-style fowler-code-smells cognitive-load documentation-style baseline-conventions; do
+  if [ ! -f ".claude/skills/${style_skill}/SKILL.md" ]; then
+    echo "✗ Review style skill missing: ${style_skill}"
+    exit 1
+  fi
+done
+echo "✓ Review style skills installed"
+for removed in ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md"; do
+  if [ -e "$removed" ]; then
+    echo "✗ Removed file still installed: $removed"
+    exit 1
+  fi
+done
+echo "✓ Removed workflow files not installed"
 if [ -f ".claude/commands/5/commit.md" ]; then
   echo "✓ Commit command installed"
 else
@@ -72,9 +80,25 @@ echo ""
 # Test 4: Auto-Upgrade
 echo "Test 4: Auto-Upgrade"
 echo "--------------------"
+mkdir -p .5/features/foo
+printf -- '---\nfeature: foo\n---\n# Plan\n' > .5/features/foo/plan.md
 node "$INSTALL_SCRIPT" --upgrade
 UPDATED=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
 echo "✓ Updated to version: $UPDATED"
+if [ -f ".5/planning/foo.md" ] && [ ! -e ".5/features/foo/plan.md" ]; then
+  echo "✓ Plan moved from .5/features/foo/plan.md to .5/planning/foo.md"
+else
+  echo "✗ Plan not moved to .5/planning/"
+  exit 1
+fi
+MIGRATION_FLAG=$(ls -a .5 | grep '^\.migration-v' | head -1)
+STATUSLINE=$(echo "{\"workspace\":{\"current_dir\":\"$PWD\"}}" | node .claude/hooks/statusline.js)
+if [ -n "$MIGRATION_FLAG" ] && echo "$STATUSLINE" | grep -q "/5:reconfigure"; then
+  echo "✓ Statusline shows the reconfigure notice for $MIGRATION_FLAG"
+else
+  echo "✗ Statusline misses the reconfigure notice (flag: ${MIGRATION_FLAG:-none})"
+  exit 1
+fi
 echo ""
 
 # Test 5: Version File Preservation
@@ -112,7 +136,7 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
-if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/split.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ -f ".claude/commands/5/commit.md" ]; then
+if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ -f ".claude/commands/5/commit.md" ]; then
   echo "✓ New v2 commands installed for legacy upgrade"
 else
   echo "✗ New v2 commands missing after legacy upgrade"
@@ -219,10 +243,10 @@ else
   echo "✗ Codex skills not created"
   exit 1
 fi
-if [ -f ".codex/skills/5-split/SKILL.md" ]; then
-  echo "✓ Split command converted to Codex skill"
+if [ -f ".codex/skills/review-style/SKILL.md" ] && [ -f ".codex/skills/baseline-conventions/SKILL.md" ]; then
+  echo "✓ Review style skills installed for Codex"
 else
-  echo "✗ Codex split skill not created"
+  echo "✗ Codex review style skills not installed"
   exit 1
 fi
 if [ -f ".codex/skills/5-commit/SKILL.md" ]; then
@@ -309,7 +333,7 @@ echo ""
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
 node "$INSTALL_SCRIPT" --codex --uninstall
-for skill in 5-plan 5-split 5-implement 5-review 5-commit; do
+for skill in 5-plan 5-implement 5-review 5-commit; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"
     exit 1
@@ -353,7 +377,7 @@ echo "# old" > test-5phase-codex-legacy/.codex/skills/5-plan-feature/SKILL.md
 echo "# old" > test-5phase-codex-legacy/.codex/skills/5-implement-feature/SKILL.md
 cd test-5phase-codex-legacy
 node "$INSTALL_SCRIPT" --codex --upgrade
-if [ -f ".codex/skills/5-plan/SKILL.md" ] && [ -f ".codex/skills/5-split/SKILL.md" ] && [ -f ".codex/skills/5-implement/SKILL.md" ]; then
+if [ -f ".codex/skills/5-plan/SKILL.md" ] && [ -f ".codex/skills/5-implement/SKILL.md" ]; then
   echo "✓ New Codex v2 skills installed for legacy upgrade"
 else
   echo "✗ New Codex v2 skills missing after legacy upgrade"

@@ -1,14 +1,14 @@
 ---
 name: 5:configure
-description: Configures the project. Analyzes project, gathers preferences, writes config.json, and creates .5/features/CONFIGURE/plan.md. Follow up with /5:implement CONFIGURE.
+description: Configures the project. Analyzes project, gathers preferences, writes config.json, points Claude Code plan mode at .5/planning/, and creates .5/planning/CONFIGURE.md. Follow up with /5:implement CONFIGURE.
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
 
 <role>
 You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a unified plan.
-You do NOT generate AGENTS.md, CLAUDE.md, documentation files, or skills directly — those are /5:implement's job.
-You write ONLY to: .5/config.json, .5/version.json, .5/features/CONFIGURE/plan.md, and .gitignore.
+You do NOT generate AGENTS.md, CLAUDE.md, rules, or skills directly — those are /5:implement's job.
+You write ONLY to: .5/config.json, .5/version.json, .5/planning/CONFIGURE.md, .gitignore, and the `plansDirectory` key of .claude/settings.json (Claude Code only).
 After writing config.json and the unified plan, you are DONE. Exit immediately.
 </role>
 
@@ -18,11 +18,11 @@ Current commit: !`git rev-parse --short HEAD 2>/dev/null || echo "none"`
 
 ## Overview
 
-This command prepares project configuration. It analyzes the project, asks preference questions, writes `.5/config.json`, and writes a unified plan at `.5/features/CONFIGURE/plan.md`.
+This command prepares project configuration. It analyzes the project, asks preference questions, writes `.5/config.json`, points Claude Code plan mode at `.5/planning/`, and writes a plan at `.5/planning/CONFIGURE.md`.
 
 After running this command, proceed through the standard phases:
 1. **`/5:configure`** (this command) - Create config and CONFIGURE plan
-2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-docs-index` and `configure-skills`)
+2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-agents-md` and `configure-skills`)
 3. `/5:review` - Review generated files if desired
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
@@ -33,19 +33,20 @@ Your job in this command:
 ✅ Analyze project (detect type, build commands, etc.)
 ✅ Gather user preferences via questions
 ✅ Write `.5/config.json` directly
-✅ Create unified plan at `.5/features/CONFIGURE/plan.md` for remaining work
+✅ Set `plansDirectory` in `.claude/settings.json` (Claude Code only)
+✅ Create the plan at `.5/planning/CONFIGURE.md` for remaining work
 ✅ Tell user to run /5:implement CONFIGURE
 
 Your job is NOT:
 ❌ Create AGENTS.md or CLAUDE.md directly (/5:implement does this)
-❌ Generate documentation files directly (/5:implement does this)
+❌ Generate rules directly (/5:implement does this)
 ❌ Generate skills directly (/5:implement does this)
 ❌ Skip user interaction
 ❌ Assume project structure
 
 **After writing config.json, creating the unified plan, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-**If you find yourself creating AGENTS.md, CLAUDE.md, documentation files, or skills, STOP IMMEDIATELY. You should only be writing config.json and the unified plan.**
+**If you find yourself creating AGENTS.md, CLAUDE.md, rules, or skills, STOP IMMEDIATELY. You should only be writing config.json, the settings key, and the plan.**
 
 ## Configuration Process
 
@@ -85,6 +86,10 @@ fi
 **1e. Check AGENTS.md / CLAUDE.md:**
 - If `AGENTS.md` exists, read its content
 - If `AGENTS.md` does not exist but `CLAUDE.md` exists with real content (not just `@AGENTS.md`), read it — this is a legacy setup that will be migrated to AGENTS.md during planning
+
+**1e2. Find repository standards:**
+- Find the files `.claude/skills/review-style/SKILL.md` step 2 counts as repository standards, such as `CONTRIBUTING.md` or `CODESTYLE.md`. Note each path.
+- These always win over the workflow's own rules. AGENTS.md links them, and generated rules must not contradict them.
 
 **1f. Scan existing skills:**
 - Check `.claude/skills/` for existing project-specific skills
@@ -186,7 +191,7 @@ The skill-creator plugin from the official Claude store helps generate higher-qu
   - If user selects "Skip": `tools.skillCreator.available` remains `false`
 
 **2j. Confirm AGENTS.md generation:**
-- "Generate/update AGENTS.md? This will analyze your codebase to document structure and conventions. (A CLAUDE.md shim will also be created for Claude Code compatibility.)"
+- "Generate/update AGENTS.md? It links your repository's own standards and adds the workflow's coding rules. (A CLAUDE.md shim will also be created for Claude Code compatibility.)"
   - Options: "Yes (recommended)", "Skip"
 
 **2j2. Confirm rules generation:**
@@ -198,7 +203,7 @@ The skill-creator plugin from the official Claude store helps generate higher-qu
 
 Present ONLY patterns that were actually detected in steps 1g and 1h.
 
-**Part 1: Architectural patterns (create-* skills)**
+**Part 1: Architectural patterns (pattern skills)**
 
 "I analyzed your codebase and found these architectural patterns:
 
@@ -208,10 +213,10 @@ Present ONLY patterns that were actually detected in steps 1g and 1h.
 | Service | 8 files | src/services/ | AuthService.ts |
 | Component | 25 files | src/components/ | Button.tsx |
 
-Which patterns would you like `create-*` skills generated for?"
+Which patterns would you like skills generated for?"
 
 - Options: Multi-select checkboxes for each detected pattern (use AskUserQuestion with multiSelect: true)
-- Include descriptions like: "Controller (12 files) - Generate `create-controller` skill"
+- Include descriptions like: "Controller (12 files) - Generate `controller` skill"
 - Plus "Other" option for patterns not detected but desired
 
 **Part 2: Command skills (run-* skills)**
@@ -235,17 +240,12 @@ If no patterns/commands detected:
 - Inform user: "No common patterns detected. Would you like to specify patterns manually?"
 - Allow manual entry of pattern names/locations or command names
 
-**2l. Git-ignore `.5/features/` folder:**
-- "The `.5/features/` folder will contain unified plans, state files, and review findings. Would you like to add it to `.gitignore`?"
+**2l. Git-ignore workflow folders:**
+- "`.5/planning/` will hold your plans. `.5/features/` will hold implementation state and review findings. Which should git ignore?"
   - Options:
-    1. "Yes, add to .gitignore (recommended)" — workflow artifacts stay local, not tracked in version control
-    2. "No, track in git" — useful if you want to share specs and plans with your team
-
-**2m. Code Conventions:**
-- "Generate `.5/CONVENTIONS.md` with coding conventions for this project? It will include a default set of strict rules (typing, code structure, naming, error handling, testing, and documentation standards) plus project-specific conventions derived from your codebase."
-  - Options:
-    1. "Yes (recommended)" → `conventions.generate: true`
-    2. "Skip" → `conventions.generate: false`
+    1. "Both (recommended)" — workflow artifacts stay local
+    2. "Only `.5/features/`" — share plans with your team, keep state local
+    3. "Neither" — track plans, state, and findings in git
 
 ### Step 2.5: Write config.json
 
@@ -259,7 +259,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2j2 and `conventions.generate` from step 2m). Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2j2). Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 
@@ -269,13 +269,20 @@ After writing config.json, update `.5/version.json` so the reconfigure reminder 
 3. Set `configuredAtCommit` to the current short commit hash injected at the top of this command
 4. Write back `.5/version.json` preserving all other fields
 
+**Point plan mode at `.5/planning/` (Claude Code only — skip on Codex):**
+
+`/5:plan` relies on native plan mode saving its plan in `.5/planning/`, where `/5:implement` finds it.
+1. Read `.claude/settings.json` if it exists.
+2. If `plansDirectory` is missing, set it to `".5/planning"` and keep every other key unchanged. Create the file if it does not exist.
+3. If `plansDirectory` already holds a different value, ask whether to switch it to `.5/planning`. Explain that `/5:implement` finds plans only there, unless it gets a plan path.
+4. Inform the user: "Plan mode now saves plans in `.5/planning/`"
+
 **Apply `.gitignore` if selected:**
 
-If the user chose to gitignore the `.5/features/` folder:
-1. Check if `.gitignore` exists in the project root
-2. If it exists, check if `.5/features/` is already listed — if not, append `.5/features/` on a new line
-3. If `.gitignore` does not exist, create it with `.5/features/` as the first entry
-4. Inform the user: "Added `.5/features/` to `.gitignore`"
+For each folder the user chose to ignore in step 2l (`.5/planning/`, `.5/features/`):
+1. Check if `.gitignore` exists in the project root — create it if not
+2. Check if the folder is already listed — if not, append it on a new line
+3. Inform the user which folders were added to `.gitignore`
 
 **Always gitignore `.5/.reconfig-reminder`:**
 
@@ -285,7 +292,7 @@ Ensure `.5/.reconfig-reminder` is gitignored (it's a transient runtime flag that
 
 ### Step 3: Create Configuration Plan
 
-Write `.5/features/CONFIGURE/plan.md` containing all gathered data:
+Write `.5/planning/CONFIGURE.md` containing all gathered data:
 
 ```markdown
 ---
@@ -297,48 +304,42 @@ created: {ISO-timestamp}
 # Plan: CONFIGURE - Project Configuration
 
 ## Overview
-Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-specific skills. (config.json already written.)
+Generates AGENTS.md, the CLAUDE.md shim, and project-specific skills and rules. (config.json and the plans directory setting are already written.)
 
 ## What Changes
 
-- Generate focused documentation and a rebuildable codebase index.
+- Write AGENTS.md from the workflow template, linking the repository's own standards.
 - Generate selected project-specific skills and scoped rules.
 - Preserve existing user-authored AGENTS.md/CLAUDE.md content.
 
 ## Existing Patterns to Follow
 
-- `.claude/skills/configure-docs-index/SKILL.md` - documentation and index generation behavior.
+- `.claude/skills/configure-agents-md/SKILL.md` - AGENTS.md and CLAUDE.md shim generation.
 - `.claude/skills/configure-skills/SKILL.md` - skill and rule generation behavior.
 
 ## Constraints
 
 - config.json is already written by `/5:configure`.
-- Do not generate empty placeholder documentation or index files.
+- Repository standards win over the workflow's own rules. Generated rules must not restate or contradict them.
 - Preserve user-authored sections in AGENTS.md.
+- Never rewrite or delete existing `.5/*.md` docs. Teams may maintain them.
 
 ## Scope
 
 ### In
 
-- Documentation files under `.5/`.
-- `.5/index/` and rebuild script.
 - AGENTS.md plus CLAUDE.md shim.
-- Selected create/run skills.
+- Selected pattern and run-* skills.
 - Selected scoped rules.
 
 ### Out
 
 - Changing preferences already saved in `.5/config.json`.
+- Generated architecture, testing, concerns, or conventions docs and codebase indexes.
 
 ## Acceptance Criteria
 
-- [ ] `.5/ARCHITECTURE.md` exists when architecture knowledge was found.
-- [ ] `.5/TESTING.md` exists when test knowledge was found.
-- [ ] `.5/CONCERNS.md` exists only if concerns were found.
-- [ ] `.5/CONVENTIONS.md` exists when `conventions.generate` is true.
-- [ ] `.5/index/rebuild-index.sh` exists and rebuilds the index.
-- [ ] `.5/index/README.md` documents generated index files.
-- [ ] `AGENTS.md` references created `.5/` files and the index rebuild rule.
+- [ ] `AGENTS.md` links every repository standard listed below.
 - [ ] `CLAUDE.md` contains only `@AGENTS.md`.
 - [ ] Selected project-specific skills are generated in `.claude/skills/`.
 - [ ] Selected scoped rules are generated in `.claude/rules/`.
@@ -346,15 +347,14 @@ Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-s
 
 ## Decisions
 
-- [DECIDED] Use the detected project type, build command, test command, ticket settings, review tool, and selected patterns from this configure session.
-- [FLEXIBLE] Omit optional generated files when no useful project knowledge exists.
+- [DECIDED] Use the detected project type, build command, test command, ticket settings, and selected patterns from this configure session.
+- [FLEXIBLE] Omit optional rules when no useful project knowledge exists.
 - [DEFERRED] Further preference changes; rerun `/5:configure` for those.
 
 ## Module Impact
 
 | Module/Area | Impact |
 |-------------|--------|
-| `.5/` | Create/update documentation and index artifacts. |
 | `AGENTS.md` / `CLAUDE.md` | Create or update provider instructions. |
 | `.claude/skills/` | Create selected project-specific skills. |
 | `.claude/rules/` | Create selected scoped rules. |
@@ -363,34 +363,25 @@ Generates AGENTS.md, CLAUDE.md shim, a rebuildable codebase index, and project-s
 
 | Component | Action | Target Path | Intent |
 |-----------|--------|-------------|--------|
-| configure docs and index | create | `.5/` | Generate project documentation, codebase index, AGENTS.md, and CLAUDE.md shim. |
-| configure skills and rules | create | `.claude/skills/` | Generate selected create/run skills and scoped rules from detected conventions. |
+| configure agents md | create | `AGENTS.md` | Write AGENTS.md from the template and the CLAUDE.md shim, linking the repository standards. |
+| configure skills and rules | create | `.claude/skills/` | Generate selected pattern/run skills and scoped rules from detected conventions. |
 
 ## Technical Notes
 
-Analyze the codebase and generate focused documentation capturing only non-derivable knowledge (skip version numbers, dependency lists, directory layouts, linter configs — Claude Code can look these up directly):
+### Requirement 1: Write AGENTS.md
+Handled by: `configure-agents-md`
 
-**Create documentation files in `.5/` folder:**
-- `.5/ARCHITECTURE.md` - Architecture pattern, layers & data flow, key abstractions, non-obvious conventions, where to add new code
-- `.5/TESTING.md` - Test organization, patterns, mocking approach, gotchas
-- `.5/CONCERNS.md` - Tech debt, known issues, security/integration/performance notes (**only if concerns found — skip file entirely if nothing detected**)
-- `.5/CONVENTIONS.md` - Default strict coding conventions plus project-specific conventions derived from codebase analysis (**only when `conventions.generate` is true**)
-
-**Create a rebuildable codebase index in `.5/index/`:**
-- Generate a repository-local script at `.5/index/rebuild-index.sh`
-- Generate multiple focused Markdown index files in `.5/index/` plus `.5/index/README.md`
-- Keep the index generic and adapted to the actual project
-- Skip empty categories; do not create placeholder index files
-- Re-running the script should fully refresh the index in place
+**Repository standards found:**
+- {one bullet per path from step 1e2, or "none found"}
 
 **Create AGENTS.md** (provider-agnostic instructions file):
 - Use `.claude/templates/AGENTS.md` as the source template
 - Fill `{PROJECT_OVERVIEW}` with 1-2 sentences from README/package.json
 - Fill `{BUILD_RUN_COMMANDS}` with build, test, and other detected commands
-- Fill `{PROJECT_DOCUMENTATION_LINKS}` with whichever `.5/` documentation files were created
-- Fill `{CODEBASE_INDEX_LINKS}` with `.5/index/README.md`, generated index files, and `.5/index/rebuild-index.sh`
+- Fill `{REPO_STANDARDS_LINKS}` with the repository standards above
+- Fill `{PROJECT_DOCUMENTATION_LINKS}` with existing `.5/*.md` docs, or drop that section when there are none
 - Fill `{CUSTOM_DOCUMENTATION}` with preserved user-authored sections under `## Custom Documentation`; remove the placeholder if there is no custom content
-- Preserve static template sections exactly as written, including skill usage, commit messages, workflow rules, coding guidelines, simplicity, testing, surgical changes, goal-driven execution, and index freshness
+- Preserve static template sections exactly as written
 
 **Create CLAUDE.md shim:**
 - Contains only `@AGENTS.md` (Claude Code include syntax)
@@ -402,8 +393,8 @@ Analyze the codebase and generate focused documentation capturing only non-deriv
 ### Requirement 2: Generate Project-Specific Skills
 Handled by: `configure-skills`
 
-**Create-* skills** for each user-selected architectural pattern:
-- Skill name: `create-{pattern}` (e.g., `create-controller`, `create-service`)
+**Pattern skills** for each user-selected architectural pattern:
+- Skill name: `{pattern}` (e.g., `controller`, `service`)
 - Analyze 2-3 existing files, extract conventions, generate SKILL.md with project-specific template
 - Set `user-invocable: true`, `model: haiku`
 
@@ -419,9 +410,10 @@ Handled by: `configure-skills`
 
 Generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
 Rules are concise directives (15-40 lines, NOT documentation) derived from codebase analysis.
+They must not restate or contradict the repository standards above.
 Only generate rules for patterns that were actually detected:
 - `code-style.md` — naming, formatting, import conventions (scoped to source files)
-- `testing.md` — test patterns, mocking, fixtures (scoped to test files)
+- `testing.md` — test patterns, mocking, fixtures, gotchas (scoped to test files)
 - `api-patterns.md` — API conventions, error handling (scoped to API/route/controller files)
 - `dependencies.md` — dependency usage patterns, env var conventions (unconditional)
 
@@ -430,19 +422,19 @@ Only generate rules for patterns that were actually detected:
 1. Run `/5:implement CONFIGURE`.
 ```
 
-**Important:** Use `mkdir -p .5/features/CONFIGURE` before writing the unified plan.
+**Important:** Use `mkdir -p .5/planning` before writing the plan.
 
 ### Step 4: Guide User to Next Phase
 
 Tell the user:
 
 1. "Configuration saved to `.5/config.json`"
-2. "Configuration plan written to `.5/features/CONFIGURE/plan.md`"
+2. "Configuration plan written to `.5/planning/CONFIGURE.md`"
 3. "Next steps:"
    - "Run `/clear` to reset context"
    - "Then run `/5:implement CONFIGURE`"
 4. "After that: Run `/5:review` if you want a review of generated files"
 
 ## Related Documentation
-- [configure-docs-index skill](../../skills/configure-docs-index/SKILL.md)
+- [configure-agents-md skill](../../skills/configure-agents-md/SKILL.md)
 - [configure-skills skill](../../skills/configure-skills/SKILL.md)

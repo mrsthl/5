@@ -16,7 +16,7 @@
 
 ## Feature Gap Fixes
 
-{If no feature gaps or Layer 2 was skipped: "No feature gaps found." or "Skipped — no plan.md available."}
+{If no feature gaps or Layer 2 was skipped: "No feature gaps found." or "Skipped — no plan available."}
 
 | # | File | Issue | Fix | Complexity |
 |---|------|-------|-----|------------|

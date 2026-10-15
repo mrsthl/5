@@ -76,9 +76,8 @@ Check for:
 
 Look for patterns in project documentation:
 
-- Check `.5/ARCHITECTURE.md` for architectural patterns and non-obvious conventions
-- Check `.5/TESTING.md` for test patterns and conventions
-- Fall back to AGENTS.md if `.5/` documentation not present
+- Check AGENTS.md and the repository standards it links
+- Check `.5/ARCHITECTURE.md` and `.5/TESTING.md` if they exist
 - Check module-specific documentation
 
 Use these patterns to identify what's critical for the module README.

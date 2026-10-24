@@ -95,16 +95,16 @@ fi
 # Projects already on 3.1.0: carry over only for upgraded installs, never for ones configured fresh on 3.1
 for case in upgraded fresh; do
   dir="$(mktemp -d)"
-  mkdir -p "$dir/.5" && printf '.5/features/\n' > "$dir/.gitignore"
+  mkdir -p "$dir/.5" && printf '# keep .5/planning-backups out of this\n.5/planning-backups/\n.5/features/\n' > "$dir/.gitignore"
   if [ "$case" = "upgraded" ]; then installed="2026-01-01T00:00:00Z"; else installed="2026-10-24T11:00:00Z"; fi
   echo "{\"installedAt\":\"$installed\",\"lastUpdated\":\"2026-10-24T11:00:00Z\"}" > "$dir/.5/version.json"
   node -e '
     const src = require("fs").readFileSync(process.argv[1], "utf8");
     const fn = src.slice(src.indexOf("function ignorePlanningLikeFeatures"), src.indexOf("// Perform update"));
     const log = { info() {} };
-    eval(fn + "; ignorePlanningLikeFeatures(process.argv[2], 0, \"3.1.0\")");
+    eval(fn + "; ignorePlanningLikeFeatures(process.argv[2], 0, \"3.1.0\", false)");
   ' "$INSTALL_SCRIPT" "$dir/.5"
-  if grep -q ".5/planning" "$dir/.gitignore"; then got=added; else got=kept; fi
+  if grep -qx ".5/planning/" "$dir/.gitignore"; then got=added; else got=kept; fi
   rm -rf "$dir"
   if { [ "$case" = "upgraded" ] && [ "$got" = "added" ]; } || { [ "$case" = "fresh" ] && [ "$got" = "kept" ]; }; then
     echo "✓ 3.1.0 $case install: .5/planning $got"

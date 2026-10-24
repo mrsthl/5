@@ -77,7 +77,21 @@ echo "Test 4: Auto-Upgrade"
 echo "--------------------"
 mkdir -p .5/features/foo
 printf -- '---\nfeature: foo\n---\n# Plan\n' > .5/features/foo/plan.md
+printf 'node_modules/\n.5/features/\n' > .gitignore
 node "$INSTALL_SCRIPT" --upgrade
+if grep -qx ".5/planning/" .gitignore; then
+  echo "✓ .5/planning/ ignored like .5/features/ was"
+else
+  echo "✗ Moved plans are no longer git-ignored"
+  exit 1
+fi
+node "$INSTALL_SCRIPT" --upgrade >/dev/null
+if [ "$(grep -c '.5/planning' .gitignore)" = "1" ]; then
+  echo "✓ Gitignore migration runs once"
+else
+  echo "✗ Gitignore migration duplicated .5/planning/"
+  exit 1
+fi
 UPDATED=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
 echo "✓ Updated to version: $UPDATED"
 if [ -f ".5/planning/foo.md" ] && [ ! -e ".5/features/foo/plan.md" ]; then

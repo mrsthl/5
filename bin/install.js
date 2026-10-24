@@ -1268,6 +1268,23 @@ function movePlansToPlanningDir(dataDir) {
   } catch (e) {}
 }
 
+// Before .5/planning/ existed, plans lived in .5/features/, so a project that git-ignored
+// .5/features/ also ignored its plans. Carry that choice over to .5/planning/ — unless the
+// .gitignore already says anything about .5/planning (/5:configure writes `!.5/planning/`
+// when the user chose to share plans). Shared .5/ data, so both update paths run this.
+function ignorePlanningLikeFeatures(dataDir) {
+  const gitignorePath = path.join(path.dirname(dataDir), '.gitignore');
+  if (!fs.existsSync(gitignorePath)) return;
+  try {
+    const content = fs.readFileSync(gitignorePath, 'utf8');
+    const lines = content.split('\n').map(l => l.trim());
+    const ignoresFeatures = lines.some(l => /^\/?\.5\/features\/?(\*\*?)?$/.test(l));
+    if (!ignoresFeatures || lines.some(l => l.includes('.5/planning'))) return;
+    fs.writeFileSync(gitignorePath, content.trimEnd() + '\n.5/planning/\n');
+    log.info('Added .5/planning/ to .gitignore (plans were ignored under .5/features/)');
+  } catch (e) {}
+}
+
 // Perform update (preserves user-created files, updates .5/ data directory)
 function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   log.header(`Updating from ${versionInfo.installed || 'legacy'} to ${versionInfo.available}`);
@@ -1295,6 +1312,7 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
   movePlansToPlanningDir(dataDir);
+  ignorePlanningLikeFeatures(dataDir);
 
   // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
@@ -1491,6 +1509,7 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
   movePlansToPlanningDir(dataDir);
+  ignorePlanningLikeFeatures(dataDir);
 
   // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;

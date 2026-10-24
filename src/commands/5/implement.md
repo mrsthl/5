@@ -140,7 +140,7 @@ Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} di
 
 If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — no review fix was applied, or `/5:address-review-findings` reported `Review findings addressed: yes` — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
 
-1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes.
+1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes. **Never stage a pre-run dirty file** (Step 2), on any plan: it holds the user's own unfinished work. Leave it uncommitted and list it in the report.
 2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}` (compact plan: a short summary of the change); trim redundant whitespace/punctuation when the ticket is empty.
 3. Commit.
 
@@ -153,5 +153,6 @@ Report: completed/failed component counts, verification status, auto-commit coun
 - **Review:** the findings count from `/5:review` and how many were fixed.
 - **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
 - **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.
+- **Not committed:** pre-run dirty files the run changed — they also hold the user's earlier work, so the user commits them.
 
 Then stop.

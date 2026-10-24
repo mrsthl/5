@@ -168,6 +168,7 @@ Context7 provides up-to-date, version-specific documentation and code examples d
 - "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when the agent works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
   - Options: "Yes (recommended)", "Skip"
 - Note: Rules complement AGENTS.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
+- On Codex, the rules live in the foifi block of `AGENTS.md`. When the user skipped AGENTS.md in step 2j, do not ask: set `rules.generate` to `false`.
 
 **2l. Git-ignore workflow folders:**
 - "`.5/planning/` will hold your plans. `.5/features/` will hold implementation state and review findings. Which should git ignore?"
@@ -222,9 +223,9 @@ Ensure `.5/.reconfig-reminder` is gitignored (it's a transient runtime flag that
 
 ### Step 3: Create Configuration Plan
 
-If the user skipped both AGENTS.md (step 2j) and rules (step 2j2), there is nothing to implement: skip Steps 3 and 4, tell the user "Configuration saved to `.5/config.json`", and stop.
+If the user skipped both AGENTS.md (step 2j) and rules (step 2j2), there is nothing to implement: delete `.5/planning/CONFIGURE.md` if an earlier run left it, so no later `/5:implement` applies what the user just declined. Then skip Steps 3 and 4, tell the user "Configuration saved to `.5/config.json`", and stop.
 
-Otherwise write `.5/planning/CONFIGURE.md` containing all gathered data:
+Otherwise write `.5/planning/CONFIGURE.md` containing all gathered data. When the user skipped AGENTS.md in step 2j, leave out everything about AGENTS.md and CLAUDE.md: the `configure agents md` component, Requirement 1, its acceptance criteria and Module Impact row, and the "After configure agents md" ordering. The plan then generates only the rules, and nothing touches `AGENTS.md` or `CLAUDE.md`. The template below shows the plan with both selected:
 
 ```markdown
 ---

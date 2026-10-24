@@ -38,7 +38,7 @@ Use `.claude/templates/AGENTS.md` as the block. Keep its marker comments and sta
 ## 3. Write AGENTS.md
 
 - **No `AGENTS.md`:** create it with only the block.
-- **`AGENTS.md` with a foifi block:** replace the text from the `<!-- foifi:start` line through the `<!-- foifi:end -->` line. Leave every other byte unchanged.
+- **`AGENTS.md` with a foifi block:** replace the text from the `<!-- foifi:start` line through the `<!-- foifi:end -->` line. Keep any `<!-- 5-sync:rules-start -->` … `<!-- 5-sync:rules-end -->` and `<!-- 5-sync:agents-start -->` … `<!-- 5-sync:agents-end -->` sections inside the old block unchanged, just before the new `<!-- foifi:end -->`: `configure-rules` and `/5:synchronize-agents` own them. Leave every other byte unchanged.
 - **`AGENTS.md` without a block:** append a blank line and the block at the end. Leave the existing content unchanged.
 - **Legacy file** (its first line starts with `<!-- Generated from the foifi AGENTS.md template`): an earlier version generated the whole file. Keep only what the user wrote: the content under its `## Custom Documentation` heading, unchanged. Write that content, then a blank line, then the block. Drop the rest; the block replaces it.
 

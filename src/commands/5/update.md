@@ -42,7 +42,7 @@ Read `.5/version.json` again. Compare the new `installedVersion` to the previous
 
 Run `git status` to show the files modified by the upgrade. Summarize the changes for the user using the correct runtime paths:
 - Claude Code installs typically update files in `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`, `.claude/templates/`, `.claude/settings.json`, and `.5/version.json`
-- Codex installs typically update files in `.codex/skills/`, `.codex/templates/`, `.codex/references/`, `.codex/instructions.md`, and `.5/version.json`
+- Codex installs typically update files in `.codex/skills/`, `.codex/templates/`, `.codex/references/`, and `.5/version.json`
 
 ## Step 5: Ask to Commit
 
@@ -67,7 +67,7 @@ Build the commit message by applying the pattern:
 Stage **only** the workflow-managed files shown in `git status`.
 
 - For Claude Code installs, this usually means files inside `.claude/commands/5/`, `.claude/skills/`, `.claude/hooks/`, `.claude/templates/`, `.claude/settings.json`, and `.5/version.json`
-- For Codex installs, this usually means files inside `.codex/skills/`, `.codex/templates/`, `.codex/references/`, `.codex/instructions.md`, and `.5/version.json`
+- For Codex installs, this usually means files inside `.codex/skills/`, `.codex/templates/`, `.codex/references/`, and `.5/version.json`
 
 Never use `git add .` or `git add -A`.
 

@@ -55,7 +55,7 @@ Read `.5/config.json`. If it does not exist, tell the user: "No configuration fo
 
 - **Repository standards** — same as configure Step 1e2. Note each path for the refresh manifest.
 - **AGENTS.md state** — whether it has a foifi block, is a legacy fully generated file (first line starts with `<!-- Generated from the foifi AGENTS.md template`), or has no block yet. Whether `CLAUDE.md` includes `@AGENTS.md`.
-- **Rules** (if `rules.generate` is `true`) — list `.claude/rules/*.md`. A rule is workflow-generated when it contains `<!-- foifi:generated -->`, or, from earlier versions, when it is named `code-style.md`, `testing.md`, `api-patterns.md`, or `dependencies.md` and you confirm it with the user in Step 3. Everything else is user-created.
+- **Rules** (if `rules.generate` is `true`) — on Codex, the `###` subsections of the `File-Scoped Rules` section in the foifi block of `AGENTS.md`; all of them are workflow-generated. On Claude Code, list `.claude/rules/*.md`. A rule is workflow-generated when it contains `<!-- foifi:generated -->`, or, from earlier versions, when it is named `code-style.md`, `testing.md`, `api-patterns.md`, or `dependencies.md` and you confirm it with the user in Step 3. Everything else is user-created.
 - For each workflow rule, check that its file types still exist (stale), and whether a missing rule from `configure-rules` step 1 now applies (new).
 
 ### Step 3: Confirm with User
@@ -89,7 +89,7 @@ Write `.5/reconfigure-manifest.json`:
 
 First, point plan mode at `.5/planning/` exactly as `/5:configure` Step 2.5 describes (Claude Code only — skip on Codex).
 
-Then invoke the refresh skills in **refresh mode** via the Agent tool (`subagent_type: "general-purpose"`):
+Then invoke the refresh skills in **refresh mode** via the Agent tool (`subagent_type: "general-purpose"`), one after the other — on Codex both write the foifi block of `AGENTS.md`:
 
 ```
 Task prompt 1: "Run configure-agents-md skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh the foifi block in AGENTS.md and the CLAUDE.md include; change nothing outside the block."

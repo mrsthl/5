@@ -43,10 +43,11 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md`; plus `security-review` for security-sensitive diffs and `review-style` | prose fallback only (no `Skill` tool); `review-style` by reading its SKILL.md |
 | Standards review | `Skill(review-style)` in `/5:review`, which `/5:implement` runs at its end | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
 | Model mapping (haiku/sonnet/opus) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
-| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
+| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the dependency rule under "Surgical Changes" in the `AGENTS.md` template, because it must apply outside the workflow skills too |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
+| Generated rules | `.claude/rules/*.md` from `configure-rules` | `File-Scoped Rules` section in the foifi block of `AGENTS.md` — Codex reads only `AGENTS.md`, never `.codex/instructions.md`; `/5:synchronize-agents` writes the same section from `.claude/rules/` |
 | Security review | `Skill(security-review)` in `/5:review` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
 | Upgrade migrations | `performUpdate()` in `install.js` | `performCodexUpdate()` in `install.js` — must mirror all migrations |
 

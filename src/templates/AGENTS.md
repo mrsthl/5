@@ -84,7 +84,7 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
-Before you report a task as done, check your own diff (`git status --short` and `git diff --stat`): revert files and changes that do not trace to the request, and remove new dependencies nobody asked for. For a deeper pass, run `/5:lean-check` (Codex: `$5-lean-check`).
+Before you report a task as done, check your own diff (`git status --short` and `git diff --stat`): revert files and changes that do not trace to the request. For every dependency the diff adds: keep it and name it in your reply if the user asked for it; otherwise remove it with the package manager and use existing code, the standard library, or an installed dependency instead. For a deeper pass, run `/5:lean-check` (Codex: `$5-lean-check`).
 
 ## Goal-Driven Execution
 

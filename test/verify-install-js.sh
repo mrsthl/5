@@ -173,6 +173,10 @@ function verifyProjectInstructionsContract() {
       ok: reviewStyle.includes('<!-- foifi:start')
     },
     {
+      label: 'Codex rules go into the AGENTS.md foifi block, not unread files',
+      ok: fs.readFileSync('src/skills/configure-rules/SKILL.md', 'utf8').includes('## Codex: rules in AGENTS.md') && fs.readFileSync('bin/sync-agents.js', 'utf8').includes("path.join(root, 'AGENTS.md')") && !fs.readFileSync('bin/sync-agents.js', 'utf8').includes("'instructions.md'") && !fs.readFileSync('bin/install.js', 'utf8').includes('generateCodexInstructions') && agentsSkill.includes('5-sync:rules-start')
+    },
+    {
       label: 'config-guard hook is gone from settings.json',
       ok: !settings.includes('config-guard')
     }

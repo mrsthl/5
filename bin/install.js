@@ -708,9 +708,6 @@ function getCodexFileManifest() {
     }
   }
 
-  // Instructions file
-  manifest.push('instructions.md');
-
   return manifest;
 }
 
@@ -1324,56 +1321,6 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
 
 // ── Codex install/update/uninstall ──────────────────────────────────────────
 
-// Generate instructions.md for Codex (replaces hooks + settings.json)
-function generateCodexInstructions(targetPath) {
-  const content = `# dev-workflow — Codex Instructions
-
-This file is managed by the dev-workflow installer. It provides Codex with
-the context it needs to run the workflow skills correctly.
-
-## Workflow Overview
-
-The workflow provides structured feature development:
-
-1. **Plan** (\`$5-plan\`) — Requirements, discovery, and a plan in \`.5/planning/\`
-2. **Implement** (\`$5-implement\`) — Orchestrated implementation with inline verification and a standards review
-3. **Review** (\`$5-review\`) — Code review and standards review
-
-## Data Directory
-
-All workflow state lives in \`.5/\` at the project root:
-- \`.5/config.json\` — Project configuration
-- \`.5/planning/{name}.md\` — Plans
-- \`.5/features/{name}/\` — Review findings and decisions
-
-## Guard Rules
-
-During the planning phase ($5-plan), until the user approves the plan:
-- Do NOT write any file
-- Do NOT write source code
-
-## Scope Discipline (replaces the dependency-guard Stop hook)
-
-Before you report any task as done — inside or outside the workflow skills — check the uncommitted diff of dependency manifests (\`package.json\`, \`requirements*.txt\`, \`pyproject.toml\`, \`go.mod\`, \`Cargo.toml\`, \`Gemfile\`, \`composer.json\`, \`pom.xml\`, \`build.gradle\`, \`*.csproj\`). For every added dependency: keep it and name it in your reply if the user asked for it; otherwise remove it with the package manager and use existing code, the standard library, a native platform feature, or an installed dependency instead. For a deeper check, run \`$5-lean-check\`.
-
-## Configuration
-
-Run \`$5-configure\` after installation to set up your project.
-
-## Codex Token Budget
-
-Workflow skills use \`gpt-5.4-mini\` with low reasoning for exploration, orchestration, and simple executors by default. Ordinary logic and final verification use \`gpt-5.4\` with medium reasoning. Complex logic, security-sensitive work, data migrations, public API changes, and retries after a failed attempt use \`gpt-5.4\` with high reasoning.
-
-## Templates & References
-
-Templates are in \`.codex/templates/\` and references in \`.codex/references/\`.
-Skills reference these paths for output formatting.
-`;
-
-  fs.writeFileSync(path.join(targetPath, 'instructions.md'), content);
-  log.success('Generated instructions.md');
-}
-
 // Install commands as Codex skills
 function installCodexSkills(targetPath, sourcePath) {
   const skillsDest = path.join(targetPath, 'skills');
@@ -1467,9 +1414,6 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
   copyWorkflowHelperBins(targetPath);
   log.success('Installed bin/ (workflow helper binaries)');
 
-  // Generate instructions.md (replaces hooks + settings.json)
-  generateCodexInstructions(targetPath);
-
   // Initialize version tracking (shared .5/ directory)
   initializeVersionJson(isGlobal);
 
@@ -1522,9 +1466,6 @@ function codexSelectiveUpdate(targetPath, sourcePath) {
   // Update helper binaries used by runtime commands
   copyWorkflowHelperBins(targetPath);
   log.success('Updated bin/ helper binaries');
-
-  // Regenerate instructions.md
-  generateCodexInstructions(targetPath);
 }
 
 // Codex update
@@ -1634,7 +1575,7 @@ function codexUninstall() {
     log.success('Removed workflow helper binaries');
   }
 
-  // Remove instructions.md
+  // Remove instructions.md left by earlier versions (Codex never read it; AGENTS.md carries the rules)
   const instructionsPath = path.join(targetPath, 'instructions.md');
   if (fs.existsSync(instructionsPath)) {
     fs.unlinkSync(instructionsPath);

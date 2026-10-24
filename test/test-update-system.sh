@@ -281,11 +281,11 @@ else
   echo "✗ Codex agents not installed"
   exit 1
 fi
-if [ -f ".codex/instructions.md" ]; then
-  echo "✓ instructions.md generated"
-else
-  echo "✗ instructions.md not generated"
+if [ -e ".codex/instructions.md" ]; then
+  echo "✗ instructions.md generated (Codex never reads it)"
   exit 1
+else
+  echo "✓ No unread instructions.md generated"
 fi
 if [ -d ".codex/templates" ]; then
   echo "✓ Templates installed"

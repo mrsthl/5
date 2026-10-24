@@ -295,7 +295,7 @@ Adds the workflow block to AGENTS.md, includes AGENTS.md from CLAUDE.md, and gen
 | Component | Action | Target Path | Intent |
 |-----------|--------|-------------|--------|
 | configure agents md | modify | `AGENTS.md` | Write the foifi block into AGENTS.md and include it from CLAUDE.md, linking the repository standards. |
-| configure rules | create | `.claude/rules/` | Generate scoped rules from detected conventions. |
+| configure rules | create | `.claude/rules/` | After configure agents md: generate scoped rules from detected conventions (on Codex, into the foifi block of `AGENTS.md`). |
 
 ## Technical Notes
 
@@ -310,7 +310,7 @@ Handled by: `configure-agents-md`
 - Never change content outside the block; append `@AGENTS.md` to CLAUDE.md only when it lacks that line
 
 ### Requirement 2: Generate Scoped Rules (if selected)
-Handled by: `configure-rules`
+Handled by: `configure-rules`. Runs after Requirement 1: on Codex, Codex reads only `AGENTS.md`, so the rules go into its foifi block instead of rule files.
 
 Generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
 Rules are concise directives (15-40 lines, NOT documentation) derived from codebase analysis.

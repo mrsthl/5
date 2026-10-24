@@ -13,6 +13,8 @@ Generates `.claude/rules/*.md`: short directives that load only when Claude work
 - **Full mode (default):** used by `/5:implement CONFIGURE`. Runs when `rules.generate` is `true` in `.5/config.json`.
 - **Refresh mode:** used by `/5:reconfigure`. The prompt includes "REFRESH MODE" and points at `.5/reconfigure-manifest.json`.
 
+**On Codex** (this skill runs as part of `$5-configure` or `$5-reconfigure`), write no rule files: Codex reads only `AGENTS.md`. Write the same rules, in the same order, into the foifi block of `AGENTS.md` instead — see [Codex: rules in AGENTS.md](#codex-rules-in-agentsmd).
+
 Rules are **concise directives** (15-40 lines each), not documentation. Rules tell Claude what to do when working with specific file types.
 
 The repository's own standards win over rules. These are the files `.claude/skills/review-style/SKILL.md` step 2 lists, such as `CONTRIBUTING.md`. A rule never restates or contradicts them.
@@ -96,11 +98,29 @@ paths:
 - Environment variables accessed via `src/config/env.ts`, never `process.env` directly
 ```
 
+## Codex: rules in AGENTS.md
+
+Put one section just before the `<!-- foifi:end -->` line of `AGENTS.md`, replacing an existing one:
+
+```markdown
+<!-- 5-sync:rules-start -->
+## File-Scoped Rules
+
+### testing
+Applies to: `**/*.test.ts`, `**/*.spec.ts`
+
+- Use `describe`/`it` blocks with descriptive names
+<!-- 5-sync:rules-end -->
+```
+
+One `###` subsection per rule, named like the rule file, starting with `Applies to:` and its globs (`Applies to: all files` for an unconditional rule). Change nothing else in `AGENTS.md`. Without a foifi block, stop and report that `configure-agents-md` must run first.
+
 ## Refresh Mode
 
 When running in REFRESH MODE:
 - Refresh, create, and remove only the rule files `.5/reconfigure-manifest.json` lists.
 - A rule file counts as workflow-generated only when it contains the `<!-- foifi:generated -->` marker line, or, for files from earlier versions without the marker, when the manifest lists it. Never modify or remove any other rule file.
+- On Codex, rewrite the `File-Scoped Rules` section with the manifest's refreshed and new rules, minus the removed ones.
 
 ---
 

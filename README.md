@@ -25,7 +25,6 @@ Then configure the project once:
 
 ```bash
 /5:configure
-/5:implement CONFIGURE
 ```
 
 This adds the foifi rules to `AGENTS.md` as one marked block, links your existing standards from it, and makes `CLAUDE.md` include it. Nothing else in your files or settings changes.

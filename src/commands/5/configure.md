@@ -1,15 +1,15 @@
 ---
 name: 5:configure
-description: Configures the project. Analyzes project, gathers preferences, writes config.json, points Claude Code plan mode at .5/planning/, and creates .5/planning/CONFIGURE.md. Follow up with /5:implement CONFIGURE.
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
+description: Configures the project. Analyzes project, gathers preferences, writes config.json, points Claude Code plan mode at .5/planning/, creates .5/planning/CONFIGURE.md, then runs /5:implement CONFIGURE itself.
+allowed-tools: Agent, Read, Write, Edit, Glob, Grep, Bash, Workflow, Skill, AskUserQuestion
 user-invocable: true
 ---
 
 <role>
 You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a unified plan.
-You do NOT write AGENTS.md, CLAUDE.md, or rules directly — those are /5:implement's job.
+You do NOT write AGENTS.md, CLAUDE.md, or rules directly — those are /5:implement's job, and you start it yourself once the plan is written.
 You write ONLY to: .5/config.json, .5/version.json, .5/planning/CONFIGURE.md, .gitignore, and the `plansDirectory` key of .claude/settings.json (Claude Code only).
-After writing config.json and the unified plan, you are DONE. Exit immediately.
+After writing config.json and the unified plan, you hand off to `/5:implement CONFIGURE`.
 </role>
 
 # Configure (Project Setup Plan)
@@ -18,16 +18,11 @@ Current commit: !`git rev-parse --short HEAD 2>/dev/null || echo "none"`
 
 ## Overview
 
-This command prepares project configuration. It analyzes the project, asks preference questions, writes `.5/config.json`, points Claude Code plan mode at `.5/planning/`, and writes a plan at `.5/planning/CONFIGURE.md`.
-
-After running this command, proceed through the standard phases:
-1. **`/5:configure`** (this command) - Create config and CONFIGURE plan
-2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-agents-md` and `configure-rules`)
-3. `/5:review` - Review generated files if desired
+This command prepares project configuration. It analyzes the project, asks preference questions, writes `.5/config.json`, points Claude Code plan mode at `.5/planning/`, writes a plan at `.5/planning/CONFIGURE.md`, and then runs `/5:implement CONFIGURE` itself, which executes the plan with `configure-agents-md` and `configure-rules` and reviews the result. The user runs only this one command.
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
 
-**THIS COMMAND WRITES config.json AND CREATES THE CONFIGURE PLAN. NOTHING ELSE.**
+**THIS COMMAND WRITES config.json AND CREATES THE CONFIGURE PLAN, THEN HANDS OFF TO `/5:implement CONFIGURE`. NOTHING ELSE.**
 
 Your job in this command:
 ✅ Analyze project (detect type, build commands, etc.)
@@ -35,7 +30,7 @@ Your job in this command:
 ✅ Write `.5/config.json` directly
 ✅ Set `plansDirectory` in `.claude/settings.json` (Claude Code only)
 ✅ Create the plan at `.5/planning/CONFIGURE.md` for remaining work
-✅ Tell user to run /5:implement CONFIGURE
+✅ Run `/5:implement CONFIGURE` right after the plan is written
 
 Your job is NOT:
 ❌ Write AGENTS.md or CLAUDE.md directly (/5:implement does this)
@@ -43,9 +38,9 @@ Your job is NOT:
 ❌ Skip user interaction
 ❌ Assume project structure
 
-**After writing config.json, creating the unified plan, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
+**After writing config.json and the unified plan, run `/5:implement CONFIGURE`. The rest is its job.**
 
-**If you find yourself writing AGENTS.md, CLAUDE.md, or rules, STOP IMMEDIATELY. You should only be writing config.json, the settings key, and the plan.**
+**If you find yourself writing AGENTS.md, CLAUDE.md, or rules before `/5:implement CONFIGURE` runs, STOP IMMEDIATELY. You should only be writing config.json, the settings key, and the plan.**
 
 ## Configuration Process
 
@@ -227,7 +222,9 @@ Ensure `.5/.reconfig-reminder` is gitignored (it's a transient runtime flag that
 
 ### Step 3: Create Configuration Plan
 
-Write `.5/planning/CONFIGURE.md` containing all gathered data:
+If the user skipped both AGENTS.md (step 2j) and rules (step 2j2), there is nothing to implement: skip Steps 3 and 4, tell the user "Configuration saved to `.5/config.json`", and stop.
+
+Otherwise write `.5/planning/CONFIGURE.md` containing all gathered data:
 
 ```markdown
 ---
@@ -324,21 +321,16 @@ Only generate rules for patterns that were actually detected:
 
 ## Next Steps
 
-1. Run `/5:implement CONFIGURE`.
+1. `/5:configure` runs `/5:implement CONFIGURE` right away; rerun it by hand only if that run was interrupted.
 ```
 
 **Important:** Use `mkdir -p .5/planning` before writing the plan.
 
-### Step 4: Guide User to Next Phase
+### Step 4: Run the Plan
 
-Tell the user:
+Tell the user in one line: "Configuration saved to `.5/config.json`, plan written to `.5/planning/CONFIGURE.md` — implementing it now."
 
-1. "Configuration saved to `.5/config.json`"
-2. "Configuration plan written to `.5/planning/CONFIGURE.md`"
-3. "Next steps:"
-   - "Run `/clear` to reset context"
-   - "Then run `/5:implement CONFIGURE`"
-4. "After that: Run `/5:review` if you want a review of generated files"
+Then run `/5:implement CONFIGURE` right away, without asking: the user already chose what to generate in Step 2. It writes the AGENTS.md block and the rules, verifies them, and runs `/5:review` on the result.
 
 ## Related Documentation
 - [configure-agents-md skill](../../skills/configure-agents-md/SKILL.md)

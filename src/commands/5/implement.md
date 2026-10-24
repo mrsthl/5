@@ -177,11 +177,14 @@ Invoke `Skill(skill: "review-style", args: "{fixed-point} files: {run-files}")` 
 
 Run this on every path, the fast path included. Its findings never change `state.json`.
 
+**Security.** When the run's files touch authentication, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction, and the built-in `security-review` skill is available, also invoke `Skill(skill: "security-review")` and report its findings with the standards findings. Fix none without the user's approval.
+
 ## Step 7: Report
 
 Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Also list, one line each:
 
 - **Standards:** findings per standard, how many are hard breaches, and which ones were fixed.
+- **Security:** security-review findings, or `not security-sensitive` when it was skipped.
 
 - **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
 - **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.

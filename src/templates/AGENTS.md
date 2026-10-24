@@ -1,34 +1,20 @@
-<!-- Generated from the foifi AGENTS.md template. The repository standards in this file are the "Custom Documentation" section and the files linked under "Standards". All other sections are workflow rules. They rank below the repository standards and the style skills. -->
+<!-- foifi:start — Managed by foifi. /5:reconfigure rewrites everything up to foifi:end. Everything outside this block belongs to the repository and ranks above it: it is part of the repository's own standards. -->
 
-# Repository Guide
-
-{PROJECT_OVERVIEW}
+# Workflow Rules (foifi)
 
 ## Build & Run Commands
 
 {BUILD_RUN_COMMANDS}
 
-## Skill Usage
-
-Before implementing changes, always check the available skills for relevant implementation guidance.
-
-Use skills to understand project-specific workflows, commands, testing expectations, and implementation conventions before editing code.
-
 ## Commit Messages
 
-Use the `/5:commit` command or `$5-commit` skill when creating commits. It reads `.5/config.json` and applies the configured `git.commitMessage.pattern`, including ticket IDs from branch names when configured.
-
-## Workflow Rules
-
-When running `/5:` workflow commands, follow the command instructions exactly as written.
-Do not skip steps, combine phases, or proceed to actions not specified in the current command.
-Each phase produces a specific artifact - do not create artifacts belonging to other phases.
+{COMMIT_MESSAGE_RULE}
 
 ## Standards
 
 These rules decide how code is written here, in this order:
 
-1. **This repository's own standards always win.** They cover contributing, code style, and conventions:
+1. **This repository's own standards always win.** They are everything in `AGENTS.md` and `CLAUDE.md` outside this block, plus these files:
 
 {REPO_STANDARDS_LINKS}
 
@@ -114,4 +100,4 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 {PROJECT_DOCUMENTATION_LINKS}
 
-{CUSTOM_DOCUMENTATION}
+<!-- foifi:end -->

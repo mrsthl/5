@@ -103,14 +103,14 @@ function compareLists(category, repoList, installList) {
 const managed = getManagedFiles();
 let errors = 0;
 
-function verifyReviewReplyContract() {
-  console.log('=== Review Reply Contract ===');
+function verifyReviewContract() {
+  console.log('=== Review Contract ===');
   console.log('');
 
   const addressCommand = fs.readFileSync('src/commands/5/address-review-findings.md', 'utf8');
-  const replyCommand = fs.readFileSync('src/commands/5/reply-pr-comments.md', 'utf8');
   const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
-  const summaryTemplate = fs.readFileSync('src/templates/workflow/REVIEW-SUMMARY.md', 'utf8');
+  const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
+  const install = fs.readFileSync('bin/install.js', 'utf8');
   const required = [
     {
       label: 'review delegates to the built-in code-review skill',
@@ -125,32 +125,56 @@ function verifyReviewReplyContract() {
       ok: !/coderabbit/i.test(reviewCommand)
     },
     {
-      label: 'address-review invokes reply helper',
-      ok: addressCommand.includes('Invoke `/5:reply-pr-comments {feature}`')
+      label: 'review and implement run security-review on security-sensitive diffs',
+      ok: reviewCommand.includes('Skill(skill: "security-review")') && implementCommand.includes('Skill(skill: "security-review")')
     },
     {
-      label: 'address-review parses reply result block',
-      ok: addressCommand.includes('---PR-REPLIES---')
+      label: 'Codex adapter maps security-review',
+      ok: install.includes('Skill(skill="security-review")')
     },
     {
-      label: 'address-review forbids silent reply omission',
-      ok: addressCommand.includes('silent omission of the reply step is not allowed')
+      label: 'address-review applies fixes itself, without helper commands',
+      ok: !/\/5:(apply-review-findings|triage-pr-comments|reply-pr-comments)/.test(addressCommand)
+    }
+  ];
+
+  let failures = 0;
+  for (const check of required) {
+    if (check.ok) {
+      console.log(`${GREEN}✓ ${check.label}${NC}`);
+    } else {
+      console.log(`${RED}✗ ${check.label}${NC}`);
+      failures += 1;
+    }
+  }
+  console.log('');
+  return failures > 0 ? 1 : 0;
+}
+
+function verifyProjectInstructionsContract() {
+  console.log('=== Project Instructions Contract ===');
+  console.log('');
+
+  const template = fs.readFileSync('src/templates/AGENTS.md', 'utf8');
+  const agentsSkill = fs.readFileSync('src/skills/configure-agents-md/SKILL.md', 'utf8');
+  const reviewStyle = fs.readFileSync('src/skills/review-style/SKILL.md', 'utf8');
+  const settings = fs.readFileSync('src/settings.json', 'utf8');
+  const required = [
+    {
+      label: 'AGENTS.md template is one marked block',
+      ok: template.startsWith('<!-- foifi:start') && template.trimEnd().endsWith('<!-- foifi:end -->')
     },
     {
-      label: 'reply helper posts inline replies',
-      ok: replyCommand.includes('/pulls/{number}/comments/{comment_id}/replies')
+      label: 'configure-agents-md leaves content outside the block unchanged',
+      ok: agentsSkill.includes('Leave every other byte unchanged') && !/overwrite `CLAUDE\.md`/.test(agentsSkill)
     },
     {
-      label: 'reply helper posts general PR replies',
-      ok: replyCommand.includes('/issues/{number}/comments')
+      label: 'review-style treats the foifi block as workflow rules',
+      ok: reviewStyle.includes('<!-- foifi:start')
     },
     {
-      label: 'reply helper fails on missing decisions',
-      ok: replyCommand.includes('If it is missing or invalid')
-    },
-    {
-      label: 'summary records PR replies',
-      ok: summaryTemplate.includes('## PR Comment Replies')
+      label: 'config-guard hook is gone from settings.json',
+      ok: !settings.includes('config-guard')
     }
   ];
 
@@ -328,7 +352,8 @@ function verifyPlanModeContract() {
   return failures > 0 ? 1 : 0;
 }
 
-errors += verifyReviewReplyContract();
+errors += verifyReviewContract();
+errors += verifyProjectInstructionsContract();
 errors += verifySyncAgentsSkills();
 errors += verifyPlanModeContract();
 

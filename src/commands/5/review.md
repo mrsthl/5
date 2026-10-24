@@ -1,6 +1,6 @@
 ---
 name: 5:review
-description: Reviews code changes for correctness via the built-in code-review skill and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
+description: Reviews code changes for correctness via the built-in code-review skill, for security via security-review when the diff is security-sensitive, and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
 argument-hint: [low|medium|high|max]
 user-invocable: true
@@ -37,6 +37,14 @@ Skill(skill: "code-review", args: "{target} {effort}")
 ```
 
 Derive `{target}` from the scope answer: options 1-3 review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
+
+**Security review** — when the diff touches authentication, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction, and the built-in `security-review` skill is available, invoke it on the same scope:
+
+```text
+Skill(skill: "security-review")
+```
+
+Use the vulnerabilities it reports. Skip it for diffs that touch none of these areas.
 
 **Standards review** — then invoke `review-style` in report-only mode. It checks the same changes against the repository's own standards and the style skills it lists, and repository standards win:
 
@@ -90,6 +98,8 @@ When the findings come from the `code-review` skill, map its reported fields ont
 | `summary` | **Description:** |
 | the concrete fix, else `short_summary` | **Suggested Fix:** |
 | `failure_scenario` | **Original Reviewer Message:** |
+
+Findings from `security-review` map to **Category:** `Fixable` when the fix is local, otherwise `Manual`, always with **Severity:** `error`; its explanation of the exploit goes into **Original Reviewer Message:**.
 
 Findings from the fallback path map directly: Fixable Issues, Questions, and Manual Review become their matching categories.
 

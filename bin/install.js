@@ -376,7 +376,21 @@ const LEGACY_REMOVED_FILES = [
   'templates/ARCHITECTURE.md',
   'templates/CONCERNS.md',
   'templates/CONVENTIONS.md',
-  'templates/TESTING.md'
+  'templates/TESTING.md',
+  // Lean core: Claude Code covers commits, READMEs, PR replies, and per-pattern skills natively
+  'commands/5/commit.md',
+  'commands/5/apply-review-findings.md',
+  'commands/5/triage-pr-comments.md',
+  'commands/5/reply-pr-comments.md',
+  'skills/5-commit',
+  'skills/5-apply-review-findings',
+  'skills/5-triage-pr-comments',
+  'skills/5-reply-pr-comments',
+  'skills/generate-readme',
+  'skills/configure-skills',
+  'hooks/config-guard.js',
+  'templates/workflow/FIX-PLAN.md',
+  'templates/workflow/REVIEW-SUMMARY.md'
 ];
 
 // Get list of workflow-owned files/directories (not user-created)
@@ -400,8 +414,7 @@ function getWorkflowManagedFiles() {
     // Skills: specific skill directories
     skills: [
       'configure-agents-md',
-      'configure-skills',
-      'generate-readme',
+      'configure-rules',
       // Review styles: review-style runs one reviewer per style listed in its SKILL.md
       'review-style',
       'fowler-code-smells',
@@ -415,7 +428,6 @@ function getWorkflowManagedFiles() {
       'statusline.js',
       'check-updates.js',
       'check-reconfig.js',
-      'config-guard.js',
       'dependency-guard.js'
     ],
 
@@ -436,9 +448,7 @@ function getWorkflowManagedFiles() {
       // Workflow output templates
       'workflow/PLAN.md',
       'workflow/PLAN-COMPACT.md',
-      'workflow/REVIEW-FINDINGS.md',
-      'workflow/REVIEW-SUMMARY.md',
-      'workflow/FIX-PLAN.md'
+      'workflow/REVIEW-FINDINGS.md'
     ]
   };
 }
@@ -537,14 +547,6 @@ function convertClaudeSetupCommandsToCodexNotes(content) {
     .replace(
       /- If user selects "Install now": execute the install command/g,
       '- If user selects "Install now": explain that Codex cannot run the Claude Code installer command; leave `tools.context7.available = false` unless Context7 is already detected'
-    )
-    .replace(
-      /1\. "Install now \(recommended\)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash/g,
-      '1. "Install now" — not supported automatically in Codex; install an equivalent skill authoring workflow outside this command, then rerun configuration'
-    )
-    .replace(
-      /- If user selects "Install now": execute the install command, then set `tools\.skillCreator\.available = true` in the config/g,
-      '- If user selects "Install now": explain that Codex cannot run the Claude Code plugin installer; leave `tools.skillCreator.available = false` unless an equivalent tool is already detected'
     );
 }
 
@@ -575,6 +577,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`Workflow\` | Not available — run the command's prose fallback loop instead |
 | \`Skill(skill="code-review")\` | Not available — run the command's prose fallback loop instead |
+| \`Skill(skill="security-review")\` | Not available — skip it; the prose review fallback of \`$5-review\` covers security |
 | \`Skill(skill="review-style", args="...")\` | Read \`.codex/skills/review-style/SKILL.md\` and follow it with the same arguments |
 | \`EnterPlanMode\` | Not available — run the command's prose fallback loop instead |
 
@@ -1050,7 +1053,7 @@ function mergeSettings(targetPath, sourcePath) {
 
   if (fs.existsSync(targetSettings)) {
     const existingSettings = JSON.parse(fs.readFileSync(targetSettings, 'utf8'));
-    const merged = deepMerge(newSettings, existingSettings);
+    const merged = deepMerge(existingSettings, newSettings);
     fs.writeFileSync(targetSettings, JSON.stringify(merged, null, 2));
     log.info('Merged settings with existing configuration');
   } else {
@@ -1080,10 +1083,10 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-implement                 - Execute implementation + verification');
     log.info('  $5-review                    - Code and standards review');
     log.info('  $5-lean-check                - Check a diff for scope drift/over-engineering');
-    log.info('  $5-commit                    - Create a templated git commit');
-    log.info('  $5-address-review-findings   - Decide review findings & PR comments');
+    log.info('  $5-address-review-findings   - Decide on review findings, apply the fixes');
+    log.info('  $5-analyze-feature           - Document a feature with mermaid diagrams');
     log.info('  $5-configure                 - Interactive project setup');
-    log.info('  $5-reconfigure               - Refresh AGENTS.md/skills/rules (no Q&A)');
+    log.info('  $5-reconfigure               - Refresh the AGENTS.md block and rules (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
@@ -1092,10 +1095,10 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code and standards review');
     log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
-    log.info('  /5:commit                    - Create a templated git commit');
-    log.info('  /5:address-review-findings   - Decide review findings & PR comments');
+    log.info('  /5:address-review-findings   - Decide on review findings, apply the fixes');
+    log.info('  /5:analyze-feature           - Document a feature with mermaid diagrams');
     log.info('  /5:configure                 - Interactive project setup');
-    log.info('  /5:reconfigure               - Refresh AGENTS.md/skills/rules (no Q&A)');
+    log.info('  /5:reconfigure               - Refresh the AGENTS.md block and rules (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');
     log.info('  /5:synchronize-agents        - Sync user content between runtimes');
   }
@@ -1141,10 +1144,8 @@ function performFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('This will:');
   log.info('  • Detect your project type and build commands');
   log.info('  • Set up ticket tracking conventions');
-  log.info('  • Generate AGENTS.md (linked from CLAUDE.md) with your repository standards');
-  log.info('  • Create project-specific skills');
-  log.info('');
-  log.info('Tip: Configure will offer to install helpful plugins like skill-creator');
+  log.info('  • Add the workflow rules to AGENTS.md as one marked block, linking your repository standards');
+  log.info('  • Create file-scoped rules from your conventions');
 
   showCommandsHelp(isGlobal);
 }
@@ -1195,10 +1196,12 @@ function removeContextForkFromSkills(targetPath) {
   } catch (e) {}
 }
 
-// Remove the plan-guard PreToolUse hook entry from an existing settings.json.
-// Native plan mode enforces read-only planning at the harness level, so the hook
-// is gone. Claude Code only — Codex never had a settings.json.
-function removePlanGuardHook(targetPath) {
+// Remove retired PreToolUse hook entries from an existing settings.json. Native plan mode
+// replaced plan-guard; config-guard blocked every Agent call in sessions outside the workflow.
+// Claude Code only — Codex never had a settings.json.
+const RETIRED_HOOKS = ['plan-guard.js', 'config-guard.js'];
+
+function removeRetiredHooks(targetPath) {
   const settingsFile = path.join(targetPath, 'settings.json');
   if (!fs.existsSync(settingsFile)) return;
   try {
@@ -1206,13 +1209,14 @@ function removePlanGuardHook(targetPath) {
     const pre = settings.hooks && settings.hooks.PreToolUse;
     if (!Array.isArray(pre)) return;
     const kept = pre.filter(entry =>
-      !(entry.hooks || []).some(h => typeof h.command === 'string' && h.command.includes('plan-guard.js')));
+      !(entry.hooks || []).some(h =>
+        typeof h.command === 'string' && RETIRED_HOOKS.some(hook => h.command.includes(hook))));
     if (kept.length === pre.length) return;
     if (kept.length) settings.hooks.PreToolUse = kept;
     else delete settings.hooks.PreToolUse;
     if (settings.hooks && !Object.keys(settings.hooks).length) delete settings.hooks;
     fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
-    log.info('Removed plan-guard hook from settings.json (native plan mode replaces it)');
+    log.info('Removed retired guard hooks from settings.json');
   } catch (e) {}
 }
 
@@ -1267,8 +1271,8 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   // Strip `context: fork` from generated skills — caused infinite loops
   removeContextForkFromSkills(targetPath);
 
-  // Native plan mode replaces the plan-guard hook and its marker file
-  removePlanGuardHook(targetPath);
+  // Native plan mode replaces the plan-guard hook and its marker file; config-guard is retired
+  removeRetiredHooks(targetPath);
   removePlanningActiveMarker(dataDir);
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
@@ -1376,7 +1380,7 @@ function installCodexSkills(targetPath, sourcePath) {
   }
   log.success(`Installed ${files.length} workflow skills`);
 
-  // Also convert and install the workflow's own skills (configure-*, generate-readme, review styles)
+  // Also convert and install the workflow's own skills (configure-*, review styles)
   const managed = getWorkflowManagedFiles();
   for (const skill of managed.skills) {
     const skillSrc = path.join(sourcePath, 'skills', skill);
@@ -1464,8 +1468,7 @@ function performCodexFreshInstall(targetPath, sourcePath, isGlobal) {
   log.info('This will:');
   log.info('  • Detect your project type and build commands');
   log.info('  • Set up ticket tracking conventions');
-  log.info('  • Generate AGENTS.md with your repository standards');
-  log.info('  • Create project-specific skills');
+  log.info('  • Add the workflow rules to AGENTS.md as one marked block, linking your repository standards');
 
   showCommandsHelp(isGlobal);
 }

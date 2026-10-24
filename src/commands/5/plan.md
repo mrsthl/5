@@ -50,6 +50,8 @@ Carry these constraints into the planning work:
 
 **Output shape.** Write the plan using the section shape of `.claude/templates/workflow/PLAN.md`, including its frontmatter with `feature` set to the feature name from Step 1. Plan files get generated names, so this field is how `/5:implement` finds the plan. Use `.claude/templates/workflow/PLAN-COMPACT.md` instead for small, low-risk changes with 1-2 components, no data migration, no security/auth change, and no public API contract change; its frontmatter adds `planFormat: compact`. The plan must contain a Component Checklist table of `Component | Action | Target Path | Intent`, where action is `create`, `modify`, `delete`, or `rename`. For `rename`, the target path is the destination and the intent names the original path. Do not add step, model, skill, pattern-file, or verify-command columns — `/5:implement` derives that wiring mechanically. End with the template's Next Steps section, so the hand-off survives a cleared context.
 
+**Diagram.** When the change has a flow across components, a state machine, or new component relationships, add the template's Diagram section with one valid mermaid diagram of what changes. Omit it for linear or single-file changes.
+
 **Discovery goes into the plan.** `/5:implement` reads only the plan. Name each pattern to follow with its path and a symbol or line range, and put the narrowest test or build command in Technical Notes.
 
 **Repository standards.** Read the repository's own standards — the files `.claude/skills/review-style/SKILL.md` step 2 lists. Plan what they require, such as tests, a changelog entry, or docs. They win over the workflow's own rules.
@@ -65,6 +67,7 @@ In refine mode, seed the plan file with the existing plan's content and change o
 - The frontmatter has `feature`, plus `planFormat: compact` for a compact plan.
 - The plan has all required template sections, and optional sections with no useful content were omitted.
 - Acceptance criteria are checkboxes.
+- A Diagram, when present, is valid mermaid and shows what changes, not the whole system.
 - Decisions are labeled `[DECIDED]`, `[FLEXIBLE]`, or `[DEFERRED]`.
 - Every component traces to scope or acceptance criteria, and none adds abstraction, flexibility, or configurability beyond what an acceptance criterion requires.
 - No implementation code or pseudo-code is present.
@@ -155,7 +158,7 @@ Keep the report under 40 lines. Do not include generic project structure, depend
 
 2. Discuss with the user until you can articulate the problem and expected outcome, scope in and out, acceptance criteria, key decisions labeled `[DECIDED]` / `[FLEXIBLE]` / `[DEFERRED]`, existing patterns to follow, and a component checklist with target paths. Ask only useful questions — prefer proposing a concrete understanding and letting the user correct it.
 
-3. Apply the same output shape, discovery, repository standards, necessity gate, and no-code constraints from Step 2, and run its self-check.
+3. Apply the same output shape, diagram, discovery, repository standards, necessity gate, and no-code constraints from Step 2, and run its self-check.
 
 4. Show the plan to the user and get explicit approval before writing it.
 

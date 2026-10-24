@@ -49,6 +49,7 @@ The plan uses either the normal template or `PLAN-COMPACT.md` for small, low-ris
 
 - overview
 - what changes
+- a mermaid diagram, when a flow, state machine, or component relationships explain the change better than text
 - existing patterns to follow, with a symbol or line range
 - constraints, including what the repository's standards require
 - scope in/out
@@ -113,7 +114,7 @@ Run:
 /5:review
 ```
 
-On Claude Code, review delegates to the built-in `code-review` skill. Effort defaults to `high`; pass `/5:review low|medium|high|max` to override. Where that skill is unavailable (Codex), a built-in review agent triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. Then `review-style` checks the same changes against the repository's standards and the style skills, in report-only mode. Either way it saves findings to:
+On Claude Code, review delegates to the built-in `code-review` skill. Effort defaults to `high`; pass `/5:review low|medium|high|max` to override. Where that skill is unavailable (Codex), a built-in review agent triages changed files by risk and reads full files only for high-risk changes or when diff context is insufficient. When the diff touches authentication, user input, secrets, cryptography, or SQL/shell/path construction, the built-in `security-review` skill runs as well. Then `review-style` checks the same changes against the repository's standards and the style skills, in report-only mode. Either way it saves findings to:
 
 ```text
 .5/features/{feature-name}/review-findings-{timestamp}.md
@@ -125,13 +126,7 @@ When findings exist, `/5:review` asks whether to address them right away and han
 /5:address-review-findings {feature-name}
 ```
 
-`/5:address-review-findings` is a compact coordinator. It routes local fixes, PR comment triage, and PR replies through focused helper commands:
-
-- `/5:apply-review-findings`
-- `/5:triage-pr-comments`
-- `/5:reply-pr-comments`
-
-PR comment decisions are recorded in `.5/features/{feature-name}/pr-comment-decisions.json` when PR handling is used.
+`/5:address-review-findings` presents each finding with a recommendation, records `fix`/`wont_fix`/`wait` decisions, applies the approved fixes, and runs build, tests, and lint afterwards. For comments on a GitHub PR, ask Claude directly.
 
 ## Configuration
 
@@ -142,15 +137,15 @@ First-time setup:
 /5:implement CONFIGURE
 ```
 
-`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, and writes the CONFIGURE plan. `/5:implement CONFIGURE` generates AGENTS.md (linking the repository's own standards), the CLAUDE.md shim, selected skills, and scoped rules.
+`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, and writes the CONFIGURE plan. `/5:implement CONFIGURE` adds the workflow rules to AGENTS.md as one marked block that links the repository's own standards, appends `@AGENTS.md` to CLAUDE.md when it lacks that line, and generates scoped rules. Nothing outside the block changes.
 
-Refresh AGENTS.md, skills, and rules later with:
+Refresh the AGENTS.md block and the rules later with:
 
 ```text
 /5:reconfigure
 ```
 
-`/5:reconfigure` writes `.5/reconfigure-manifest.json` and passes that compact manifest to the AGENTS.md and skill refresh helpers instead of duplicating long detection summaries in prompts. It is also the upgrade path after a major update: it sets `plansDirectory` and removes the legacy `.5/index/`. Existing `.5/*.md` docs stay untouched.
+`/5:reconfigure` writes `.5/reconfigure-manifest.json` and passes that compact manifest to the AGENTS.md and rule refresh helpers instead of duplicating long detection summaries in prompts. It is also the upgrade path after a major update: it sets `plansDirectory` and removes the legacy `.5/index/`. Existing `.5/*.md` docs stay untouched.
 
 ## Troubleshooting
 
@@ -182,7 +177,7 @@ v2.0.0 removes old commands during upgrade:
 | `/5:plan` | Create a plan, or refine an existing one |
 | `/5:implement` | Implement and verify |
 | `/5:review` | Review changes for correctness and standards |
-| `/5:commit` | Create a templated git commit |
-| `/5:address-review-findings` | Apply approved findings |
+| `/5:address-review-findings` | Decide on findings and apply the approved ones |
+| `/5:analyze-feature` | Document a feature with mermaid diagrams |
 | `/5:configure` | Create project config and CONFIGURE plan |
-| `/5:reconfigure` | Refresh generated project context |
+| `/5:reconfigure` | Refresh the AGENTS.md block and rules |

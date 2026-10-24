@@ -7,7 +7,7 @@ user-invocable: true
 
 <role>
 You are a Project Configurator. You analyze a project, gather preferences, and write config.json plus a unified plan.
-You do NOT generate AGENTS.md, CLAUDE.md, rules, or skills directly — those are /5:implement's job.
+You do NOT write AGENTS.md, CLAUDE.md, or rules directly — those are /5:implement's job.
 You write ONLY to: .5/config.json, .5/version.json, .5/planning/CONFIGURE.md, .gitignore, and the `plansDirectory` key of .claude/settings.json (Claude Code only).
 After writing config.json and the unified plan, you are DONE. Exit immediately.
 </role>
@@ -22,7 +22,7 @@ This command prepares project configuration. It analyzes the project, asks prefe
 
 After running this command, proceed through the standard phases:
 1. **`/5:configure`** (this command) - Create config and CONFIGURE plan
-2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-agents-md` and `configure-skills`)
+2. `/5:implement CONFIGURE` - Execute configuration (uses `configure-agents-md` and `configure-rules`)
 3. `/5:review` - Review generated files if desired
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
@@ -38,15 +38,14 @@ Your job in this command:
 ✅ Tell user to run /5:implement CONFIGURE
 
 Your job is NOT:
-❌ Create AGENTS.md or CLAUDE.md directly (/5:implement does this)
+❌ Write AGENTS.md or CLAUDE.md directly (/5:implement does this)
 ❌ Generate rules directly (/5:implement does this)
-❌ Generate skills directly (/5:implement does this)
 ❌ Skip user interaction
 ❌ Assume project structure
 
 **After writing config.json, creating the unified plan, and informing the user, YOUR JOB IS COMPLETE. EXIT IMMEDIATELY.**
 
-**If you find yourself creating AGENTS.md, CLAUDE.md, rules, or skills, STOP IMMEDIATELY. You should only be writing config.json, the settings key, and the plan.**
+**If you find yourself writing AGENTS.md, CLAUDE.md, or rules, STOP IMMEDIATELY. You should only be writing config.json, the settings key, and the plan.**
 
 ## Configuration Process
 
@@ -76,27 +75,16 @@ fi
 
 # Context7 - up-to-date documentation MCP server
 # Check if context7 tools are available (resolve-library-id, query-docs)
-
-# skill-creator plugin — helps create better project-specific skills
-# Check if skill-creator tools are available by looking for known tool names
-# in the current session (e.g., create-skill, scaffold-skill).
-# Set skill_creator_available=true if any skill-creator tool is found.
 ```
 
 **1e. Check AGENTS.md / CLAUDE.md:**
-- If `AGENTS.md` exists, read its content
-- If `AGENTS.md` does not exist but `CLAUDE.md` exists with real content (not just `@AGENTS.md`), read it — this is a legacy setup that will be migrated to AGENTS.md during planning
+- Read `AGENTS.md` and `CLAUDE.md` if they exist. Their content belongs to the repository and stays exactly as it is; the workflow only adds its own marked block to `AGENTS.md` and an `@AGENTS.md` line to `CLAUDE.md`.
+- Note the build/test commands and the commit convention they already document, so the questions below can skip them.
 
 **1e2. Find repository standards:**
 - Find the files `.claude/skills/review-style/SKILL.md` step 2 counts as repository standards, such as `CONTRIBUTING.md` or `CODESTYLE.md`. Note each path.
 - These always win over the workflow's own rules. AGENTS.md links them, and generated rules must not contradict them.
-
-**1f. Scan existing skills:**
-- Check `.claude/skills/` for existing project-specific skills
-
-**1g. Detect codebase patterns** — Read `.claude/references/configure-tables.md` section "Codebase Pattern Categories to Scan" for the full list and scanning approach.
-
-**1h. Detect runnable commands** — Read `.claude/references/configure-tables.md` section "Runnable Command Categories" for categories and scanning approach.
+- Note whether one of them documents a commit message convention.
 
 ### Step 2: Gather User Preferences (interactive via AskUserQuestion)
 
@@ -154,7 +142,9 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     1. "No (recommended)" → `git.autoCommit: false`
     2. "Yes - commit after each implementation step" → `git.autoCommit: true`
 
-**2g. Commit message pattern (only if auto-commit = Yes):**
+**2g. Commit message pattern:**
+
+Skip this question when the repository already documents a commit convention (step 1e or 1e2); that convention wins and AGENTS.md links it. Otherwise ask:
 - "What commit message format would you like?"
   - Options:
     1. "Default: `{ticket-id} {short-description}` (Recommended)"
@@ -175,70 +165,14 @@ Context7 provides up-to-date, version-specific documentation and code examples d
     2. "Skip"
   - If user selects "Install now": execute the install command
 
-**2i. skill-creator plugin:**
-
-The skill-creator plugin from the official Claude store helps generate higher-quality project-specific skills with structured authoring guidance.
-
-- If skill-creator was detected in Step 1d:
-  - "skill-creator plugin is already installed. ✓"
-  - Set `tools.skillCreator.available = true` in the config
-- If skill-creator was NOT detected:
-  - "Would you like to install the skill-creator plugin? It helps generate higher-quality project-specific skills."
-  - Options:
-    1. "Install now (recommended)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash
-    2. "Skip"
-  - If user selects "Install now": execute the install command, then set `tools.skillCreator.available = true` in the config
-  - If user selects "Skip": `tools.skillCreator.available` remains `false`
-
 **2j. Confirm AGENTS.md generation:**
-- "Generate/update AGENTS.md? It links your repository's own standards and adds the workflow's coding rules. (A CLAUDE.md shim will also be created for Claude Code compatibility.)"
+- "Add the workflow rules to AGENTS.md? They go into one marked block that links your repository's own standards; nothing else in AGENTS.md or CLAUDE.md changes. CLAUDE.md gets an `@AGENTS.md` line if it lacks one."
   - Options: "Yes (recommended)", "Skip"
 
 **2j2. Confirm rules generation:**
 - "Generate `.claude/rules/` files? These are scoped instruction files that automatically load when the agent works with matching file types (e.g., testing rules load only when editing test files, code-style rules load only for source files)."
   - Options: "Yes (recommended)", "Skip"
 - Note: Rules complement AGENTS.md — they provide focused, file-type-scoped directives derived from your project's actual conventions.
-
-**2k. Review detected patterns for skill generation:**
-
-Present ONLY patterns that were actually detected in steps 1g and 1h.
-
-**Part 1: Architectural patterns (pattern skills)**
-
-"I analyzed your codebase and found these architectural patterns:
-
-| Pattern | Files Found | Location | Example |
-|---------|-------------|----------|---------|
-| Controller | 12 files | src/controllers/ | UserController.ts |
-| Service | 8 files | src/services/ | AuthService.ts |
-| Component | 25 files | src/components/ | Button.tsx |
-
-Which patterns would you like skills generated for?"
-
-- Options: Multi-select checkboxes for each detected pattern (use AskUserQuestion with multiSelect: true)
-- Include descriptions like: "Controller (12 files) - Generate `controller` skill"
-- Plus "Other" option for patterns not detected but desired
-
-**Part 2: Command skills (run-* skills)**
-
-"I also found these runnable commands:
-
-| Command | Source | Full Command | Variants |
-|---------|--------|--------------|----------|
-| build | package.json | npm run build | build:prod, build:dev |
-| test | package.json | npm test | test:unit, test:e2e |
-| lint | package.json | npm run lint | lint:fix |
-| format | Makefile | make format | - |
-
-Which commands would you like `run-*` skills generated for?"
-
-- Options: Multi-select checkboxes for each detected command
-- Include descriptions like: "test - Generate `run-tests` skill"
-- Plus "Other" option for commands not detected
-
-If no patterns/commands detected:
-- Inform user: "No common patterns detected. Would you like to specify patterns manually?"
-- Allow manual entry of pattern names/locations or command names
 
 **2l. Git-ignore workflow folders:**
 - "`.5/planning/` will hold your plans. `.5/features/` will hold implementation state and review findings. Which should git ignore?"
@@ -304,50 +238,48 @@ created: {ISO-timestamp}
 # Plan: CONFIGURE - Project Configuration
 
 ## Overview
-Generates AGENTS.md, the CLAUDE.md shim, and project-specific skills and rules. (config.json and the plans directory setting are already written.)
+Adds the workflow block to AGENTS.md, includes AGENTS.md from CLAUDE.md, and generates scoped rules. (config.json and the plans directory setting are already written.)
 
 ## What Changes
 
-- Write AGENTS.md from the workflow template, linking the repository's own standards.
-- Generate selected project-specific skills and scoped rules.
-- Preserve existing user-authored AGENTS.md/CLAUDE.md content.
+- Write the workflow block into AGENTS.md, linking the repository's own standards.
+- Generate scoped rules from detected conventions, when selected.
+- Leave all existing AGENTS.md/CLAUDE.md content unchanged.
 
 ## Existing Patterns to Follow
 
-- `.claude/skills/configure-agents-md/SKILL.md` - AGENTS.md and CLAUDE.md shim generation.
-- `.claude/skills/configure-skills/SKILL.md` - skill and rule generation behavior.
+- `.claude/skills/configure-agents-md/SKILL.md` - the AGENTS.md block and the CLAUDE.md include.
+- `.claude/skills/configure-rules/SKILL.md` - rule generation behavior.
 
 ## Constraints
 
 - config.json is already written by `/5:configure`.
 - Repository standards win over the workflow's own rules. Generated rules must not restate or contradict them.
-- Preserve user-authored sections in AGENTS.md.
+- Change nothing outside the foifi block in AGENTS.md, and only append `@AGENTS.md` to CLAUDE.md.
 - Never rewrite or delete existing `.5/*.md` docs. Teams may maintain them.
 
 ## Scope
 
 ### In
 
-- AGENTS.md plus CLAUDE.md shim.
-- Selected pattern and run-* skills.
+- The foifi block in AGENTS.md plus the CLAUDE.md include.
 - Selected scoped rules.
 
 ### Out
 
 - Changing preferences already saved in `.5/config.json`.
-- Generated architecture, testing, concerns, or conventions docs and codebase indexes.
+- Generated architecture, testing, concerns, or conventions docs, codebase indexes, and project-specific skills.
 
 ## Acceptance Criteria
 
-- [ ] `AGENTS.md` links every repository standard listed below.
-- [ ] `CLAUDE.md` contains only `@AGENTS.md`.
-- [ ] Selected project-specific skills are generated in `.claude/skills/`.
+- [ ] The foifi block in `AGENTS.md` links every repository standard listed below.
+- [ ] `CLAUDE.md` includes `@AGENTS.md`.
 - [ ] Selected scoped rules are generated in `.claude/rules/`.
-- [ ] User-written AGENTS.md/CLAUDE.md content is preserved.
+- [ ] Content outside the foifi block in AGENTS.md and CLAUDE.md is byte-for-byte unchanged.
 
 ## Decisions
 
-- [DECIDED] Use the detected project type, build command, test command, ticket settings, and selected patterns from this configure session.
+- [DECIDED] Use the detected project type, build command, test command, ticket settings, and commit convention from this configure session.
 - [FLEXIBLE] Omit optional rules when no useful project knowledge exists.
 - [DEFERRED] Further preference changes; rerun `/5:configure` for those.
 
@@ -355,16 +287,15 @@ Generates AGENTS.md, the CLAUDE.md shim, and project-specific skills and rules. 
 
 | Module/Area | Impact |
 |-------------|--------|
-| `AGENTS.md` / `CLAUDE.md` | Create or update provider instructions. |
-| `.claude/skills/` | Create selected project-specific skills. |
+| `AGENTS.md` / `CLAUDE.md` | Add or refresh the foifi block; include AGENTS.md from CLAUDE.md. |
 | `.claude/rules/` | Create selected scoped rules. |
 
 ## Component Checklist
 
 | Component | Action | Target Path | Intent |
 |-----------|--------|-------------|--------|
-| configure agents md | create | `AGENTS.md` | Write AGENTS.md from the template and the CLAUDE.md shim, linking the repository standards. |
-| configure skills and rules | create | `.claude/skills/` | Generate selected pattern/run skills and scoped rules from detected conventions. |
+| configure agents md | modify | `AGENTS.md` | Write the foifi block into AGENTS.md and include it from CLAUDE.md, linking the repository standards. |
+| configure rules | create | `.claude/rules/` | Generate scoped rules from detected conventions. |
 
 ## Technical Notes
 
@@ -374,39 +305,12 @@ Handled by: `configure-agents-md`
 **Repository standards found:**
 - {one bullet per path from step 1e2, or "none found"}
 
-**Create AGENTS.md** (provider-agnostic instructions file):
-- Use `.claude/templates/AGENTS.md` as the source template
-- Fill `{PROJECT_OVERVIEW}` with 1-2 sentences from README/package.json
-- Fill `{BUILD_RUN_COMMANDS}` with build, test, and other detected commands
-- Fill `{REPO_STANDARDS_LINKS}` with the repository standards above
-- Fill `{PROJECT_DOCUMENTATION_LINKS}` with existing `.5/*.md` docs, or drop that section when there are none
-- Fill `{CUSTOM_DOCUMENTATION}` with preserved user-authored sections under `## Custom Documentation`; remove the placeholder if there is no custom content
-- Preserve static template sections exactly as written
+**Write the foifi block into AGENTS.md** as `configure-agents-md` describes:
+- Fill the template from `.claude/templates/AGENTS.md`: build/run commands, the commit message rule, the repository standards above, and links to existing `.5/*.md` docs
+- Never change content outside the block; append `@AGENTS.md` to CLAUDE.md only when it lacks that line
 
-**Create CLAUDE.md shim:**
-- Contains only `@AGENTS.md` (Claude Code include syntax)
-
-**Migrate and preserve existing content:**
-- If AGENTS.md already exists, preserve user-written custom sections
-- If CLAUDE.md exists with real content (not just `@AGENTS.md`), migrate content to AGENTS.md and replace CLAUDE.md with the shim
-
-### Requirement 2: Generate Project-Specific Skills
-Handled by: `configure-skills`
-
-**Pattern skills** for each user-selected architectural pattern:
-- Skill name: `{pattern}` (e.g., `controller`, `service`)
-- Analyze 2-3 existing files, extract conventions, generate SKILL.md with project-specific template
-- Set `user-invocable: true`, `model: haiku`
-
-**Run-* skills** for each user-selected command:
-- Skill name: `run-{category}` (e.g., `run-tests`, `run-lint`)
-- Document exact command syntax, variants, flags
-- Set `user-invocable: true`, `model: haiku`
-
-Include only patterns/commands where user selected "Generate".
-
-### Requirement 3: Generate Scoped Rules (if selected)
-Handled by: `configure-skills`
+### Requirement 2: Generate Scoped Rules (if selected)
+Handled by: `configure-rules`
 
 Generate `.claude/rules/` files with project-specific conventions scoped to relevant file types.
 Rules are concise directives (15-40 lines, NOT documentation) derived from codebase analysis.
@@ -437,4 +341,4 @@ Tell the user:
 
 ## Related Documentation
 - [configure-agents-md skill](../../skills/configure-agents-md/SKILL.md)
-- [configure-skills skill](../../skills/configure-skills/SKILL.md)
+- [configure-rules skill](../../skills/configure-rules/SKILL.md)

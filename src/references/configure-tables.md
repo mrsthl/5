@@ -37,33 +37,6 @@ Check files in this order (first match wins):
 | rust | `cargo build` | `cargo test` |
 | go | `go build ./...` | `go test ./...` |
 
-## Codebase Pattern Categories to Scan
-
-Use Glob to scan for architectural patterns. For each, check both suffix-based (`*{Pattern}.{ts,js,java,py,rb}`) and directory-based (`{patterns}/**`) globs.
-
-- **Core:** Controllers, Services, Repositories, Models/Entities, Handlers
-- **Data Transfer:** DTOs, Requests, Responses, Mappers, Validators, Schemas
-- **Frontend:** Components, Hooks, Contexts, Stores, Pages, Layouts
-- **API/Routes:** API Routes, Middleware, Guards, Interceptors, Filters
-- **Testing:** Tests/Specs, Fixtures, Factories, Mocks
-- **Utilities:** Utils, Helpers, Constants, Types/Interfaces, Config
-- **Framework-Specific:** Modules, Pipes, Decorators, Blueprints, Views, Serializers
-- **Background/Async:** Jobs, Workers, Events, Listeners, Commands
-- **Database:** Migrations, Seeds
-- **Error Handling:** Exceptions, Errors
-
-For each pattern found: count matching files, identify primary location, sample 1 filename.
-
-## Runnable Command Categories
-
-Scan config files (`package.json` scripts, `Makefile` targets, `pyproject.toml` scripts, `Cargo.toml`, `build.gradle` tasks, `composer.json` scripts, `Rakefile` tasks) for commands in these categories:
-
-Build, Test, Lint, Format, Type Check, Dev Server, Database (migrate/seed), Docker, Deploy, Clean, Generate
-
-Skill naming: `run-{category}` (e.g., `run-build`, `run-tests`, `run-lint`).
-
-For each command found: record exact syntax, note variants (e.g., `test:unit`, `test:e2e`), and environment requirements. Only include commands that are actually detected.
-
 ## Config Schema
 
 ```json
@@ -90,9 +63,6 @@ For each command found: record exact syntax, note variants (e.g., `test:unit`, `
       "type": null
     },
     "context7": {
-      "available": false
-    },
-    "skillCreator": {
       "available": false
     }
   },

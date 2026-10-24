@@ -58,8 +58,9 @@ Search the repository for every file that documents how code is written:
 - `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `CODESTYLE.md`, `STYLEGUIDE.md`, and docs about style or conventions.
   Look at the repository root, `.github/` and `docs/`.
 - `CLAUDE.md` and `AGENTS.md` at every level, plus every file they link to about code, tests or docs.
-  When one says a workflow generated it from a template, count only the parts it names as repository
-  standards. Its other sections are workflow rules, not repository standards.
+  The block between `<!-- foifi:start` and `<!-- foifi:end -->` holds workflow rules, not repository
+  standards; count only the files it links under "Standards". In a legacy file that says a workflow generated it
+  from a template, count only the parts it names as repository standards.
 
 Skip linter and formatter configs. Tooling enforces them already.
 

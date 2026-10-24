@@ -27,8 +27,7 @@ const log = {
 
 const WORKFLOW_MANAGED_SKILLS = new Set([
   'configure-agents-md',
-  'configure-skills',
-  'generate-readme',
+  'configure-rules',
   'review-style',
   'fowler-code-smells',
   'cognitive-load',
@@ -78,14 +77,6 @@ function convertClaudeSetupCommandsToCodexNotes(content) {
     .replace(
       /- If user selects "Install now": execute the install command/g,
       '- If user selects "Install now": explain that Codex cannot run the Claude Code installer command; leave `tools.context7.available = false` unless Context7 is already detected'
-    )
-    .replace(
-      /1\. "Install now \(recommended\)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash/g,
-      '1. "Install now" — not supported automatically in Codex; install an equivalent skill authoring workflow outside this command, then rerun configuration'
-    )
-    .replace(
-      /- If user selects "Install now": execute the install command, then set `tools\.skillCreator\.available = true` in the config/g,
-      '- If user selects "Install now": explain that Codex cannot run the Claude Code plugin installer; leave `tools.skillCreator.available = false` unless an equivalent tool is already detected'
     );
 }
 

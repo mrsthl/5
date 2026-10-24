@@ -24,7 +24,7 @@ src/
   commands/5/         workflow commands (Claude Code)
   agents/             reusable agent instructions
   workflows/          Workflow-tool scripts (Claude Code only; e.g. 5-implement.js)
-  hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, config-guard, dependency-guard)
+  hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, dependency-guard)
   skills/             setup generators and review styles (review-style + one skill per style)
   templates/workflow/ workflow artifact templates
 test/                 shell verification scripts
@@ -39,14 +39,14 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Commands | `/5:*` slash commands | `$5-*` skills (auto-converted by installer) |
 | Planning engine | Native plan mode via `EnterPlanMode`, which also enforces read-only planning at the harness level; `/5:configure` sets `plansDirectory` so the plan file lands in `.5/planning/` | prose fallback in `plan.md`, which writes `.5/planning/{name}.md` itself, + the "Guard Rules" block in `getCodexSkillAdapterHeader()` (no plan mode) |
 | Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
-| Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md`; plus `review-style` | prose fallback only (no `Skill` tool); `review-style` by reading its SKILL.md |
+| Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md`; plus `security-review` for security-sensitive diffs and `review-style` | prose fallback only (no `Skill` tool); `review-style` by reading its SKILL.md |
 | Standards review | `Skill(review-style)` at the end of `/5:implement`, the compact path of `/5:plan`, and in `/5:review` | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
 | Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
-| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `config-guard`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
+| Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
-| Generated skills | `.claude/skills/{pattern}/SKILL.md` | `.codex/skills/{pattern}/SKILL.md` (paths substituted by installer) |
+| Security review | `Skill(security-review)` in `/5:review` and at the end of `/5:implement` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
 | Upgrade migrations | `performUpdate()` in `install.js` | `performCodexUpdate()` in `install.js` — must mirror all migrations |
 
 **Rule:** When adding a hook, statusline indicator, or upgrade migration for Claude Code, add an equivalent for Codex. The most common Codex equivalent is an instruction in `getCodexSkillAdapterHeader()`.
@@ -58,27 +58,27 @@ Primary commands:
 1. `/5:plan` / `$5-plan` — resolves the ticket and feature name, hands exploration, Q&A, and the approval gate to native plan mode. Plan mode saves the plan in `.5/planning/`; it is the only planning artifact (no copy, no scan cache). Re-running it on an existing feature or plan path refines that plan. Codex uses the prose fallback in `plan.md`.
    On approval it branches: a **compact** plan is implemented inline in the same session (warm context beats orchestration for 1-2 files) and gets its `state.json` written there; a **full** plan is handed to `/5:implement`, where parallel waves and model routing pay for a fresh run.
 2. `/5:implement {name}` / `$5-implement {name}` — finds the plan in `.5/planning/` by its `feature` frontmatter (or takes a plan path), derives the execution graph, executes components in parallel waves, verifies inline, then runs `review-style` on the change. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
-3. `/5:review [low|medium|high|max]` / `$5-review` — reviews code and writes review findings. On Claude Code it delegates to the built-in `code-review` skill (default effort `high`) and maps its reported findings onto `REVIEW-FINDINGS.md`; Codex uses the condensed prose fallback in `review.md`. Both then run `review-style` in report-only mode and map its findings too.
+3. `/5:review [low|medium|high|max]` / `$5-review` — reviews code and writes review findings. On Claude Code it delegates to the built-in `code-review` skill (default effort `high`), adds the built-in `security-review` skill when the diff is security-sensitive, and maps their reported findings onto `REVIEW-FINDINGS.md`; Codex uses the condensed prose fallback in `review.md`. Both then run `review-style` in report-only mode and map its findings too.
 
 Helpers:
 
 - `/5:lean-check [base-branch|feature-name] [request]` checks any diff — with or without a plan — for scope drift and over-engineering, and can revert the drift.
-- `/5:commit [short-description]` creates a git commit using `git.commitMessage.pattern`.
-- `/5:address-review-findings {name}` applies approved review findings.
+- `/5:address-review-findings {name}` decides on review findings one by one and applies the approved ones.
+- `/5:analyze-feature {topic}` documents a feature or dataflow with mermaid diagrams.
 - `/5:configure` writes config and the CONFIGURE plan.
 - `/5:reconfigure`, `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.
 
 All commands have `$5-*` Codex equivalents unless noted otherwise.
 
-## Generated Skills
+## Project Instructions
 
-`/5:configure` generates project-specific skills and rules via `configure-skills`:
+`/5:configure` never owns a project's `AGENTS.md` or `CLAUDE.md`. `configure-agents-md` writes the workflow rules into `AGENTS.md` as one block between `<!-- foifi:start` and `<!-- foifi:end -->`, and appends `@AGENTS.md` to `CLAUDE.md` when that line is missing. Everything outside the block belongs to the repository, ranks as a repository standard, and is never changed. `review-style` uses the markers to tell the two apart.
 
-- Pattern skills: `.claude/skills/{pattern}/SKILL.md` (e.g. `dto`, `service`, `component`) — handle both create and update.
-- Command skills: `.claude/skills/run-{command}/SKILL.md` (e.g. `run-build`, `run-tests`).
-- Rules: `.claude/rules/*.md` scoped to file globs.
+`configure-rules` generates `.claude/rules/*.md` scoped to file globs and marks each with `<!-- foifi:generated -->`; only marked rules are refreshed or removed. foifi generates no project-specific skills: Claude explores the code itself. Pattern and `run-*` skills from earlier versions stay where they are, untouched.
 
-Generated skills must not include `context: fork` — this causes skills to loop by re-invoking themselves in a fresh context. The upgrade migration in `performUpdate` / `performCodexUpdate` strips `context: fork` from existing skills and renames legacy `create-*` directories to bare pattern names.
+The installer merges `src/settings.json` into an existing `settings.json` without overriding any value the user already set, such as their own `statusLine`.
+
+Skills must not include `context: fork` — this causes skills to loop by re-invoking themselves in a fresh context. The upgrade migration in `performUpdate` / `performCodexUpdate` strips `context: fork` from existing skills and renames legacy `create-*` directories to bare pattern names.
 
 ## Planning Artifact
 
@@ -87,6 +87,7 @@ The plan file that native plan mode saves in `.5/planning/` is the only planning
 `PLAN.md` is the single planning template. It includes:
 
 - overview and what changes
+- an optional mermaid diagram of what changes
 - existing patterns to follow, with a symbol or line range
 - constraints (including what the repository's standards require), scope, acceptance criteria, decisions
 - module impact

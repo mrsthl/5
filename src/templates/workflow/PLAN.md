@@ -12,6 +12,7 @@ created: {ISO-timestamp}
 - Existing Patterns to Follow should name high-value files with a symbol or line range, so executors read only what they need.
 - Plan what the repository's own standards require, such as tests or a changelog entry.
 - Decisions must be labeled [DECIDED], [FLEXIBLE], or [DEFERRED].
+- Add a Diagram when the change has a flow, state machine, or component relationships that text explains worse. Use one valid mermaid diagram.
 - Omit optional sections when they would only contain "none", "n/a", or placeholder content.
 -->
 
@@ -25,6 +26,12 @@ created: {ISO-timestamp}
 
 - {Logical behavior or capability that changes}
 - {User-visible or system-visible outcome}
+
+## Diagram
+
+```mermaid
+{sequenceDiagram, flowchart, stateDiagram-v2, or classDiagram of what changes}
+```
 
 ## Existing Patterns to Follow
 

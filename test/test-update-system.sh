@@ -36,7 +36,7 @@ for style_skill in review-style fowler-code-smells cognitive-load documentation-
   fi
 done
 echo "✓ Review style skills installed"
-for removed in ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md" \
+for removed in ".claude/commands/5/plan.md" ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md" \
   ".claude/commands/5/commit.md" ".claude/commands/5/apply-review-findings.md" ".claude/commands/5/triage-pr-comments.md" \
   ".claude/commands/5/reply-pr-comments.md" ".claude/skills/generate-readme" ".claude/skills/configure-skills" \
   ".claude/hooks/config-guard.js"; do
@@ -131,7 +131,7 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
-if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ]; then
+if [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ ! -e ".claude/commands/5/plan.md" ]; then
   echo "✓ New v2 commands installed for legacy upgrade"
 else
   echo "✗ New v2 commands missing after legacy upgrade"

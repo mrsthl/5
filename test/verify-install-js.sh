@@ -198,6 +198,12 @@ errors += compareLists(
 );
 
 errors += compareLists(
+  'Codex-only Commands',
+  listEntries('src/codex-commands', { filesOnly: true }),
+  [...(managed.codexCommands || [])].sort()
+);
+
+errors += compareLists(
   'Agents',
   listEntries('src/agents', { filesOnly: true }),
   [...(managed.agents || [])].sort()
@@ -264,7 +270,8 @@ function verifyPlanModeContract() {
   console.log('=== Plan Mode Contract ===');
   console.log('');
 
-  const planCommand = fs.readFileSync('src/commands/5/plan.md', 'utf8');
+  const planCommand = fs.readFileSync('src/codex-commands/plan.md', 'utf8');
+  const agentsTemplate = fs.readFileSync('src/templates/AGENTS.md', 'utf8');
   const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
   const configureCommand = fs.readFileSync('src/commands/5/configure.md', 'utf8');
   const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
@@ -274,48 +281,40 @@ function verifyPlanModeContract() {
 
   const required = [
     {
-      label: 'plan delegates to native plan mode',
-      ok: planCommand.includes('EnterPlanMode')
+      label: 'Claude Code has no plan command and plans have no prescribed template',
+      ok: !fs.existsSync('src/commands/5/plan.md') && agentsTemplate.includes('## Planning') && !fs.existsSync('src/templates/workflow/PLAN.md')
     },
     {
-      label: 'plan keeps a fallback path for runtimes without plan mode',
-      ok: planCommand.includes('## Fallback path')
+      label: 'AGENTS.md hands an approved plan to /5:implement',
+      ok: agentsTemplate.includes('After the user approves a plan, run `/5:implement {plan-path}`')
     },
     {
-      label: 'plan handles refine mode and replaces the refined plan file',
-      ok: /refine mode/i.test(planCommand) && planCommand.includes('delete the plan file this plan replaces')
+      label: 'Codex plan command writes to .5/planning and hands off to /5:implement',
+      ok: planCommand.includes('.5/planning/{name}.md') && planCommand.includes('/5:implement {name}') && !planCommand.includes('EnterPlanMode')
     },
     {
       label: 'native plan mode file is the only planning artifact',
-      ok: planCommand.includes('.5/planning') && !planCommand.includes('codebase-scan') && !workflow.includes('paths.scan')
+      ok: !planCommand.includes('codebase-scan') && !workflow.includes('paths.scan')
     },
     {
       label: 'configure points plan mode at .5/planning',
       ok: configureCommand.includes('`plansDirectory`') && configureCommand.includes('".5/planning"')
     },
     {
-      label: 'implement finds plans by their feature frontmatter',
-      ok: implementCommand.includes('`feature: {argument}`')
+      label: 'implement finds plans by path, file name, or feature frontmatter',
+      ok: implementCommand.includes('`{argument}.md`') && implementCommand.includes('`feature: {argument}`')
     },
     {
-      label: 'plan and implement review the change with review-style',
-      ok: planCommand.includes('Skill(skill: "review-style"') && implementCommand.includes('Skill(skill: "review-style"')
+      label: 'implement reviews the change with review-style',
+      ok: implementCommand.includes('Skill(skill: "review-style"')
     },
     {
       label: 'review records review-style findings without fixing them',
       ok: reviewCommand.includes('Skill(skill: "review-style"') && reviewCommand.includes('report only')
     },
     {
-      label: 'plan branches the handoff on plan format',
-      ok: planCommand.includes('planFormat: compact') && planCommand.includes('/5:implement {name}')
-    },
-    {
-      label: 'plan can implement compact plans inline (needs Edit)',
-      ok: /^allowed-tools:.*\bEdit\b/m.test(planCommand)
-    },
-    {
-      label: 'implement tolerates a compact plan already done inline',
-      ok: /implements compact plans inline/i.test(implementCommand)
+      label: 'implement builds compact plans inline without the orchestrator',
+      ok: implementCommand.includes('A compact plan skips the orchestrator')
     },
     {
       label: 'plan-guard hook is gone from settings.json',
@@ -330,8 +329,8 @@ function verifyPlanModeContract() {
       ok: !implementCommand.includes('state-events') && !orchestratorAgent.includes('state-events')
     },
     {
-      label: 'orchestrator pins component names to the plan checklist',
-      ok: /verbatim/i.test(orchestratorAgent) && /VERBATIM/i.test(workflow)
+      label: 'resume reuses the component names persisted on the first run',
+      ok: /reuse/i.test(orchestratorAgent) && workflow.includes('knownComponents') && implementCommand.includes('"knownComponents"')
     },
     {
       label: 'workflow resumes on completedComponents alone',

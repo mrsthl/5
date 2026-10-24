@@ -3,7 +3,7 @@
 v2.0.0 collapses the old five command path into the dev-workflow command path:
 
 ```text
-/5:plan -> /5:implement -> /5:review
+plan mode -> /5:implement -> /5:review
 ```
 
 The package is named `foifi`.
@@ -17,7 +17,7 @@ The workflow separates human decisions from mechanical execution.
 - The execution graph is derived by `step-orchestrator-agent` on every run and is never written to disk.
 - `state.json` persists only what a resume needs: status, completed component names, and the verification result.
 
-Where Claude Code ships a native capability, the workflow wraps it: `/5:plan` runs inside native plan mode and `/5:review` calls the built-in `code-review` skill. Codex has neither, so both commands keep a prose fallback.
+Where Claude Code ships a native capability, the workflow uses it: planning happens in native plan mode, shaped by the `AGENTS.md` rules, and `/5:review` calls the built-in `code-review` skill. Codex has neither, so it gets `$5-plan` and a prose review fallback.
 
 Code quality follows a fixed order. The repository's own standards, such as `CONTRIBUTING.md` or `CODESTYLE.md`, always win. The style skills `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions` set the baseline wherever the repository says nothing. The `review-style` skill checks a change against both.
 
@@ -25,58 +25,23 @@ This keeps planning short and reviewable while still giving implementation agent
 
 ## Plan
 
-Run:
-
-```text
-/5:plan
-```
-
-or:
-
-```text
-$5-plan
-```
-
-The planner gathers requirements, explores the codebase, asks targeted questions, and plan mode saves the approved plan as:
+On Claude Code there is no plan command. Plan in native plan mode (shift+tab, or ask Claude to plan). The "Planning" section of the generated `AGENTS.md` shapes every plan, and plan mode saves it as:
 
 ```text
 .5/planning/{generated-name}.md
 ```
 
-Plan mode picks the file name. The plan's `feature` frontmatter field ties it to its feature, and `/5:implement {feature-name}` finds it by that field. On Codex the plan is written to `.5/planning/{feature-name}.md`.
+On Codex, which has no plan mode, run `$5-plan`; it writes `.5/planning/{feature-name}.md`.
 
-The plan uses either the normal template or `PLAN-COMPACT.md` for small, low-risk changes with 1-2 components and no migration, security/auth, or public API contract change. It contains:
+The plan has no prescribed structure; Claude shapes it as the change needs, with a mermaid diagram where a flow, state machine, or component relationships explain the change better than text. When the request names a ticket, Claude fetches it and confirms the content with you first.
 
-- overview
-- what changes
-- a mermaid diagram, when a flow, state machine, or component relationships explain the change better than text
-- existing patterns to follow, with a symbol or line range
-- constraints, including what the repository's standards require
-- scope in/out
-- acceptance criteria
-- decisions
-- module impact
-- component checklist
-- technical notes
-
-The component checklist has only four columns: component, action, target path, intent. It does not contain step grouping, model selection, verify commands, or pattern-reference wiring.
-
-Which template gets chosen also decides what happens on approval: a compact plan is implemented immediately in the same session, while a full plan stops and points you at `/5:implement`.
+Approving a plan means you want it built: Claude runs `/5:implement {plan-path}` right away. A small plan (1-2 files, no migration, security/auth, or public API change) skips the orchestrator there.
 
 ## Refining A Plan
 
-Run:
-
-```text
-/5:plan {feature-name}
-/5:plan {path-to-plan}
-```
-
-With an existing plan, `/5:plan` enters refine mode: it seeds plan mode with the current plan and discusses the changes. After approval the new plan file replaces the old one. Use this when the reviewed plan needs changed scope, additional acceptance criteria, or a corrected component checklist. Passing a path also turns a plan made in plain plan mode into a workflow plan.
+Ask Claude in plan mode to refine an existing plan, by feature name or path. It starts from the plan's content. On Codex, run `$5-plan {feature-name}` or `$5-plan {path-to-plan}`.
 
 ## Implement
-
-Compact plans never reach this command. Approving a plan means you want it built, so `/5:plan` implements a 1-2 component plan inline in the session that planned it and writes the same `state.json` — orchestration would cost more than it saves at that size. What follows applies to full plans.
 
 Run:
 
@@ -84,13 +49,13 @@ Run:
 /5:implement {feature-name}
 ```
 
-Prefer a fresh context first — `/clear` in Claude Code, a new conversation in Codex. This command needs only the plan, and dropping the planning conversation is the point of the handoff. It is a recommendation, not a requirement.
+Claude runs it right after you approve a plan; run it yourself to resume. The executors work in their own contexts, so the planning conversation does not crowd them.
 
 Implementation does four things:
 
 1. Spawns `step-orchestrator-agent` to derive the execution graph from the plan — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
 2. Spawns executor agents for each component using an inline executor contract, parallelizing independent work. Each executor follows the repository standards and style skills that apply to its target.
-3. Spawns `verification-agent` to verify completeness, correctness, build/tests, acceptance criteria, and test coverage.
+3. Spawns `verification-agent` to verify completeness, correctness, build/tests, the plan's acceptance criteria when it states any, and test coverage.
 4. Runs `review-style` on everything the run changed, then asks which findings to fix.
 
 The graph is transient. `state.json` records only:
@@ -102,9 +67,9 @@ The graph is transient. `state.json` records only:
 
 Live progress during a run comes from the task list rather than the file.
 
-If implementation is interrupted, rerun `/5:implement {feature-name}` to resume. The graph is re-derived and components already in `completedComponents` are skipped — which works because component names are copied verbatim from the plan's checklist. Note that the Workflow path writes `state.json` only when the run returns, so a run killed mid-way repeats the components it had finished.
+If implementation is interrupted, rerun `/5:implement {feature-name}` to resume. The graph is re-derived and components already in `completedComponents` are skipped — which works because `state.json` keeps the component names from the first run, and later runs reuse them. Note that the Workflow path writes `state.json` only when the run returns, so a run killed mid-way repeats the components it had finished.
 
-Verification runs inline during `/5:implement`. It checks planned files, final build/test commands, acceptance criteria, and recorded component verification outcomes.
+Verification runs inline during `/5:implement`. It checks planned files, final build/test commands, any acceptance criteria the plan states, and recorded component verification outcomes.
 
 ## Review
 
@@ -174,7 +139,7 @@ v2.0.0 removes old commands during upgrade:
 
 | Command | Purpose |
 |---------|---------|
-| `/5:plan` | Create a plan, or refine an existing one |
+| plan mode / `$5-plan` | Create a plan, or refine an existing one |
 | `/5:implement` | Implement and verify |
 | `/5:review` | Review changes for correctness and standards |
 | `/5:address-review-findings` | Decide on findings and apply the approved ones |

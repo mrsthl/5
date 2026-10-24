@@ -1,6 +1,6 @@
 ---
 name: 5:lean-check
-description: Checks any diff for scope drift and over-engineering — changes that do not trace to the request, new dependencies, reinvented code. Works with or without a /5:plan feature.
+description: Checks any diff for scope drift and over-engineering — changes that do not trace to the request, new dependencies, reinvented code. Works with or without a workflow plan.
 allowed-tools: Bash, Read, Glob, Grep, Edit, Write, AskUserQuestion
 argument-hint: [base-branch|feature-name] [what was requested]
 user-invocable: true
@@ -31,7 +31,7 @@ No changes → say `Nothing to check.` and stop.
 Every finding is judged against what was asked. Take the first that exists:
 
 1. Request text passed as an argument.
-2. The feature's plan — the file in `.5/planning/` with `feature: {feature-name}` in its frontmatter — when a feature name was passed or the current branch matches a feature. Use its Scope (In/Out), Acceptance Criteria, `[DEFERRED]` decisions, and Component Checklist target paths.
+2. The feature's plan — the file in `.5/planning/` with `feature: {feature-name}` in its frontmatter — when a feature name was passed or the current branch matches a feature. Use what it puts in and out of scope, the success criteria it states, the work it defers, and the files it targets.
 3. The request from this conversation.
 
 None of these → ask the user for one sentence describing what the change should do.
@@ -42,7 +42,7 @@ Read the diff first; read full files only where a finding needs the surrounding 
 
 Tags, one per finding:
 
-- `drift:` a file or change that does not trace to the request (unrelated refactor, reformatting, a feature nobody asked for, work the plan marks Out or `[DEFERRED]`). Replacement: revert it.
+- `drift:` a file or change that does not trace to the request (unrelated refactor, reformatting, a feature nobody asked for, work the plan rules out or defers). Replacement: revert it.
 - `dep:` a new dependency in a manifest or lockfile. Name what already covers it (stdlib, platform, installed dependency), or `needed` if nothing does.
 - `reuse:` re-implements something that already lives in this codebase. Name the existing symbol and path.
 - `stdlib:` / `native:` hand-rolled code the standard library or platform ships. Name the function or feature.

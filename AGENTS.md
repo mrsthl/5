@@ -21,7 +21,8 @@ bin/
   install.js          installer, updater, Codex conversion, upgrade migrations
   sync-agents.js      Claude/Codex user-content sync
 src/
-  commands/5/         workflow commands (Claude Code)
+  commands/5/         workflow commands (both runtimes)
+  codex-commands/     Codex-only commands, listed in `codexCommands` (e.g. plan.md; Claude Code uses plan mode)
   agents/             reusable agent instructions
   workflows/          Workflow-tool scripts (Claude Code only; e.g. 5-implement.js)
   hooks/              Claude Code hooks (statusline, check-updates, check-reconfig, dependency-guard)
@@ -37,10 +38,10 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Concern | Claude Code | Codex |
 |---|---|---|
 | Commands | `/5:*` slash commands | `$5-*` skills (auto-converted by installer) |
-| Planning engine | Native plan mode via `EnterPlanMode`, which also enforces read-only planning at the harness level; `/5:configure` sets `plansDirectory` so the plan file lands in `.5/planning/` | prose fallback in `plan.md`, which writes `.5/planning/{name}.md` itself, + the "Guard Rules" block in `getCodexSkillAdapterHeader()` (no plan mode) |
+| Planning engine | Native plan mode, shaped by the "Planning" section of the generated `AGENTS.md` block; no plan command. `/5:configure` sets `plansDirectory` so the plan file lands in `.5/planning/` | `$5-plan` from `src/codex-commands/plan.md`, which writes `.5/planning/{name}.md` itself, + the "Guard Rules" block in `getCodexSkillAdapterHeader()` (no plan mode) |
 | Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
 | Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md`; plus `security-review` for security-sensitive diffs and `review-style` | prose fallback only (no `Skill` tool); `review-style` by reading its SKILL.md |
-| Standards review | `Skill(review-style)` at the end of `/5:implement`, the compact path of `/5:plan`, and in `/5:review` | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
+| Standards review | `Skill(review-style)` at the end of `/5:implement` and in `/5:review` | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
 | Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
 | Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
 | Statusline | `src/hooks/statusline.js` | Not available |
@@ -55,9 +56,8 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 
 Primary commands:
 
-1. `/5:plan` / `$5-plan` — resolves the ticket and feature name, hands exploration, Q&A, and the approval gate to native plan mode. Plan mode saves the plan in `.5/planning/`; it is the only planning artifact (no copy, no scan cache). Re-running it on an existing feature or plan path refines that plan. Codex uses the prose fallback in `plan.md`.
-   On approval it branches: a **compact** plan is implemented inline in the same session (warm context beats orchestration for 1-2 files) and gets its `state.json` written there; a **full** plan is handed to `/5:implement`, where parallel waves and model routing pay for a fresh run.
-2. `/5:implement {name}` / `$5-implement {name}` — finds the plan in `.5/planning/` by its `feature` frontmatter (or takes a plan path), derives the execution graph, executes components in parallel waves, verifies inline, then runs `review-style` on the change. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
+1. Plan mode / `$5-plan` — on Claude Code there is no plan command: the "Planning" section of the `AGENTS.md` template asks Claude, in native plan mode, for a diagram where it helps, what the repository standards require, and the ticket handling, and to run `/5:implement {plan-path}` after approval. It prescribes no plan structure and no save location; plan mode saves the plan where `plansDirectory` points (`.5/planning/`). Codex has no plan mode and runs `$5-plan` (`src/codex-commands/plan.md`), which ends with the same hand-off.
+2. `/5:implement {name}` / `$5-implement {name}` — takes a plan path, or finds the plan in `.5/planning/` by file name or `feature` frontmatter (newest plan without an argument), derives the execution graph (inline for a compact plan, via the orchestrator otherwise), executes components in parallel waves, verifies inline, then runs `review-style` on the change. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
 3. `/5:review [low|medium|high|max]` / `$5-review` — reviews code and writes review findings. On Claude Code it delegates to the built-in `code-review` skill (default effort `high`), adds the built-in `security-review` skill when the diff is security-sensitive, and maps their reported findings onto `REVIEW-FINDINGS.md`; Codex uses the condensed prose fallback in `review.md`. Both then run `review-style` in report-only mode and map its findings too.
 
 Helpers:
@@ -82,19 +82,7 @@ Skills must not include `context: fork` — this causes skills to loop by re-inv
 
 ## Planning Artifact
 
-The plan file that native plan mode saves in `.5/planning/` is the only planning artifact. Plan mode picks the file name, so the `feature` frontmatter field is how `/5:implement` finds a plan — never match on the file name. There is no codebase index and no `codebase-scan.md`; agents explore on demand, and what implementation needs goes into the plan.
-
-`PLAN.md` is the single planning template. It includes:
-
-- overview and what changes
-- an optional mermaid diagram of what changes
-- existing patterns to follow, with a symbol or line range
-- constraints (including what the repository's standards require), scope, acceptance criteria, decisions
-- module impact
-- component checklist
-- technical notes and next steps
-
-The component checklist stays intentionally lean: component, action, target path, intent. `step-orchestrator-agent` derives execution details from it.
+The plan file that native plan mode saves in `.5/planning/` is the only planning artifact. Plans have no prescribed structure or template — Claude or Codex shapes each one as the change needs. `step-orchestrator-agent` derives components from whatever the plan describes. There is no codebase index and no `codebase-scan.md`; agents explore on demand.
 
 ## Execution State
 
@@ -104,6 +92,7 @@ The execution graph — steps, component wiring, model choices, `patternRefs`, v
 {
   "feature": "{name}",
   "status": "in-progress|completed|failed",
+  "components": ["component-name"],
   "completedComponents": ["component-name"],
   "verification": {"status": "passed|partial|failed", "summary": "one line"},
   "startedAt": "{ISO}",
@@ -111,7 +100,7 @@ The execution graph — steps, component wiring, model choices, `patternRefs`, v
 }
 ```
 
-Resume matches components by name across runs, which is only sound because **component names are copied verbatim from the plan's Component Checklist**. That rule lives in `step-orchestrator-agent.md` and in `orchestratorPrompt()` in `5-implement.js` — keep both. In-run progress the user sees comes from `TaskCreate` / `TaskUpdate`, not from a file.
+Resume matches components by name across runs. Because plans have no fixed shape, the first run's derived names are persisted in `components`, and every later run passes them back as `knownComponents` so the orchestrator **reuses them verbatim**. That rule lives in `step-orchestrator-agent.md`, `orchestratorPrompt()` in `5-implement.js`, and `implement.md` — keep all three. In-run progress the user sees comes from `TaskCreate` / `TaskUpdate`, not from a file.
 
 ## Agents
 

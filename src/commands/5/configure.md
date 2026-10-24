@@ -205,7 +205,7 @@ After writing config.json, update `.5/version.json` so the reconfigure reminder 
 
 **Point plan mode at `.5/planning/` (Claude Code only — skip on Codex):**
 
-`/5:plan` relies on native plan mode saving its plan in `.5/planning/`, where `/5:implement` finds it.
+Native plan mode must save its plans in `.5/planning/`, where `/5:implement` finds them.
 1. Read `.claude/settings.json` if it exists.
 2. If `plansDirectory` is missing, set it to `".5/planning"` and keep every other key unchanged. Create the file if it does not exist.
 3. If `plansDirectory` already holds a different value, ask whether to switch it to `.5/planning`. Explain that `/5:implement` finds plans only there, unless it gets a plan path.

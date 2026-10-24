@@ -17,10 +17,11 @@ You are an Implementation Orchestrator. Keep your context lean, delegate all cod
 Find the plan:
 
 - If the argument is a path to a plan file, use it.
-- Otherwise find the file in `.5/planning/` whose frontmatter has `feature: {argument}`. Plan files get generated names, so match on the frontmatter, never on the file name. If several match, use the most recently modified one.
-- If no plan matches, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}`.
+- Otherwise look in `.5/planning/` for a file named `{argument}.md`, or whose frontmatter has `feature: {argument}`. If several match, use the most recently modified one.
+- Without an argument, use the most recently modified file in `.5/planning/` and name it to the user.
+- If no plan matches, stop and ask the user to plan the feature first — in plan mode on Claude Code, with `$5-plan` on Codex — then rerun `/5:implement`.
 
-The feature name is the plan's `feature` frontmatter field, or the file name without `.md` when the plan has none. If the plan has no Component Checklist, stop and ask the user to run `/5:plan {plan-path}` to turn it into a workflow plan.
+Plans have no fixed shape. The feature name is the plan's `feature` frontmatter field when it has one, otherwise the file name without `.md`.
 
 Read the plan and `.5/config.json` if it exists.
 
@@ -30,7 +31,7 @@ Then read `.5/features/{feature-name}/state.json` if it exists:
 - `in-progress`: resume — skip every component listed in `completedComponents`.
 - `failed`: ask whether to resume or restart. Restart clears `completedComponents`.
 
-A plan is **compact** when the plan's frontmatter has `planFormat: compact` (1-2 components, no data migration, no security/auth change, no public API change). `/5:plan` implements compact plans inline as soon as the user approves them, so a compact plan usually already has a `completed` or `failed` state here — the common reasons to reach this command are resuming a failed inline run or re-running after the plan changed. Treat that state exactly as above; do not re-run completed components.
+A plan is **compact** when it changes 1-2 files with no data migration, no security/auth change, and no public API change. A compact plan skips the orchestrator: list its components yourself — name (short kebab-case), action, target file, one-sentence intent.
 
 The execution graph — steps, component wiring, model choices, pattern references, verify commands — is derived fresh on every run and lives only in this run. `state.json` persists only what resume needs:
 
@@ -38,6 +39,7 @@ The execution graph — steps, component wiring, model choices, pattern referenc
 {
   "feature": "{feature-name}",
   "status": "in-progress|completed|failed",
+  "components": ["component-name"],
   "completedComponents": ["component-name"],
   "verification": {"status": "passed|partial|failed", "summary": "one line"},
   "startedAt": "{ISO-timestamp}",
@@ -45,7 +47,7 @@ The execution graph — steps, component wiring, model choices, pattern referenc
 }
 ```
 
-Resume matches on component name alone, so component names must always be copied verbatim from the plan's Component Checklist. Write `state.json` with `status: "in-progress"` now if it does not exist.
+Resume matches on component name alone. `components` keeps the names the first run derived; every later run reuses them for the same work instead of naming components again. Write `state.json` with `status: "in-progress"` now if it does not exist.
 
 Create one task per planned component with `TaskCreate` so the user can see progress, and mark already-completed components as completed.
 
@@ -74,20 +76,22 @@ Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep
   "isCompact": true,
   "components": [{"name": "...", "action": "create|modify|delete|rename", "file": "...", "sourceFile": null, "description": "...", "dependsOn": []}],
   "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
+  "knownComponents": [],
   "completedComponents": []
 }
 ```
 
-- For a **compact** plan, set `isCompact: true` and parse `components` from the plan's Component Checklist (the workflow builds a trivial single step with no orchestrator agent).
+- For a **compact** plan, set `isCompact: true` and pass the components you listed in Step 1, reusing names from `state.json.components` (the workflow builds a trivial single step with no orchestrator agent).
 - For a **full** plan, set `isCompact: false` and omit `components` — the workflow's orchestrate phase derives steps itself.
 - `standards` holds the repository standards and style skill paths from Step 1. Executors follow them while writing code.
 - `baseline` is the array from Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
+- `knownComponents` is `state.json.components`, or `[]` on a first run. The orchestrator reuses these names.
 - `completedComponents` is `[]` for a fresh run, or the array from `state.json` to resume. The workflow re-derives the graph and skips those components by name.
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
 
 2. Call `Workflow({name: "5-implement", args})`.
 3. If the returned `verification.inline` is `true` (the workflow took the mechanical fast path and no verification agent ran), run the **fast-path scope check** from 3c yourself and set `verification.scope` from it.
-4. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
+4. When it returns, **merge** (never replace) its `completedComponents` into the existing array, add any new names from its `components` to `state.json.components`, and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
 5. Auto-commit per step (Step 5), review the standards (Step 6), then report (Step 7).
 
 > The Workflow path persists only after the workflow returns — if a run is interrupted mid-way, this session's progress is not saved and those components run again on the next `/5:implement`. The executor's smallest-coherent-change contract makes a re-touch safe but not free.
@@ -96,10 +100,10 @@ Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep
 
 ### 3a. Derive the execution graph
 
-- **Compact plan:** build the graph inline from the Component Checklist — one step, `mode: "parallel"` unless components share a file or have a dependency (then `sequential`), `model: "haiku"`. **Do not spawn `step-orchestrator-agent`.**
-- **Full plan:** spawn `step-orchestrator-agent` with the plan path and config; it returns steps, dependencies, model choices, `patternRefs` (line ranges/symbols), and verify commands.
+- **Compact plan:** build the graph inline from the components you listed in Step 1 — one step, `mode: "parallel"` unless components share a file or have a dependency (then `sequential`), `model: "haiku"`. **Do not spawn `step-orchestrator-agent`.**
+- **Full plan:** spawn `step-orchestrator-agent` with the plan path, config, and the known component names from `state.json.components`; it returns steps, dependencies, model choices, `patternRefs` (line ranges/symbols), and verify commands.
 
-Check the returned graph: non-empty steps, every component name copied verbatim from the plan's Component Checklist, and each component carrying `step`, `mode`, `model`, `patternRefs`, and `verifyCommands`.
+Check the returned graph: non-empty steps, every known component name reused where its work is still planned, and each component carrying `step`, `mode`, `model`, `patternRefs`, and `verifyCommands`.
 
 ### 3b. Execute steps in waves
 
@@ -153,20 +157,20 @@ ERRORS: none | {summary}
 
 1. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, an import site it needs, or a file a repository standard requires (such as a changelog entry). Anything else is drift.
 2. Changed dependency manifests or lockfiles: a dependency no component requires is drift.
-3. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
+3. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan: work the plan rules out or defers, or abstraction/configurability the plan does not ask for, is drift.
 
 Set `SCOPE: passed | drift`. Drift never changes the verification status or `state.json`; it only goes into the report.
 
 ## Step 4: Persist Result
 
-Write `state.json` with the merged `completedComponents`, a one-line `verification` summary condensed from the block above, and `lastUpdated`. Set `status` to `completed` when verification passed; otherwise `failed`, and tell the user to fix the reported issues and rerun `/5:implement {feature-name}` to resume.
+Write `state.json` with the derived `components`, the merged `completedComponents`, a one-line `verification` summary condensed from the block above, and `lastUpdated`. Set `status` to `completed` when verification passed; otherwise `failed`, and tell the user to fix the reported issues and rerun `/5:implement {feature-name}` to resume.
 
 ## Step 5: Auto-commit
 
 If `.5/config.json` `git.autoCommit` is `true`, commit once per completed step:
 
 1. Stage only files owned by that step's components: `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executor's reported `FILES_CREATED`/`FILES_MODIFIED`. Do not stage unrelated changes.
-2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket from the plan frontmatter (or empty) and `{short-description}` with `step {number}: {step-name}`; trim redundant whitespace/punctuation when the ticket is empty.
+2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}`; trim redundant whitespace/punctuation when the ticket is empty.
 3. Commit.
 
 No changed files → skip. Commit error → report it and continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.

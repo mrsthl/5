@@ -379,6 +379,8 @@ const LEGACY_REMOVED_FILES = [
   'templates/TESTING.md',
   // Lean core: Claude Code covers commits, READMEs, PR replies, and per-pattern skills natively
   'commands/5/commit.md',
+  // Claude Code plans in native plan mode under the AGENTS.md Planning rules; $5-plan stays for Codex
+  'commands/5/plan.md',
   'commands/5/apply-review-findings.md',
   'commands/5/triage-pr-comments.md',
   'commands/5/reply-pr-comments.md',
@@ -390,6 +392,9 @@ const LEGACY_REMOVED_FILES = [
   'skills/configure-skills',
   'hooks/config-guard.js',
   'templates/workflow/FIX-PLAN.md',
+  // Plans have no fixed shape; plan mode and $5-plan decide it
+  'templates/workflow/PLAN.md',
+  'templates/workflow/PLAN-COMPACT.md',
   'templates/workflow/REVIEW-SUMMARY.md'
 ];
 
@@ -398,6 +403,9 @@ function getWorkflowManagedFiles() {
   return {
     // Commands: only the 5/ namespace
     commands: ['5'],
+
+    // Codex-only commands, installed as skills/5-{name}: Claude Code covers them natively
+    codexCommands: ['plan.md'],
 
     // Agents: separate agent files referenced by commands via agent: frontmatter
     agents: [
@@ -446,8 +454,6 @@ function getWorkflowManagedFiles() {
       // Project instructions template
       'AGENTS.md',
       // Workflow output templates
-      'workflow/PLAN.md',
-      'workflow/PLAN-COMPACT.md',
       'workflow/REVIEW-FINDINGS.md'
     ]
   };
@@ -487,7 +493,7 @@ function getFileManifest() {
     manifest.push(`hooks/${hook}`);
   }
 
-  // Templates are files (may include nested paths like workflow/PLAN.md)
+  // Templates are files (may include nested paths like workflow/REVIEW-FINDINGS.md)
   for (const template of managed.templates) {
     manifest.push(`templates/${template}`);
   }
@@ -604,7 +610,7 @@ Claude Code enforces these at the harness level via native plan mode. Codex has 
 - Do NOT write source code
 - Do NOT spawn implementation agents — only Explore/research agents
 
-After approval, \`$5-plan\` saves the plan in \`.5/planning/\`, implements compact plans inline, and hands larger ones to \`$5-implement\`.
+After approval, \`$5-plan\` saves the plan in \`.5/planning/\` and hands it to \`$5-implement\`.
 
 ## Update & Migration Notices (replaces statusline hooks)
 At the very start of this skill, before doing anything else, read these two files if they exist:
@@ -647,20 +653,29 @@ function convertClaudeSkillToCodexSkill(content) {
   return convertClaudeToCodexMarkdown(content);
 }
 
+// Command files that become Codex skills: the shared commands/5/ plus the Codex-only codex-commands/
+// (Claude Code covers those natively, e.g. plan mode replaces /5:plan).
+function getCodexCommandFiles(sourcePath) {
+  const toEntry = (dir, file) => ({ name: file.replace('.md', ''), file: path.join(dir, file) });
+  const sharedDir = path.join(sourcePath, 'commands', '5');
+  const shared = fs.existsSync(sharedDir)
+    ? fs.readdirSync(sharedDir).filter(f => f.endsWith('.md')).map(f => toEntry(sharedDir, f))
+    : [];
+  const codexDir = path.join(sourcePath, 'codex-commands');
+  const codexOnly = getWorkflowManagedFiles().codexCommands
+    .filter(f => fs.existsSync(path.join(codexDir, f)))
+    .map(f => toEntry(codexDir, f));
+  return [...shared, ...codexOnly];
+}
+
 // Get file manifest for Codex installs (skills-based structure)
 function getCodexFileManifest() {
   const managed = getWorkflowManagedFiles();
   const manifest = [];
 
-  // Commands become skills
-  // Each command file in commands/5/ becomes skills/5-{name}/SKILL.md
-  const commandsSrc = path.join(getSourcePath(), 'commands', '5');
-  if (fs.existsSync(commandsSrc)) {
-    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
-    for (const file of files) {
-      const name = file.replace('.md', '');
-      manifest.push(`skills/5-${name}`);
-    }
+  // Commands become skills: each command file becomes skills/5-{name}/SKILL.md
+  for (const { name } of getCodexCommandFiles(getSourcePath())) {
+    manifest.push(`skills/5-${name}`);
   }
 
   // Original skills also become Codex skills
@@ -793,7 +808,7 @@ function selectiveUpdate(targetPath, sourcePath) {
     const src = path.join(templatesSrc, template);
     const dest = path.join(templatesDest, template);
     if (fs.existsSync(src)) {
-      // Ensure parent directory exists for nested paths (e.g., workflow/PLAN.md)
+      // Ensure parent directory exists for nested paths (e.g., workflow/REVIEW-FINDINGS.md)
       const destDir = path.dirname(dest);
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
@@ -1070,9 +1085,9 @@ function checkExistingInstallation(targetPath) {
     const legacyMarkerFile = path.join(targetPath, 'skills', '5-plan-feature', 'SKILL.md');
     return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
   }
-  const markerFile = path.join(targetPath, 'commands', '5', 'plan.md');
-  const legacyMarkerFile = path.join(targetPath, 'commands', '5', 'plan-feature.md');
-  return fs.existsSync(markerFile) || fs.existsSync(legacyMarkerFile);
+  // plan.md and plan-feature.md mark installs from before plan mode replaced /5:plan
+  return ['implement.md', 'plan.md', 'plan-feature.md']
+    .some(file => fs.existsSync(path.join(targetPath, 'commands', '5', file)));
 }
 
 // Helper to show commands
@@ -1090,8 +1105,8 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-eject                     - Eject from update mechanism');
     log.info('  $5-synchronize-agents        - Sync user content between runtimes');
   } else {
+    log.info('Plan in native plan mode (shift+tab); AGENTS.md shapes the plan.');
     log.info('Available commands:');
-    log.info('  /5:plan                      - Create or refine a plan');
     log.info('  /5:implement                 - Execute implementation + verification');
     log.info('  /5:review                    - Code and standards review');
     log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
@@ -1359,17 +1374,13 @@ Skills reference these paths for output formatting.
 
 // Install commands as Codex skills
 function installCodexSkills(targetPath, sourcePath) {
-  const commandsSrc = path.join(sourcePath, 'commands', '5');
   const skillsDest = path.join(targetPath, 'skills');
+  const files = getCodexCommandFiles(sourcePath);
+  if (files.length === 0) return;
 
-  if (!fs.existsSync(commandsSrc)) return;
-
-  const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
-
-  for (const file of files) {
-    const name = file.replace('.md', '');
+  for (const { name, file } of files) {
     const skillName = `5-${name}`;
-    const content = fs.readFileSync(path.join(commandsSrc, file), 'utf8');
+    const content = fs.readFileSync(file, 'utf8');
     const converted = convertClaudeCommandToCodexSkill(content, skillName);
 
     const skillDir = path.join(skillsDest, skillName);
@@ -1480,14 +1491,9 @@ function codexSelectiveUpdate(targetPath, sourcePath) {
   const skillsDest = path.join(targetPath, 'skills');
 
   // Remove workflow command skills (5-*)
-  const commandsSrc = path.join(sourcePath, 'commands', '5');
-  if (fs.existsSync(commandsSrc)) {
-    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
-    for (const file of files) {
-      const name = file.replace('.md', '');
-      const skillDir = path.join(skillsDest, `5-${name}`);
-      if (fs.existsSync(skillDir)) removeDir(skillDir);
-    }
+  for (const { name } of getCodexCommandFiles(sourcePath)) {
+    const skillDir = path.join(skillsDest, `5-${name}`);
+    if (fs.existsSync(skillDir)) removeDir(skillDir);
   }
 
   // Remove utility skills
@@ -1576,16 +1582,11 @@ function codexUninstall() {
   }
 
   // Remove workflow command skills (5-*)
-  const commandsSrc = path.join(getSourcePath(), 'commands', '5');
-  if (fs.existsSync(commandsSrc)) {
-    const files = fs.readdirSync(commandsSrc).filter(f => f.endsWith('.md'));
-    for (const file of files) {
-      const name = file.replace('.md', '');
-      const skillDir = path.join(targetPath, 'skills', `5-${name}`);
-      if (fs.existsSync(skillDir)) removeDir(skillDir);
-    }
-    log.success('Removed workflow skills');
+  for (const { name } of getCodexCommandFiles(getSourcePath())) {
+    const skillDir = path.join(targetPath, 'skills', `5-${name}`);
+    if (fs.existsSync(skillDir)) removeDir(skillDir);
   }
+  log.success('Removed workflow skills');
 
   // Remove utility skills
   const managed = getWorkflowManagedFiles();

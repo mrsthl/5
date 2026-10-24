@@ -23,6 +23,14 @@ These rules decide how code is written here, in this order:
 
 Run the `review-style` skill to check a change against all of them.
 
+## Planning
+
+Plan non-trivial changes in plan mode (Codex: run `$5-plan`). Shape each plan as the change needs; add a mermaid diagram when a flow, state machine, or component relationships explain the change better than text, and plan what the repository standards require, such as tests or a changelog entry.
+
+When the request names a ticket, fetch it (Jira MCP or `gh issue view`) and confirm its content with the user before planning.
+
+After the user approves a plan, run `/5:implement {plan-path}` (Codex: `$5-implement {plan-path}`). Do not implement the plan any other way.
+
 ## Simplicity First
 
 Before writing code, walk this decision hierarchy and stop at the first step that solves the problem:

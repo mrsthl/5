@@ -19,8 +19,9 @@ export const meta = {
 // state.json and runs auto-commit after this returns.
 //
 // The execution graph (steps/components) is derived fresh on every run and is
-// NOT persisted. Resume works because component names are copied verbatim from
-// the plan's Component Checklist, so re-derivation is stable by name.
+// NOT persisted. Plans have no fixed shape, so the command persists the component
+// NAMES from the first run and passes them back as knownComponents; reusing them
+// keeps resume stable by name.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESULT_SCHEMA = {
@@ -132,14 +133,14 @@ Feature: ${a.feature}
 Plan: ${a.paths.plan}
 Config: ${a.paths.config} (read only if present)
 
-Turn the lean component checklist in the plan into steps + components:
-- COPY EVERY COMPONENT NAME VERBATIM from the plan's Component Checklist. Resume matches components by name across runs, so a renamed or reformatted name makes completed work run twice.
+The plan has no fixed shape. Derive the components from whatever it describes: one component per target file (or tightly coupled file group), named in short kebab-case, then turn them into steps + components:
+${(a.knownComponents || []).length ? `- REUSE THESE COMPONENT NAMES EXACTLY for the same work: ${a.knownComponents.join(', ')}. Resume matches components by name, so a renamed component runs twice. Add new names only for work none of them covers.` : '- Name each component once and stably; later runs reuse these names to resume.'}
 - Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same file, one imports another, or there is an explicit dependency.
 - Prefer fewer steps. Tests run after the components they validate.
 - model "haiku" by default (mechanical, UI, tests, docs, config, single-file). model "sonnet" only for complex logic, cross-module, security/auth, migrations, or public API.
-- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan's Existing Patterns to Follow, else find them with Glob/Grep.
+- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan where it names patterns, else find them with Glob/Grep.
 - verifyCommands: narrowest relevant check first, then project build/test.
-- Exclude [DEFERRED] work. Represent every other component once. dependsOn must reference existing component names.
+- Exclude work the plan defers or rules out. Represent every other component once. dependsOn must reference existing component names.
 
 Return an object matching the schema (steps[] and pendingComponents[]).`
 }
@@ -200,7 +201,7 @@ ${baseline}
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
+Checks: completeness (every planned component done, and any acceptance criteria the plan states addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan rules out or defers, new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
 Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
 }

@@ -226,8 +226,8 @@ function findProjectRoot() {
 }
 
 function isClaudeInstalled(root) {
-  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md')) ||
-    fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
+  return ['implement.md', 'plan.md', 'plan-feature.md']
+    .some(file => fs.existsSync(path.join(root, '.claude', 'commands', '5', file)));
 }
 
 function isCodexInstalled(root) {

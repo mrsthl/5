@@ -1,5 +1,28 @@
 # Release Notes
 
+## v3.1.2
+
+**Release Date:** 2026-10-24
+
+### One-Command Setup
+
+`/5:configure` now runs `/5:implement CONFIGURE` itself once the plan is written, so first-time setup is a single command — no `/clear`, no second command.
+
+**Improvements**
+- **`/5:configure` implements its own plan**: after the questions it writes `.5/config.json` and the CONFIGURE plan, then hands off to `/5:implement CONFIGURE`, which writes the AGENTS.md block and the rules and reviews the result. Same on Codex with `$5-configure`.
+- **Nothing to do, nothing run**: when you skip both AGENTS.md and rules, configure stops after `config.json` and removes a CONFIGURE plan an earlier run left behind.
+
+**Bug Fixes**
+- **Skipping AGENTS.md is honored**: the CONFIGURE plan leaves out the AGENTS.md block when you skip it, so only the rules are generated and `AGENTS.md`/`CLAUDE.md` stay untouched. On Codex, where rules live in that block, skipping AGENTS.md skips rules too.
+
+**Affected files:**
+- `src/commands/5/configure.md` (modified)
+- `README.md` (modified)
+- `docs/workflow-guide.md` (modified)
+- `AGENTS.md` (modified)
+
+---
+
 ## v3.1.1
 
 **Release Date:** 2026-10-24

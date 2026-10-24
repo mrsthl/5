@@ -34,7 +34,7 @@ Collect the standards once for this run:
 
 ## Step 2: Establish Baseline
 
-Record `git rev-parse HEAD` as this run's **fixed point** for the review in Step 4.
+Record `git rev-parse HEAD` as this run's **fixed point** for the review in Step 4, and the files `git status --porcelain` lists now as **pre-run dirty files**: they hold the user's own uncommitted work.
 
 Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep the results in context for this run — they are what lets verification tell pre-existing failures apart from new ones. If baseline fails, warn and continue.
 
@@ -134,17 +134,17 @@ Set `SCOPE: passed | drift`. Drift never changes the verification status; it onl
 
 ## Step 4: Review
 
-Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name}` with the fixed point from Step 2. `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
+Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}` with the fixed point and the pre-run dirty files from Step 2 (`dirty: none` when there are none). `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
 
 ## Step 5: Auto-commit
 
-If `.5/config.json` `git.autoCommit` is `true` and verification passed, commit — including the review fixes from Step 4 for those files — once per step for a full plan, once for a compact plan:
+If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — no review fix was applied, or `/5:address-review-findings` reported `Review findings addressed: yes` — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
 
 1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes.
 2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}` (compact plan: a short summary of the change); trim redundant whitespace/punctuation when the ticket is empty.
 3. Commit.
 
-No changed files → skip. Commit error → report it and continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.
+When a review fix left build, tests, e2e, or lint failing, do not commit; report it. No changed files → skip. Commit error → report it and continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.
 
 ## Step 6: Report
 

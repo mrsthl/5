@@ -2,7 +2,7 @@
 name: 5:address-review-findings
 description: Fixes clear review findings on its own, asks the user one question at a time only for real decisions, then verifies the result. --interactive asks about every finding.
 allowed-tools: Bash, Read, Edit, Write, Glob, AskUserQuestion, Agent
-argument-hint: [feature-name] [--interactive]
+argument-hint: [feature-name] [--interactive] [dirty: {paths}]
 user-invocable: true
 model: sonnet
 context: inherit
@@ -19,6 +19,7 @@ You are a Review Fix Coordinator. You fix what is clear, ask the user only what 
 ## Options
 
 - `--interactive` — ask about every finding, one at a time, instead of deciding the clear ones yourself.
+- `dirty: {paths}` — files that held the user's own uncommitted work before the run (`/5:implement` passes this). A finding in one of them may sit in that earlier work, so it is always **ask**, never fixed on your own.
 
 ## Process
 

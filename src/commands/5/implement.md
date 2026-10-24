@@ -1,53 +1,31 @@
 ---
 name: 5:implement
-description: Executes a plan from .5/planning/. Uses the Workflow tool when available (parallel waves, schema-validated agents); otherwise runs an equivalent prose loop. Codex always uses the prose loop. Ends with a standards review via review-style.
-allowed-tools: Agent, Read, Write, Glob, Grep, Bash, Workflow, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList
+description: Executes a plan from .5/planning/. Compact plans are implemented inline in this session; full plans run through the Workflow tool when available (parallel waves, schema-validated agents), otherwise an equivalent prose loop. Codex always uses the prose loop. Verifies that the plan was built and works, then runs /5:review.
+allowed-tools: Agent, Read, Write, Edit, Glob, Grep, Bash, Workflow, Skill, AskUserQuestion
 user-invocable: true
 argument-hint: [feature-name-or-plan-path]
 ---
 
 <role>
-You are an Implementation Orchestrator. Keep your context lean, delegate all code edits, and use `.5/features/{name}/state.json` for cross-session resume. You do NOT write source code yourself.
+You are an Implementation Orchestrator. A compact plan you implement yourself. For a full plan you keep your context lean and delegate every code edit to executor agents.
 </role>
 
 # Implement
 
-## Step 1: Load Artifacts
+## Step 1: Load the Plan
 
 Find the plan:
 
 - If the argument is a path to a plan file, use it.
-- Otherwise find the file in `.5/planning/` whose frontmatter has `feature: {argument}`. Plan files get generated names, so match on the frontmatter, never on the file name. If several match, use the most recently modified one.
-- If no plan matches, stop and ask the user to run `/5:plan` first, then rerun `/5:implement {feature-name}`.
+- Otherwise look in `.5/planning/` for a file named `{argument}.md`, or whose frontmatter has `feature: {argument}`. If several match, use the most recently modified one.
+- Without an argument, use the most recently modified file in `.5/planning/` and name it to the user.
+- If no plan matches, stop and ask the user to plan the feature first — in plan mode on Claude Code, with `$5-plan` on Codex — then rerun `/5:implement`.
 
-The feature name is the plan's `feature` frontmatter field, or the file name without `.md` when the plan has none. If the plan has no Component Checklist, stop and ask the user to run `/5:plan {plan-path}` to turn it into a workflow plan.
+Plans have no fixed shape. The feature name is the plan's `feature` frontmatter field when it has one, otherwise the file name without `.md`.
 
-Read the plan and `.5/config.json` if it exists.
+Read the plan and `.5/config.json` if it exists. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
 
-Then read `.5/features/{feature-name}/state.json` if it exists:
-
-- `completed`: tell the user it is already implemented and verified; stop.
-- `in-progress`: resume — skip every component listed in `completedComponents`.
-- `failed`: ask whether to resume or restart. Restart clears `completedComponents`.
-
-A plan is **compact** when the plan's frontmatter has `planFormat: compact` (1-2 components, no data migration, no security/auth change, no public API change). `/5:plan` implements compact plans inline as soon as the user approves them, so a compact plan usually already has a `completed` or `failed` state here — the common reasons to reach this command are resuming a failed inline run or re-running after the plan changed. Treat that state exactly as above; do not re-run completed components.
-
-The execution graph — steps, component wiring, model choices, pattern references, verify commands — is derived fresh on every run and lives only in this run. `state.json` persists only what resume needs:
-
-```json
-{
-  "feature": "{feature-name}",
-  "status": "in-progress|completed|failed",
-  "completedComponents": ["component-name"],
-  "verification": {"status": "passed|partial|failed", "summary": "one line"},
-  "startedAt": "{ISO-timestamp}",
-  "lastUpdated": "{ISO-timestamp}"
-}
-```
-
-Resume matches on component name alone, so component names must always be copied verbatim from the plan's Component Checklist. Write `state.json` with `status: "in-progress"` now if it does not exist.
-
-Create one task per planned component with `TaskCreate` so the user can see progress, and mark already-completed components as completed.
+A plan is **compact** when it changes 1-2 files with no data migration, no security/auth change, and no public API change. Every other plan is **full**.
 
 Collect the standards once for this run:
 
@@ -56,64 +34,62 @@ Collect the standards once for this run:
 
 ## Step 2: Establish Baseline
 
-Record `git rev-parse HEAD` as this run's **fixed point** for the standards review in Step 6.
+Record `git rev-parse HEAD` as this run's **fixed point** for the review in Step 4, and the files `git status --porcelain` lists now as **pre-run dirty files**: they hold the user's own uncommitted work.
 
-Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep the results in context for this run — they are what lets verification tell pre-existing failures apart from new ones. Do not persist them. If baseline fails, warn and continue.
+Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep the results in context for this run — they are what lets verification tell pre-existing failures apart from new ones. If baseline fails, warn and continue.
 
 ## Step 3: Run
 
-**If the `Workflow` tool is available, use the Workflow engine (preferred).** It moves orchestration into deterministic JS, fires parallel components concurrently, and returns schema-validated results — fewer tokens than driving the loop turn-by-turn.
+### Compact plan: implement inline
 
-1. Build `args` for the workflow:
+The context is already warm, and an agent for one or two files costs more than it saves. Implement the plan yourself, in this session, with no agents and no Workflow call:
+
+- Follow the repository standards first, then the style skills. Follow the patterns the plan names.
+- Make the smallest coherent change: reuse existing code in this codebase first, then the standard library, native platform features, and installed dependencies. Touch only the planned files and what they strictly need (their tests, an import site). Add no new dependency.
+- Then run the **fast-path check** (3c).
+
+### Full plan, with the `Workflow` tool (preferred)
+
+It moves orchestration into deterministic JS, fires parallel components concurrently, and returns schema-validated results — fewer tokens than driving the loop turn-by-turn.
+
+1. Call `Workflow({name: "5-implement", args})` with:
 
 ```json
 {
   "feature": "{feature-name}",
   "paths": {"plan": "{plan-path}", "config": ".5/config.json"},
   "standards": {"repo": ["CONTRIBUTING.md"], "styles": ["/abs/path/.claude/skills/fowler-code-smells/SKILL.md"]},
-  "isCompact": true,
-  "components": [{"name": "...", "action": "create|modify|delete|rename", "file": "...", "sourceFile": null, "description": "...", "dependsOn": []}],
-  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
-  "completedComponents": []
+  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}]
 }
 ```
 
-- For a **compact** plan, set `isCompact: true` and parse `components` from the plan's Component Checklist (the workflow builds a trivial single step with no orchestrator agent).
-- For a **full** plan, set `isCompact: false` and omit `components` — the workflow's orchestrate phase derives steps itself.
 - `standards` holds the repository standards and style skill paths from Step 1. Executors follow them while writing code.
 - `baseline` is the array from Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
-- `completedComponents` is `[]` for a fresh run, or the array from `state.json` to resume. The workflow re-derives the graph and skips those components by name.
-- The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline — baseline (Step 2) and auto-commit (Step 5) are run by this command, not the workflow.
+- The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline.
 
-2. Call `Workflow({name: "5-implement", args})`.
-3. If the returned `verification.inline` is `true` (the workflow took the mechanical fast path and no verification agent ran), run the **fast-path scope check** from 3c yourself and set `verification.scope` from it.
-4. When it returns, **merge** (never replace) its `completedComponents` into the existing array and write `state.json` (Step 4). A resumed run reports only the components it ran this invocation. Mark the matching tasks completed with `TaskUpdate`. The workflow does not touch the filesystem itself.
-5. Auto-commit per step (Step 5), review the standards (Step 6), then report (Step 7).
+2. If the returned `verification.inline` is `true` (every component was mechanical and passed, so no verification agent ran), run the **fast-path check** (3c) and take its result as the verification.
+3. Continue with Step 4.
 
-> The Workflow path persists only after the workflow returns — if a run is interrupted mid-way, this session's progress is not saved and those components run again on the next `/5:implement`. The executor's smallest-coherent-change contract makes a re-touch safe but not free.
+### Full plan, without the `Workflow` tool (prose loop)
 
-**Otherwise, run the prose loop (fallback).** It produces the same outcome:
+It produces the same outcome.
 
-### 3a. Derive the execution graph
+#### 3a. Derive the execution graph
 
-- **Compact plan:** build the graph inline from the Component Checklist — one step, `mode: "parallel"` unless components share a file or have a dependency (then `sequential`), `model: "haiku"`. **Do not spawn `step-orchestrator-agent`.**
-- **Full plan:** spawn `step-orchestrator-agent` with the plan path and config; it returns steps, dependencies, model choices, `patternRefs` (line ranges/symbols), and verify commands.
+Spawn `step-orchestrator-agent` with the plan path and config. It returns steps, dependencies, a model per component, `patternRefs` (line ranges/symbols), and verify commands. Check the graph: non-empty steps, and each component carrying `step`, `mode`, `model`, `patternRefs`, and `verifyCommands`.
 
-Check the returned graph: non-empty steps, every component name copied verbatim from the plan's Component Checklist, and each component carrying `step`, `mode`, `model`, `patternRefs`, and `verifyCommands`.
+#### 3b. Execute steps in waves
 
-### 3b. Execute steps in waves
+For each step:
 
-For each step, skipping components already in `completedComponents`:
-
-1. Pre-check: every dependency component is completed and its files still exist.
-2. Mark the step's tasks in progress with `TaskUpdate`.
-3. Spawn executors:
+1. Pre-check: every dependency component succeeded and its files still exist.
+2. Spawn executors with the component's model. Run `opus` at `effort: "medium"`.
    - **Parallel step: emit all of the step's executor Agent calls in a single message so they run concurrently.**
    - Sequential step (same-file or dependency): one executor at a time.
    - Give each executor only its component block, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below — do not make it read `step-executor-agent.md`.
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -127,15 +103,14 @@ ERROR: none | {error description}
 ---END---
 ```
 
-4. Parse only the `---RESULT---` block from each executor.
-5. **Once per wave** (not per component), append the succeeded component names to `state.json.completedComponents`, refresh `lastUpdated`, and mark the matching tasks completed. Trust the executor's report — do not re-read files you did not change to confirm them.
+3. Parse only the `---RESULT---` block from each executor. Trust the executor's report — do not re-read files you did not change to confirm them.
 
-Retry failed components up to twice, escalating to `sonnet`. Never fix code in the orchestrator context.
+Retry failed components up to twice on `opus` at `effort: "medium"`. Never fix code in the orchestrator context.
 
-### 3c. Verify
+#### 3c. Verify
 
-- **Fast path:** when every component reported `success` with `verify` `passed` or `skipped`, and no component was planned as **or escalated to** `sonnet` (i.e. a mechanical change), verify inline — run the configured build/test once (reuse fresh baseline/component results) and set the verification result directly, skipping `verification-agent`.
-- **Otherwise:** spawn `verification-agent` with the plan path, the component results, the baseline from Step 2, the repository standards from Step 1, and config. It returns:
+- **Fast path:** when every component reported `success` with `verify` `passed` or `skipped`, every component was planned as `haiku`, and none needed a retry, run the **fast-path check** below and skip `verification-agent`.
+- **Otherwise:** spawn `verification-agent` — it checks only that the plan was built and works; quality and correctness come from `/5:review` in Step 4 — on `opus` at `effort: "medium"` when any component was planned as or retried on `opus`, else on `sonnet` — with the plan path, the component results, the baseline from Step 2, the repository standards from Step 1, and config. It returns:
 
 ```text
 ---VERIFICATION---
@@ -143,47 +118,41 @@ STATUS: passed | partial | failed
 COMPLETENESS: passed | partial | failed
 INFRASTRUCTURE: passed | failed
 ACCEPTANCE_CRITERIA: satisfied/total
-QUALITY: passed | partial | failed
 SCOPE: passed | drift
 ERRORS: none | {summary}
 ---END_VERIFICATION---
 ```
 
-**Fast-path scope check** — the fast path skips `verification-agent`, so run this before Step 4 (on both the Workflow and the prose path):
+**Fast-path check** — used by compact plans and by the fast path of both full-plan routes:
 
-1. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, an import site it needs, or a file a repository standard requires (such as a changelog entry). Anything else is drift.
-2. Changed dependency manifests or lockfiles: a dependency no component requires is drift.
-3. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan's Scope **Out** and `[DEFERRED]` decisions: work the plan excludes, or abstraction/configurability no acceptance criterion asks for, is drift.
+1. Run the configured build and test commands once (skip any set to `none`). A command that passed in the baseline and fails now sets `STATUS: failed`; a failure the baseline already had is pre-existing and only goes into the report.
+2. `git status --short` and `git diff HEAD --stat`: every changed file must be a planned target, its test, an import site it needs, or a file a repository standard requires (such as a changelog entry). Anything else is drift.
+3. Changed dependency manifests or lockfiles: a dependency the plan does not require is drift.
+4. `git diff HEAD` on the changed files plus the full contents of untracked (`??`) files — `git diff HEAD` omits files not yet committed — read against the plan: work the plan rules out or defers, or abstraction/configurability the plan does not ask for, is drift.
 
-Set `SCOPE: passed | drift`. Drift never changes the verification status or `state.json`; it only goes into the report.
+Set `SCOPE: passed | drift`. Drift never changes the verification status; it only goes into the report.
 
-## Step 4: Persist Result
+## Step 4: Review
 
-Write `state.json` with the merged `completedComponents`, a one-line `verification` summary condensed from the block above, and `lastUpdated`. Set `status` to `completed` when verification passed; otherwise `failed`, and tell the user to fix the reported issues and rerun `/5:implement {feature-name}` to resume.
+Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}` with the fixed point and the pre-run dirty files from Step 2 (`dirty: none` when there are none). `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
 
 ## Step 5: Auto-commit
 
-If `.5/config.json` `git.autoCommit` is `true`, commit once per completed step:
+If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — no review fix was applied, or `/5:address-review-findings` reported `Review findings addressed: yes` — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
 
-1. Stage only files owned by that step's components: `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executor's reported `FILES_CREATED`/`FILES_MODIFIED`. Do not stage unrelated changes.
-2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket from the plan frontmatter (or empty) and `{short-description}` with `step {number}: {step-name}`; trim redundant whitespace/punctuation when the ticket is empty.
+1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes. **Never stage a pre-run dirty file** (Step 2), on any plan: it holds the user's own unfinished work. Leave it uncommitted and list it in the report.
+2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}` (compact plan: a short summary of the change); trim redundant whitespace/punctuation when the ticket is empty.
 3. Commit.
 
-No changed files → skip. Commit error → report it and continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.
+When a review fix left build, tests, e2e, or lint failing, do not commit; report it. No changed files → skip. Commit error → report it and continue; do not retry with broader paths. If `git.autoCommit` is missing/`false`, do not commit.
 
-## Step 6: Review the Standards
+## Step 6: Report
 
-Invoke `Skill(skill: "review-style", args: "{fixed-point} files: {run-files}")` with the fixed point from Step 2. `{run-files}` lists the files this run created, modified, or deleted: each component's planned target plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. Changes the user already had before the run stay out of the review and out of its fixes. This is review-style's default mode, limited to those files: it reviews everything since the fixed point, committed or not, against the repository's standards and the style skills. It reports numbered findings — ⛔️ for a hard breach of a repository standard, ⚠️ for a style judgement call — and asks which ones to fix. Its fixer leaves the fixes uncommitted.
+Report: completed/failed component counts, verification status, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. When verification failed, tell the user to fix the reported issues and rerun `/5:implement {feature-name}`. Also list, one line each:
 
-Run this on every path, the fast path included. Its findings never change `state.json`.
-
-## Step 7: Report
-
-Report: completed/failed component counts, verification status, path to `state.json`, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. Also list, one line each:
-
-- **Standards:** findings per standard, how many are hard breaches, and which ones were fixed.
-
+- **Review:** the findings count from `/5:review` and how many were fixed.
 - **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
 - **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.
+- **Not committed:** pre-run dirty files the run changed — they also hold the user's earlier work, so the user commits them.
 
 Then stop.

@@ -29,13 +29,6 @@ else
   echo "✗ version.json not created"
   exit 1
 fi
-for helper_command in apply-review-findings triage-pr-comments reply-pr-comments; do
-  if [ ! -f ".claude/commands/5/${helper_command}.md" ]; then
-    echo "✗ Internal review helper command missing: ${helper_command}"
-    exit 1
-  fi
-done
-echo "✓ Internal review helper commands installed"
 for style_skill in review-style fowler-code-smells cognitive-load documentation-style baseline-conventions; do
   if [ ! -f ".claude/skills/${style_skill}/SKILL.md" ]; then
     echo "✗ Review style skill missing: ${style_skill}"
@@ -43,19 +36,21 @@ for style_skill in review-style fowler-code-smells cognitive-load documentation-
   fi
 done
 echo "✓ Review style skills installed"
-for removed in ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md"; do
+for removed in ".claude/commands/5/plan.md" ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md" \
+  ".claude/commands/5/commit.md" ".claude/commands/5/apply-review-findings.md" ".claude/commands/5/triage-pr-comments.md" \
+  ".claude/commands/5/reply-pr-comments.md" ".claude/skills/generate-readme" ".claude/skills/configure-skills" \
+  ".claude/hooks/config-guard.js"; do
   if [ -e "$removed" ]; then
     echo "✗ Removed file still installed: $removed"
     exit 1
   fi
 done
 echo "✓ Removed workflow files not installed"
-if [ -f ".claude/commands/5/commit.md" ]; then
-  echo "✓ Commit command installed"
-else
-  echo "✗ Commit command missing"
+if grep -q "config-guard" .claude/settings.json; then
+  echo "✗ config-guard hook still in settings.json"
   exit 1
 fi
+echo "✓ config-guard hook not installed"
 if [ -f ".claude/bin/sync-agents.js" ]; then
   echo "✓ Sync helper installed"
 else
@@ -136,7 +131,7 @@ else
   echo "✗ version.json not created for legacy install"
   exit 1
 fi
-if [ -f ".claude/commands/5/plan.md" ] && [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ -f ".claude/commands/5/commit.md" ]; then
+if [ -f ".claude/commands/5/implement.md" ] && [ -f ".claude/commands/5/review.md" ] && [ ! -e ".claude/commands/5/plan.md" ]; then
   echo "✓ New v2 commands installed for legacy upgrade"
 else
   echo "✗ New v2 commands missing after legacy upgrade"
@@ -165,7 +160,7 @@ echo "---------------------------"
 cd /tmp
 rm -rf test-5phase-3
 mkdir -p test-5phase-3/.claude/commands/5
-echo '{"permissions":{"allow":["Bash"]},"customSetting":"test"}' > test-5phase-3/.claude/settings.json
+echo '{"permissions":{"allow":["Bash"]},"customSetting":"test","statusLine":{"type":"command","command":"my-statusline.sh"},"hooks":{"PreToolUse":[{"matcher":"Task|Agent","hooks":[{"type":"command","command":"node .claude/hooks/config-guard.js"},{"type":"command","command":"my-own-agent-hook.sh"}]}]}}' > test-5phase-3/.claude/settings.json
 touch test-5phase-3/.claude/commands/5/plan-feature.md
 cd test-5phase-3
 node "$INSTALL_SCRIPT" --upgrade
@@ -173,6 +168,24 @@ if grep -q "permissions" .claude/settings.json && grep -q "statusLine" .claude/s
   echo "✓ Deep merge preserved user settings"
 else
   echo "✗ Deep merge failed"
+  exit 1
+fi
+if grep -q "my-statusline.sh" .claude/settings.json && ! grep -q "hooks/statusline.js" .claude/settings.json; then
+  echo "✓ User statusLine kept"
+else
+  echo "✗ User statusLine overwritten"
+  exit 1
+fi
+if grep -q "config-guard" .claude/settings.json; then
+  echo "✗ Retired config-guard hook not removed on upgrade"
+  exit 1
+else
+  echo "✓ Retired config-guard hook removed on upgrade"
+fi
+if grep -q "my-own-agent-hook.sh" .claude/settings.json; then
+  echo "✓ User hook in the same entry kept"
+else
+  echo "✗ User hook in the same entry removed with config-guard"
   exit 1
 fi
 echo ""
@@ -249,11 +262,11 @@ else
   echo "✗ Codex review style skills not installed"
   exit 1
 fi
-if [ -f ".codex/skills/5-commit/SKILL.md" ]; then
-  echo "✓ Commit command converted to Codex skill"
-else
-  echo "✗ Codex commit skill not created"
+if [ -e ".codex/skills/5-commit" ] || [ -e ".codex/skills/generate-readme" ] || [ -e ".codex/skills/configure-skills" ]; then
+  echo "✗ Removed skill installed for Codex"
   exit 1
+else
+  echo "✓ Removed skills not installed for Codex"
 fi
 if [ -f ".codex/bin/sync-agents.js" ]; then
   echo "✓ Sync helper installed"
@@ -262,29 +275,23 @@ else
   exit 1
 fi
 for helper_skill in 5-apply-review-findings 5-triage-pr-comments 5-reply-pr-comments; do
-  if [ ! -f ".codex/skills/${helper_skill}/SKILL.md" ]; then
-    echo "✗ Internal review helper skill missing: ${helper_skill}"
+  if [ -e ".codex/skills/${helper_skill}" ]; then
+    echo "✗ Removed review helper skill installed: ${helper_skill}"
     exit 1
   fi
 done
-echo "✓ Internal review helper skills installed"
-if echo "$CODEX_INSTALL_OUTPUT" | grep -q '\$5-apply-review-findings\|\$5-triage-pr-comments\|\$5-reply-pr-comments'; then
-  echo "✗ Internal helper skills should not be listed as user-facing commands"
-  exit 1
-else
-  echo "✓ Internal helper skills hidden from user-facing install summary"
-fi
+echo "✓ Removed review helper skills not installed"
 if [ -f ".codex/agents/step-orchestrator-agent.md" ] && [ -f ".codex/agents/step-executor-agent.md" ] && [ -f ".codex/agents/verification-agent.md" ]; then
   echo "✓ Agents installed for Codex skills"
 else
   echo "✗ Codex agents not installed"
   exit 1
 fi
-if [ -f ".codex/instructions.md" ]; then
-  echo "✓ instructions.md generated"
-else
-  echo "✗ instructions.md not generated"
+if [ -e ".codex/instructions.md" ]; then
+  echo "✗ instructions.md generated (Codex never reads it)"
   exit 1
+else
+  echo "✓ No unread instructions.md generated"
 fi
 if [ -d ".codex/templates" ]; then
   echo "✓ Templates installed"
@@ -332,8 +339,14 @@ echo ""
 # Test 11: Codex Uninstall
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
+mkdir -p .codex/skills/5-commit .codex/skills/generate-readme && echo "# old" > .codex/skills/5-commit/SKILL.md
 node "$INSTALL_SCRIPT" --codex --uninstall
-for skill in 5-plan 5-implement 5-review 5-commit; do
+if [ -e ".codex/skills/5-commit" ] || [ -e ".codex/skills/generate-readme" ]; then
+  echo "✗ Retired Codex skills left after uninstall"
+  exit 1
+fi
+echo "✓ Retired Codex skills removed on uninstall"
+for skill in 5-plan 5-implement 5-review 5-address-review-findings; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"
     exit 1

@@ -54,7 +54,6 @@ Tell the user what ejecting means:
 > For Codex installs:
 > - `.codex/skills/5-update/` (update skill)
 > - `.codex/skills/5-eject/` (this skill)
-> - `.codex/instructions.md` is removed only if it is workflow-managed and no longer needed for remaining installed workflow files
 >
 > All other workflow files remain untouched. To restore updates later, reinstall with `npx foifi`.
 

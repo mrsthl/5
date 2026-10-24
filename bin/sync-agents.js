@@ -27,8 +27,7 @@ const log = {
 
 const WORKFLOW_MANAGED_SKILLS = new Set([
   'configure-agents-md',
-  'configure-skills',
-  'generate-readme',
+  'configure-rules',
   'review-style',
   'fowler-code-smells',
   'cognitive-load',
@@ -47,6 +46,8 @@ const RULES_SYNC_START = '<!-- 5-sync:rules-start -->';
 const RULES_SYNC_END = '<!-- 5-sync:rules-end -->';
 const AGENTS_SYNC_START = '<!-- 5-sync:agents-start -->';
 const AGENTS_SYNC_END = '<!-- 5-sync:agents-end -->';
+// Codex reads only AGENTS.md, so synced rules and agents live in its foifi block.
+const FOIFI_BLOCK_END = '<!-- foifi:end -->';
 
 // ── Conversion functions (mirrors install.js logic) ────────────────────────
 
@@ -78,14 +79,6 @@ function convertClaudeSetupCommandsToCodexNotes(content) {
     .replace(
       /- If user selects "Install now": execute the install command/g,
       '- If user selects "Install now": explain that Codex cannot run the Claude Code installer command; leave `tools.context7.available = false` unless Context7 is already detected'
-    )
-    .replace(
-      /1\. "Install now \(recommended\)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash/g,
-      '1. "Install now" — not supported automatically in Codex; install an equivalent skill authoring workflow outside this command, then rerun configuration'
-    )
-    .replace(
-      /- If user selects "Install now": execute the install command, then set `tools\.skillCreator\.available = true` in the config/g,
-      '- If user selects "Install now": explain that Codex cannot run the Claude Code plugin installer; leave `tools.skillCreator.available = false` unless an equivalent tool is already detected'
     );
 }
 
@@ -112,6 +105,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Agent(subagent_type="Explore")\` | \`spawn_agent(agent_type="explorer", model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="haiku")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="sonnet")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="medium", message="...")\` |
+| \`Agent(prompt="...", model="opus", effort="medium")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="high", message="...")\` |
 | \`Agent(prompt="...")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` unless the prompt explicitly requires complex reasoning |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |
@@ -235,8 +229,8 @@ function findProjectRoot() {
 }
 
 function isClaudeInstalled(root) {
-  return fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan.md')) ||
-    fs.existsSync(path.join(root, '.claude', 'commands', '5', 'plan-feature.md'));
+  return ['implement.md', 'plan.md', 'plan-feature.md']
+    .some(file => fs.existsSync(path.join(root, '.claude', 'commands', '5', file)));
 }
 
 function isCodexInstalled(root) {
@@ -357,22 +351,22 @@ function classifyRulesActions(root) {
   const rules = getClaudeRules(root);
   if (rules.length === 0) return [];
 
-  const instructionsPath = path.join(root, '.codex', 'instructions.md');
-  if (!fs.existsSync(instructionsPath)) {
+  const agentsPath = path.join(root, 'AGENTS.md');
+  if (!fs.existsSync(agentsPath)) {
     return [{ type: 'new', direction: 'claude-to-codex', category: 'rules', name: `${rules.length} rule file(s)` }];
   }
 
-  const instructions = fs.readFileSync(instructionsPath, 'utf8');
+  const agentsMd = fs.readFileSync(agentsPath, 'utf8');
   const newSection = buildRulesSection(root, rules);
 
   // Extract existing section
-  const startIdx = instructions.indexOf(RULES_SYNC_START);
-  const endIdx = instructions.indexOf(RULES_SYNC_END);
+  const startIdx = agentsMd.indexOf(RULES_SYNC_START);
+  const endIdx = agentsMd.indexOf(RULES_SYNC_END);
   if (startIdx === -1 || endIdx === -1) {
     return [{ type: 'new', direction: 'claude-to-codex', category: 'rules', name: `${rules.length} rule file(s)` }];
   }
 
-  const existing = instructions.substring(startIdx, endIdx + RULES_SYNC_END.length);
+  const existing = agentsMd.substring(startIdx, endIdx + RULES_SYNC_END.length);
   if (existing === newSection) {
     return [{ type: 'in-sync', direction: 'both', category: 'rules', name: `${rules.length} rule file(s)` }];
   }
@@ -383,21 +377,21 @@ function classifyAgentActions(root) {
   const agents = getClaudeCustomAgents(root);
   if (agents.length === 0) return [];
 
-  const instructionsPath = path.join(root, '.codex', 'instructions.md');
-  if (!fs.existsSync(instructionsPath)) {
+  const agentsPath = path.join(root, 'AGENTS.md');
+  if (!fs.existsSync(agentsPath)) {
     return [{ type: 'new', direction: 'claude-to-codex', category: 'agents', name: `${agents.length} agent(s)` }];
   }
 
-  const instructions = fs.readFileSync(instructionsPath, 'utf8');
+  const agentsMd = fs.readFileSync(agentsPath, 'utf8');
   const newSection = buildAgentsSection(root, agents);
 
-  const startIdx = instructions.indexOf(AGENTS_SYNC_START);
-  const endIdx = instructions.indexOf(AGENTS_SYNC_END);
+  const startIdx = agentsMd.indexOf(AGENTS_SYNC_START);
+  const endIdx = agentsMd.indexOf(AGENTS_SYNC_END);
   if (startIdx === -1 || endIdx === -1) {
     return [{ type: 'new', direction: 'claude-to-codex', category: 'agents', name: `${agents.length} agent(s)` }];
   }
 
-  const existing = instructions.substring(startIdx, endIdx + AGENTS_SYNC_END.length);
+  const existing = agentsMd.substring(startIdx, endIdx + AGENTS_SYNC_END.length);
   if (existing === newSection) {
     return [{ type: 'in-sync', direction: 'both', category: 'agents', name: `${agents.length} agent(s)` }];
   }
@@ -408,15 +402,17 @@ function classifyAgentActions(root) {
 
 function buildRulesSection(root, ruleFiles) {
   const rulesDir = path.join(root, '.claude', 'rules');
-  let section = `${RULES_SYNC_START}\n## Project Rules\n\n`;
+  let section = `${RULES_SYNC_START}\n## File-Scoped Rules\n\n`;
   section += '> Synced from .claude/rules/ — do not edit this section manually.\n';
   section += '> Re-run /5:synchronize-agents (or $5-synchronize-agents) to update.\n\n';
 
   for (const file of ruleFiles) {
     const content = fs.readFileSync(path.join(rulesDir, file), 'utf8');
-    const { body } = extractFrontmatterAndBody(content);
+    const { frontmatter, body } = extractFrontmatterAndBody(content);
+    const globs = frontmatter ? [...frontmatter.matchAll(/^\s*-\s*["']?([^"'\n]+?)["']?\s*$/gm)].map(m => `\`${m[1]}\``) : [];
     const name = file.replace('.md', '');
-    section += `### ${name}\n\n${body.trim()}\n\n`;
+    const directives = body.replace('<!-- foifi:generated -->', '').trim();
+    section += `### ${name}\nApplies to: ${globs.length ? globs.join(', ') : 'all files'}\n\n${directives}\n\n`;
   }
 
   section += RULES_SYNC_END;
@@ -440,18 +436,32 @@ function buildAgentsSection(root, agentFiles) {
   return section;
 }
 
-function updateInstructionsSection(instructionsContent, startMarker, endMarker, newSection) {
-  const startIdx = instructionsContent.indexOf(startMarker);
-  const endIdx = instructionsContent.indexOf(endMarker);
+// Replace the marked section inside the foifi block of AGENTS.md, or insert it just before the
+// block's end. Returns null when there is no foifi block: content outside it belongs to the user.
+function updateFoifiBlockSection(content, startMarker, endMarker, newSection) {
+  const startIdx = content.indexOf(startMarker);
+  const endIdx = content.indexOf(endMarker);
 
   if (startIdx !== -1 && endIdx !== -1) {
-    // Replace existing section
-    return instructionsContent.substring(0, startIdx) +
+    return content.substring(0, startIdx) +
       newSection +
-      instructionsContent.substring(endIdx + endMarker.length);
+      content.substring(endIdx + endMarker.length);
   }
-  // Append
-  return instructionsContent.trimEnd() + '\n\n' + newSection + '\n';
+  const blockEnd = content.indexOf(FOIFI_BLOCK_END);
+  if (blockEnd === -1) return null;
+  return content.substring(0, blockEnd) + newSection + '\n\n' + content.substring(blockEnd);
+}
+
+function writeFoifiBlockSection(root, startMarker, endMarker, section, label) {
+  const agentsPath = path.join(root, 'AGENTS.md');
+  const content = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, 'utf8') : '';
+  const updated = updateFoifiBlockSection(content, startMarker, endMarker, section);
+  if (updated === null) {
+    log.warn(`${label}: AGENTS.md has no foifi block — run /5:configure first`);
+    return;
+  }
+  fs.writeFileSync(agentsPath, updated);
+  log.dim(`${label} → AGENTS.md (foifi block)`);
 }
 
 // ── Execute sync ───────────────────────────────────────────────────────────
@@ -479,17 +489,17 @@ function executeSync(root, actions) {
     // rules and agents are handled separately in batch
   }
 
-  // Sync rules to instructions.md
+  // Sync rules into the AGENTS.md foifi block
   const ruleActions = actions.filter(a => a.category === 'rules' && a.type !== 'in-sync');
   if (ruleActions.length > 0) {
-    syncRulesToInstructions(root);
+    syncRulesToAgentsMd(root);
     for (const a of ruleActions) counts['claude-to-codex'][a.type]++;
   }
 
-  // Sync agents to instructions.md
+  // Sync agents into the AGENTS.md foifi block
   const agentActions = actions.filter(a => a.category === 'agents' && a.type !== 'in-sync');
   if (agentActions.length > 0) {
-    syncAgentsToInstructions(root);
+    syncAgentsToAgentsMd(root);
     for (const a of agentActions) counts['claude-to-codex'][a.type]++;
   }
 
@@ -524,24 +534,14 @@ function syncCommandClaudeToCodex(root, action) {
   log.dim(`command: ${action.name} → .codex/skills/${action.skillName}/`);
 }
 
-function syncRulesToInstructions(root) {
+function syncRulesToAgentsMd(root) {
   const rules = getClaudeRules(root);
-  const section = buildRulesSection(root, rules);
-  const instructionsPath = path.join(root, '.codex', 'instructions.md');
-  let content = fs.existsSync(instructionsPath) ? fs.readFileSync(instructionsPath, 'utf8') : '';
-  content = updateInstructionsSection(content, RULES_SYNC_START, RULES_SYNC_END, section);
-  fs.writeFileSync(instructionsPath, content);
-  log.dim(`rules: ${rules.length} file(s) → .codex/instructions.md`);
+  writeFoifiBlockSection(root, RULES_SYNC_START, RULES_SYNC_END, buildRulesSection(root, rules), `rules: ${rules.length} file(s)`);
 }
 
-function syncAgentsToInstructions(root) {
+function syncAgentsToAgentsMd(root) {
   const agents = getClaudeCustomAgents(root);
-  const section = buildAgentsSection(root, agents);
-  const instructionsPath = path.join(root, '.codex', 'instructions.md');
-  let content = fs.existsSync(instructionsPath) ? fs.readFileSync(instructionsPath, 'utf8') : '';
-  content = updateInstructionsSection(content, AGENTS_SYNC_START, AGENTS_SYNC_END, section);
-  fs.writeFileSync(instructionsPath, content);
-  log.dim(`agents: ${agents.length} file(s) → .codex/instructions.md`);
+  writeFoifiBlockSection(root, AGENTS_SYNC_START, AGENTS_SYNC_END, buildAgentsSection(root, agents), `agents: ${agents.length} file(s)`);
 }
 
 // ── Display ────────────────────────────────────────────────────────────────

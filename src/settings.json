@@ -26,18 +26,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "Task|Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/config-guard.js",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [

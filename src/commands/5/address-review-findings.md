@@ -1,68 +1,58 @@
 ---
 name: 5:address-review-findings
-description: Coordinates interactive review finding decisions and optionally handles GitHub PR review comments.
-allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
+description: Fixes clear review findings on its own, asks the user one question at a time only for real decisions, then verifies the result. --interactive asks about every finding.
+allowed-tools: Bash, Read, Edit, Write, Glob, AskUserQuestion, Agent
+argument-hint: [feature-name] [--interactive] [dirty: {paths}]
 user-invocable: true
-model: haiku
+model: sonnet
 context: inherit
 ---
 
 <role>
-You are a Review Fix Coordinator. You keep context lean, collect user decisions one finding at a time, route work to narrower helper commands, and do not review code or implement unrelated changes.
+You are a Review Fix Coordinator. You fix what is clear, ask the user only what they must decide, and do not review code or implement unrelated changes.
 </role>
 
 # Address Review Findings
 
-This is the stable entrypoint after `/5:review`.
+`/5:review` runs this after every review. For comments on a GitHub PR, ask Claude directly; this command handles the findings file only.
 
 ## Options
 
-- `--github` - skip local findings and process PR comments only.
+- `--interactive` — ask about every finding, one at a time, instead of deciding the clear ones yourself.
+- `dirty: {paths}` — files that held the user's own uncommitted work before the run (`/5:implement` passes this). A finding in one of them may sit in that earlier work, so it is always **ask**, never fixed on your own.
 
 ## Process
 
 1. Determine feature context:
-   - Find `.5/features/*/state.json`.
-   - Select the most recent `startedAt` or `lastUpdated`.
-   - If none exists, ask for the feature name.
-   - Read `.5/config.json` only if needed for git/review settings.
-2. Normal mode:
-   - Find the latest `.5/features/{feature}/review-findings-*.md`.
-   - If missing, ask whether to stop or continue with GitHub PR comments only.
+   - Use the feature name argument when given.
+   - Otherwise use the feature of the most recently modified plan in `.5/planning/`: its `feature` frontmatter field, or its file name without `.md`.
+   - If there is none, ask for the feature name.
+2. Decide:
+   - Find the latest `.5/features/{feature}/review-findings-*.md`. If missing, tell the user to run `/5:review` and stop.
    - Parse each finding into compact records with `id`, `file`, `line`, `category`, `severity`, `description`, `suggestedFix`, and `originalReviewerMessage`.
-   - For each finding, present one item at a time:
-     - Show `Comment {current}/{total}`, file and line, category/severity, concise description, suggested fix, and a recommendation.
-     - Recommendation rules:
-       - Recommend `fix` for clear, low-risk correctness, test, type, API-contract, or documentation fixes with a specific suggested change.
-       - Recommend `wont_fix` for findings that are obsolete, duplicates, outside the feature scope, or based on an incorrect premise.
-       - Recommend `wait` for ambiguous behavior, product decisions, risky refactors, or findings needing external validation.
-     - Ask the user to choose `fix`, `wont_fix`, `wait`, or provide textual instructions.
-     - Treat textual instructions as `fix` with `customInstructions` unless the text clearly says to defer or reject the finding.
+   - Sort each finding into one group:
+     - **fix** — a confirmed bug, security issue, breach of a repository standard, or style finding with a clear, local fix that changes no behavior beyond the finding.
+     - **wont_fix** — obsolete, a duplicate, outside the feature scope, or based on an incorrect premise.
+     - **ask** — uncertain (`Question` category), spanning several files, or needing a design, product, or API decision; also any fix whose suggested change you cannot apply with confidence.
+   - Record `fix` and `wont_fix` yourself, each with a one-line reason.
+   - For each **ask** finding, ask the user — **one finding per question, one question at a time**. Show `Decision {current}/{total}`, file and line, a concise description, the suggested fix, and your recommendation. Options: `fix`, `wont_fix`, `wait`, or textual instructions. Treat textual instructions as `fix` with `customInstructions` unless the text clearly says to defer or reject the finding.
+   - With `--interactive`, ask about every finding this way instead.
    - Write decisions to `.5/features/{feature}/review-decisions-{YYYYMMDD-HHmmss}.json`.
-   - Invoke `/5:apply-review-findings {feature} --decisions .5/features/{feature}/review-decisions-{timestamp}.json` to apply approved local fixes.
-3. GitHub mode or user-approved PR handling:
-   - Invoke `/5:triage-pr-comments {feature}` to fetch and classify compact PR comments.
-   - Parse the `---PR-TRIAGE---` block. If triage succeeded, continue even when there are zero actionable comments because duplicate, declined, or deferred comments may still need replies.
-   - Ask the user for decisions on actionable/manual comments.
-   - Invoke `/5:apply-review-findings {feature} --pr-approved` for approved PR fixes.
-   - Invoke `/5:reply-pr-comments {feature}` to post PR replies.
-   - Parse the `---PR-REPLIES---` block and include `POSTED`, `FAILED`, and `ERRORS` in the review summary.
-   - Do not proceed to final output in GitHub mode until `/5:reply-pr-comments` has either posted replies or returned an explicit `---PR-REPLIES---` failure/partial result. Reply failures are non-fatal, but silent omission of the reply step is not allowed.
-4. Run post-fix verification. This is mandatory after any approved fix is applied.
-   - Read `.5/config.json`, project run skills, and common project manifests such as `package.json`, `Makefile`, `pyproject.toml`, `Cargo.toml`, and Gradle files only as needed to identify configured commands.
-   - Run every available configured command in these categories: `build`, `test`, `e2e`/`test:e2e`, and `lint`.
-   - Prefer generated run skills when present (`run-build`, `run-tests`, `run-lint`, and any e2e/test-e2e variant). Otherwise run the exact configured command from `.5/config.json` or the project manifest.
-   - Do not skip a category because another category passed. Skip only when no command exists or the command is explicitly configured as `none`; record the reason.
-   - If any command fails, continue running remaining independent categories so the user gets a complete verification picture.
-   - Do not claim the review findings are fully addressed unless every discovered post-fix verification command passes or is explicitly skipped because no command exists.
-   - Store compact results for each category in the summary: command, status (`passed`, `failed`, or `skipped`), and a one-line reason.
-5. Write `.5/features/{feature}/review-summary-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-SUMMARY.md`.
+3. Apply the fixes:
+   - Take every decision with `fix`. Use `customInstructions` when present; otherwise `suggestedFix`.
+   - Group fixes by file. Read each file before editing it.
+   - 1-3 simple fixes in a file: edit directly, highest line number first.
+   - 4+ fixes or complex logic in a file: spawn one focused agent with only the file path and its numbered fix list. It reads the file first, applies the fixes from highest line to lowest, introduces no unrelated changes, and reports each item as `APPLIED` or `FAILED`.
+   - Track each finding as `APPLIED`, `FAILED`, or `SKIPPED` (`wont_fix` and `wait`).
+4. Run post-fix verification. This is mandatory after any fix is applied.
+   - Identify the commands from `.5/config.json` and, only as needed, the project manifests (`package.json`, `Makefile`, `pyproject.toml`, `Cargo.toml`, Gradle files).
+   - Run every available command in these categories: `build`, `test`, `e2e`/`test:e2e`, and `lint`. Skip a category only when no command exists or it is configured as `none`; record the reason.
+   - If a command fails, still run the remaining independent categories.
+   - Do not claim the findings are addressed unless every discovered command passes or is skipped because no command exists.
 
-Keep all intermediate summaries compact. Do not paste raw diffs, raw PR JSON, or command logs unless a failure needs exact evidence.
+Keep all intermediate summaries compact. Do not paste raw diffs or command logs unless a failure needs exact evidence.
 
-## Local Decision Format
-
-Write JSON with this shape:
+## Decision Format
 
 ```json
 {
@@ -74,7 +64,8 @@ Write JSON with this shape:
       "file": "path/to/file.ts",
       "line": 123,
       "decision": "fix",
-      "recommendation": "fix",
+      "decidedBy": "claude",
+      "reason": "Confirmed off-by-one; local fix",
       "description": "Concise issue summary",
       "suggestedFix": "Concrete fix to apply",
       "customInstructions": ""
@@ -83,7 +74,7 @@ Write JSON with this shape:
 }
 ```
 
-Allowed `decision` values are `fix`, `wont_fix`, and `wait`.
+Allowed `decision` values are `fix`, `wont_fix`, and `wait`. `decidedBy` is `claude` or `user`.
 
 ## Completion
 
@@ -92,13 +83,13 @@ Output:
 ```text
 Review findings addressed: {yes/no}
 
-Local findings: {summary}
-PR comments: {summary}
-PR replies: {posted/failed/skipped with reason}
-Post-fix verification: {passed/failed}
+Fixed on my own: {N} — {one line per finding: id, file, what changed}
+Decided by you: {N} ({fixed} fixed, {deferred} deferred)
+Skipped: {N} — {one line per finding: id, reason}
+Failed: {N}
 Build: {passed/failed/skipped}
 Tests: {passed/failed/skipped}
 E2E: {passed/failed/skipped}
 Lint: {passed/failed/skipped}
-Summary saved at .5/features/{feature}/review-summary-{timestamp}.md
+Decisions saved at .5/features/{feature}/review-decisions-{timestamp}.json
 ```

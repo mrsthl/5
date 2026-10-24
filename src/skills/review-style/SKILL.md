@@ -58,8 +58,9 @@ Search the repository for every file that documents how code is written:
 - `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `CODESTYLE.md`, `STYLEGUIDE.md`, and docs about style or conventions.
   Look at the repository root, `.github/` and `docs/`.
 - `CLAUDE.md` and `AGENTS.md` at every level, plus every file they link to about code, tests or docs.
-  When one says a workflow generated it from a template, count only the parts it names as repository
-  standards. Its other sections are workflow rules, not repository standards.
+  The block between `<!-- foifi:start` and `<!-- foifi:end -->` holds workflow rules, not repository
+  standards; count only the files it links under "Standards". In a legacy file that says a workflow generated it
+  from a template, count only the parts it names as repository standards.
 
 Skip linter and formatter configs. Tooling enforces them already.
 
@@ -70,17 +71,18 @@ know that directory, so they only get absolute paths.
 
 ### 4. Review in parallel
 
-Start all reviewers in one message, as foreground sub-agents:
+Start both reviewers in one message, as foreground sub-agents:
 
 - One **repo reviewer** for all repo standards together, when step 2 found any.
-- One **style reviewer** per style.
+- One **style reviewer** for all styles together. Two reviewers keep the token cost flat as styles are added.
 
 Each prompt carries:
 
 - The diff file path and the commit list.
-- Its standard: the repo standard files, or the absolute path of its style's `SKILL.md`. A style reviewer
-  reads that `SKILL.md` and every file it links to.
-- For style reviewers, the repo standard files too, so they can suppress overridden findings.
+- Its standards: the repo standard files, or the absolute paths of every style's `SKILL.md`. The style
+  reviewer reads each `SKILL.md` and every file it links to, and applies each style only where it says it
+  applies.
+- For the style reviewer, the repo standard files too, so they can suppress overridden findings.
 - The **context rule**: before judging a hunk, read its whole enclosing method and type. Follow the calls,
   types and parents it touches whenever a rule needs them. Search the repository when a rule asks about
   duplication.
@@ -94,7 +96,7 @@ Each prompt carries:
   > fix in a few words. Every finding gets a suggested fix. Use one sentence when a few words can't carry it. A breach of a repo standard may be hard. A style finding is always a judgement call. Skip anything
   > tooling enforces.
   >
-  > Style reviewers only: when a repo standard endorses what your style would flag, report it under
+  > Style reviewer only: when a repo standard endorses what your style would flag, report it under
   > **Suppressed**, citing the repo rule that overrides it.
 
 ### 5. Merge and report

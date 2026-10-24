@@ -1,34 +1,20 @@
-<!-- Generated from the foifi AGENTS.md template. The repository standards in this file are the "Custom Documentation" section and the files linked under "Standards". All other sections are workflow rules. They rank below the repository standards and the style skills. -->
+<!-- foifi:start — Managed by foifi. /5:reconfigure rewrites everything up to foifi:end. Everything outside this block belongs to the repository and ranks above it: it is part of the repository's own standards. -->
 
-# Repository Guide
-
-{PROJECT_OVERVIEW}
+# Workflow Rules (foifi)
 
 ## Build & Run Commands
 
 {BUILD_RUN_COMMANDS}
 
-## Skill Usage
-
-Before implementing changes, always check the available skills for relevant implementation guidance.
-
-Use skills to understand project-specific workflows, commands, testing expectations, and implementation conventions before editing code.
-
 ## Commit Messages
 
-Use the `/5:commit` command or `$5-commit` skill when creating commits. It reads `.5/config.json` and applies the configured `git.commitMessage.pattern`, including ticket IDs from branch names when configured.
-
-## Workflow Rules
-
-When running `/5:` workflow commands, follow the command instructions exactly as written.
-Do not skip steps, combine phases, or proceed to actions not specified in the current command.
-Each phase produces a specific artifact - do not create artifacts belonging to other phases.
+{COMMIT_MESSAGE_RULE}
 
 ## Standards
 
 These rules decide how code is written here, in this order:
 
-1. **This repository's own standards always win.** They cover contributing, code style, and conventions:
+1. **This repository's own standards always win.** They are everything in `AGENTS.md` and `CLAUDE.md` outside this block, plus these files:
 
 {REPO_STANDARDS_LINKS}
 
@@ -36,6 +22,14 @@ These rules decide how code is written here, in this order:
 3. **The workflow rules below** (Simplicity First, Testing, Surgical Changes, Goal-Driven Execution) apply as well. When a repository standard asks for more, such as a changelog entry or a test, do what it asks.
 
 Run the `review-style` skill to check a change against all of them.
+
+## Planning
+
+Plan non-trivial changes in plan mode (Codex: run `$5-plan`). Shape each plan as the change needs; add a mermaid diagram when a flow, state machine, or component relationships explain the change better than text, and plan what the repository standards require, such as tests or a changelog entry.
+
+When the request names a ticket, fetch it (Jira MCP or `gh issue view`) and confirm its content with the user before planning.
+
+After the user approves a plan, run `/5:implement {plan-path}` (Codex: `$5-implement {plan-path}`). Do not implement the plan any other way.
 
 ## Simplicity First
 
@@ -90,7 +84,7 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
-Before you report a task as done, check your own diff (`git status --short` and `git diff --stat`): revert files and changes that do not trace to the request, and remove new dependencies nobody asked for. For a deeper pass, run `/5:lean-check` (Codex: `$5-lean-check`).
+Before you report a task as done, check your own diff (`git status --short` and `git diff --stat`): revert files and changes that do not trace to the request. For every dependency the diff adds: keep it and name it in your reply if the user asked for it; otherwise remove it with the package manager and use existing code, the standard library, or an installed dependency instead. For a deeper pass, run `/5:lean-check` (Codex: `$5-lean-check`).
 
 ## Goal-Driven Execution
 
@@ -114,4 +108,4 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 {PROJECT_DOCUMENTATION_LINKS}
 
-{CUSTOM_DOCUMENTATION}
+<!-- foifi:end -->

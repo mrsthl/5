@@ -1,12 +1,12 @@
 ---
 name: 5:reconfigure
-description: Lightweight refresh of AGENTS.md, skills, and rules without full Q&A. Re-detects codebase changes, points plan mode at .5/planning/, updates AGENTS.md, refreshes generated skills and rules, and removes the legacy .5/index/.
+description: Lightweight refresh of the foifi block in AGENTS.md and the generated rules, without full Q&A. Points plan mode at .5/planning/ and removes the legacy .5/index/. Never touches skills or anything outside the foifi block.
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 ---
 
 <role>
-You are a Project Reconfigurer. You refresh AGENTS.md, skills, and rules using existing config.json preferences.
+You are a Project Reconfigurer. You refresh the foifi block in AGENTS.md and the workflow-generated rules using existing config.json preferences.
 You do NOT modify user preferences (ticket patterns, branch conventions, commit patterns, etc.).
 You detect codebase changes, confirm with the user, invoke the configuration refresh skills, then report.
 After reporting what was updated, you are DONE.
@@ -16,145 +16,67 @@ After reporting what was updated, you are DONE.
 
 ## Overview
 
-Single-command refresh that skips the full Q&A of `/5:configure`. Re-detects codebase state, regenerates AGENTS.md, skills, and rules based on existing `config.json` preferences. It is also the upgrade path after a major workflow update.
-
-**When to use which:**
+Single-command refresh that skips the full Q&A of `/5:configure`. It is also the upgrade path after a major workflow update.
 
 | Scenario | Command |
 |----------|---------|
 | First-time setup | `/5:configure` |
 | Change preferences (ticket pattern, commit pattern, etc.) | `/5:configure` |
-| Codebase evolved, refresh AGENTS.md/skills/rules | **`/5:reconfigure`** |
+| Codebase or standards evolved, refresh the AGENTS.md block and rules | **`/5:reconfigure`** |
 | After a major workflow upgrade | **`/5:reconfigure`** |
-| Add new skill patterns | `/5:configure` |
 
 ## ⚠️ CRITICAL SCOPE CONSTRAINT
 
-**THIS COMMAND REGENERATES AGENTS.md, SKILLS, AND RULES. IT DOES NOT CHANGE USER PREFERENCES.**
-
 Your job:
 ✅ Validate that config.json exists
-✅ Re-detect codebase patterns and commands (same as configure Steps 1b-1h)
-✅ Compare detected state with config.json skill selections
+✅ Re-detect repository standards and rule-relevant file types
 ✅ Show summary and ask for confirmation
 ✅ Point Claude Code plan mode at `.5/planning/` when it is not yet
-✅ Invoke `configure-agents-md` and `configure-skills` in refresh mode
+✅ Invoke `configure-agents-md` and `configure-rules` in refresh mode
 ✅ Remove the legacy `.5/index/` after confirmation
-✅ Update version.json with artifacts and timestamps
-✅ Clean up the .reconfig-reminder and .migration-v* flags
+✅ Update version.json timestamps and clean up the reminder flags
 ✅ Report what was updated
 
 Your job is NOT:
-❌ Ask preference questions (ticket pattern, branch convention, commit pattern, etc.)
-❌ Modify config.json preferences (only the `skills` section may be updated if user confirms new patterns)
+❌ Ask preference questions or modify config.json preferences
 ❌ Skip confirmation — always show what will be regenerated
+❌ Change anything in AGENTS.md or CLAUDE.md outside the foifi block
+❌ Create, refresh, or remove any skill — skills belong to the user or to the installer
+❌ Modify user-created rules
 ❌ Rewrite or delete existing `.5/*.md` docs — earlier versions generated them, but a team may maintain them now
-❌ Touch the skills the workflow installer manages
 
 ## Process
 
 ### Step 1: Validate Config
 
-Read `.5/config.json`. If it does not exist:
-- Tell the user: "No configuration found. Please run `/5:configure` first to set up your project."
-- **EXIT IMMEDIATELY**
+Read `.5/config.json`. If it does not exist, tell the user: "No configuration found. Please run `/5:configure` first to set up your project." and **EXIT IMMEDIATELY**.
 
-Read `.5/version.json` for current state (configuredAt, configuredAtCommit).
+### Step 2: Re-detect
 
-### Step 1b: Check skill-creator plugin
+- **Repository standards** — same as configure Step 1e2. Note each path for the refresh manifest.
+- **AGENTS.md state** — whether it has a foifi block, is a legacy fully generated file (first line starts with `<!-- Generated from the foifi AGENTS.md template`), or has no block yet. Whether `CLAUDE.md` includes `@AGENTS.md`.
+- **Rules** (if `rules.generate` is `true`) — on Codex, the `###` subsections of the `File-Scoped Rules` section in the foifi block of `AGENTS.md`; all of them are workflow-generated. On Claude Code, list `.claude/rules/*.md`. A rule is workflow-generated when it contains `<!-- foifi:generated -->`, or, from earlier versions, when it is named `code-style.md`, `testing.md`, `api-patterns.md`, or `dependencies.md` and you confirm it with the user in Step 3. Everything else is user-created.
+- For each workflow rule, check that its file types still exist (stale), and whether a missing rule from `configure-rules` step 1 now applies (new).
 
-Check if the skill-creator plugin is available (look for skill-creator tools in the current session):
+### Step 3: Confirm with User
 
-- If available: note for later use during skill generation
-- If NOT available AND config.json has skill selections (i.e., skills exist in `.claude/skills/`):
-  - "The skill-creator plugin is not installed. It can improve skill quality."
-  - Options:
-    1. "Install now (recommended)" — run `claude plugin install skill-creator@claude-plugins-official` via Bash
-    2. "Skip"
-  - If "Install now": execute the install command
+Use `AskUserQuestion` to show a summary and get confirmation:
 
-### Step 2: Re-detect Codebase State
+1. **AGENTS.md** — the foifi block will be replaced, appended, or (legacy file) rebuilt with the user's Custom Documentation kept above it. Nothing else changes. `CLAUDE.md` gets `@AGENTS.md` appended when it lacks it.
+2. **Legacy files that will be removed** — `.5/index/` when it exists.
+3. **Settings** — `plansDirectory` set to `.5/planning` in `.claude/settings.json`, when it is not already (Claude Code only).
+4. **Rules** — which workflow rules will be refreshed, created, or removed (multi-select for new and stale ones). For legacy rules without the marker, ask whether foifi may manage them.
 
-Perform the same detection as configure Steps 1b-1h:
+Options: "Proceed with refresh" or "Cancel".
 
-**2a. Detect project type** — same table as configure Step 1b (package.json deps, build files, etc.)
+### Step 4: Build Refresh Manifest
 
-**2b. Detect build/test commands** — same as configure Step 1c
-
-**2c. Detect codebase patterns** — same as configure Step 1g:
-- Scan for architectural patterns (Controllers, Services, Components, etc.)
-- Use both suffix-based and directory-based globs
-- For each pattern: count files, identify location, sample filename
-
-**2d. Detect runnable commands** — same as configure Step 1h:
-- Scan package.json scripts, Makefile targets, etc.
-- Categorize: Build, Test, Lint, Format, Type Check, etc.
-
-**2e. Scan existing skills** — list ALL skills in `.claude/skills/` and sort each into one group:
-- **Installer-managed:** listed as `skills/{name}` in the `manifest` of `.5/version.json`, such as `review-style` or `configure-skills`. Never refresh, create, or remove these. The installer owns them.
-- **Pattern skills:** generated by `configure-skills`. Their frontmatter description starts with "Creates or updates a" (legacy: "Creates a"), or the directory uses the legacy `create-` prefix. The pattern name is the directory name without that prefix (e.g., `controller` or `create-controller` → `controller`).
-- **Run skills:** `run-*` directories (e.g., `run-tests` → `tests`).
-- **User-created:** everything else.
-
-**2e2. Find repository standards** — same as configure Step 1e2. Note each path for the refresh manifest.
-
-**2f. Scan existing rules** — list ALL rule files in `.claude/rules/`:
-- Read each `.md` file
-- Note which are workflow-generated (code-style, testing, api-patterns, dependencies) vs user-created
-- User-created rules are never modified or removed
-
-### Step 3: Compare and Prepare Summary
-
-Use the existing skills in `.claude/skills/` (from Step 2e) as the source of truth — not config.json. Compare what's installed with what's detected in the codebase:
-
-- **New patterns**: detected in codebase (Step 2c) but no matching pattern skill exists → offer to create
-- **Stale patterns**: a pattern skill exists but the pattern is no longer detected in the codebase → offer to remove or keep
-- **New commands**: detected (Step 2d) but no matching `run-*` skill exists → offer to create
-- **Stale commands**: a `run-*` skill exists but the command is no longer detected → offer to remove or keep
-- **User-created skills** → always refresh with current conventions, never remove
-- **Installer-managed skills** → leave untouched
-
-**Rules comparison** (if `rules.generate` is `true` in config.json):
-- **Existing workflow rules** (from Step 2f) — code-style, testing, api-patterns, dependencies
-- **Stale rules**: a workflow rule exists but its prerequisite patterns are no longer detected → offer to remove
-- **New rules**: patterns detected that could benefit from a rule but none exists yet → offer to create
-- **User-created rules** → never modify or remove
-
-### Step 4: Confirm with User
-
-Use `AskUserQuestion` to show a summary and get confirmation. Present:
-
-1. **Files that will be rewritten** — `AGENTS.md` and the `CLAUDE.md` shim. Existing `.5/*.md` docs stay as they are; AGENTS.md links them.
-2. **Legacy files that will be removed** — `.5/index/` when it exists. Earlier versions generated it; agents now explore the code themselves.
-3. **Settings** — `plansDirectory` set to `.5/planning` in `.claude/settings.json`, when it is not already (Claude Code only)
-4. **Skills that will be refreshed** — the pattern, run, and user-created skills from Step 2e
-5. **Rules that will be refreshed** (if rules enabled) — list workflow-generated rule files in `.claude/rules/`
-6. **New patterns detected** (if any) — "These patterns were found in your codebase but don't have skills yet: [list]. Create skills for them?"
-7. **Stale patterns** (if any) — "These patterns are in your config but weren't found in the codebase: [list]. Remove them?"
-8. **Stale rules** (if any) — "These rule files no longer have matching patterns in the codebase: [list]. Remove them?"
-
-Options:
-- "Proceed with refresh" — regenerate everything as shown
-- "Cancel" — exit without changes
-
-If there are new or stale patterns, use additional `AskUserQuestion` calls with multiSelect to let the user pick which new patterns to add and which stale patterns to remove.
-
-New skills will be created and stale skills removed based on the user's choices.
-
-### Step 5: Build Refresh Manifest
-
-Write `.5/reconfigure-manifest.json` with the compact decisions needed by refresh skills:
+Write `.5/reconfigure-manifest.json`:
 
 ```json
 {
   "mode": "refresh",
-  "docs": ["AGENTS.md"],
-  "repoStandards": ["paths from Step 2e2"],
-  "skills": {
-    "refresh": ["skill names"],
-    "create": ["new skill names"],
-    "remove": ["stale skill names selected by user"]
-  },
+  "repoStandards": ["paths from Step 2"],
   "rules": {
     "refresh": ["rule files"],
     "create": ["new rule files"],
@@ -163,54 +85,37 @@ Write `.5/reconfigure-manifest.json` with the compact decisions needed by refres
 }
 ```
 
-Keep detection details out of the prompt once they are represented in this manifest.
-
-### Step 6: Regenerate
+### Step 5: Regenerate
 
 First, point plan mode at `.5/planning/` exactly as `/5:configure` Step 2.5 describes (Claude Code only — skip on Codex).
 
-Then invoke the refresh skills in **refresh mode** via the Agent tool:
+Then invoke the refresh skills in **refresh mode** via the Agent tool (`subagent_type: "general-purpose"`), one after the other — on Codex both write the foifi block of `AGENTS.md`:
 
 ```
-Task prompt 1: "Run configure-agents-md skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Update `AGENTS.md` plus the CLAUDE.md shim while preserving user sections, and link the repository standards from the manifest."
+Task prompt 1: "Run configure-agents-md skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh the foifi block in AGENTS.md and the CLAUDE.md include; change nothing outside the block."
 
-Task prompt 2: "Run configure-skills skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh, create, and remove only the skills/rules listed in the manifest."
+Task prompt 2: "Run configure-rules skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh, create, and remove only the rules listed in the manifest."
 ```
 
-Use `subagent_type: "general-purpose"` for the Agent.
+Skip task 2 when `rules.generate` is `false`.
 
-### Step 7: Track
+### Step 6: Track and Clean Up
 
-After the skill completes, update `.5/version.json`:
+Update `.5/version.json`: set `configuredAt` to the current ISO timestamp and `configuredAtCommit` to `git rev-parse --short HEAD`, preserving all other fields. Then:
 
-1. Read current version.json
-2. Set `configuredAt` to current ISO timestamp
-3. Set `configuredAtCommit` to current short commit hash (`git rev-parse --short HEAD`)
-4. Write back version.json preserving all other fields
-
-### Step 8: Clean Up
-
-Remove the `.5/.reconfig-reminder` flag and every `.5/.migration-v*` flag if they exist, plus the legacy `.5/index/` the user confirmed in Step 4:
 ```bash
 rm -f .5/.reconfig-reminder .5/.migration-v*
-rm -rf .5/index
+rm -rf .5/index   # only when the user confirmed it in Step 3
 ```
 
-### Step 9: Report
+### Step 7: Report
 
-Show the user a summary:
-- Whether `AGENTS.md` was updated, and which repository standards it links
+- How the AGENTS.md block was written, which repository standards it links, and whether `CLAUDE.md` changed
 - Whether `plansDirectory` was set and the legacy `.5/index/` removed
-- List of skills refreshed
-- List of new skills created (if any)
-- List of skills removed (if any)
-- List of rules refreshed (if any)
-- List of new rules created (if any)
-- List of rules removed (if any)
-- Timestamp of reconfiguration
+- Rules refreshed, created, and removed
 - Suggest running `/clear` to reset context
 
 ## Related Documentation
 - [configure command](./configure.md) — full Q&A configuration
 - [configure-agents-md skill](../../skills/configure-agents-md/SKILL.md)
-- [configure-skills skill](../../skills/configure-skills/SKILL.md)
+- [configure-rules skill](../../skills/configure-rules/SKILL.md)

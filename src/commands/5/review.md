@@ -1,8 +1,8 @@
 ---
 name: 5:review
-description: Reviews code changes for correctness via the built-in code-review skill and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
+description: Reviews code changes for correctness via the built-in code-review skill, for security via security-review when the diff is security-sensitive, and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
-argument-hint: [low|medium|high|max]
+argument-hint: [low|medium|high|max] [since {fixed-point} files: {paths} feature: {name} dirty: {paths}]
 user-invocable: true
 model: sonnet
 ---
@@ -16,7 +16,9 @@ You do NOT apply fixes. Fix application is handled by /5:address-review-findings
 
 ## Step 1: Determine Scope
 
-Ask what to review:
+When the arguments say `since {fixed-point} files: {paths} feature: {name} dirty: {paths}` — `/5:implement` passes this — review exactly those files' changes since that commit and skip the question. `/5:implement` runs this before it commits, so the changes are in the working tree. The working tree can also hold changes the user had before the run: in this scope, **drop every finding whose file is not in `{paths}`**, from every reviewer, before saving.
+
+Otherwise ask what to review:
 
 1. Staged changes (`git diff --cached`)
 2. Unstaged changes (`git diff`)
@@ -36,7 +38,15 @@ Never pass `--fix` or `--comment`. This command only records findings; applying 
 Skill(skill: "code-review", args: "{target} {effort}")
 ```
 
-Derive `{target}` from the scope answer: options 1-3 review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
+Derive `{target}` from the scope answer: options 1-3 and the `since … files:` scope review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
+
+**Security review** — when the diff touches authentication, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction, and the built-in `security-review` skill is available, invoke it on the same scope:
+
+```text
+Skill(skill: "security-review")
+```
+
+Use the vulnerabilities it reports. Skip it for diffs that touch none of these areas.
 
 **Standards review** — then invoke `review-style` in report-only mode. It checks the same changes against the repository's own standards and the style skills it lists, and repository standards win:
 
@@ -44,7 +54,7 @@ Derive `{target}` from the scope answer: options 1-3 review the current working-
 Skill(skill: "review-style", args: "{mode} report only")
 ```
 
-Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, and option 4 `{base-branch} committed only`.
+Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, option 4 `{base-branch} committed only`, and the `since … files:` scope `{fixed-point} files: {paths}`.
 
 **Fallback path** — on Codex, or when the `code-review` skill is unavailable, spawn one review agent instead:
 
@@ -73,7 +83,7 @@ On Codex, or when the `review-style` skill cannot be invoked, read `.claude/skil
 
 ## Step 3: Save Findings
 
-Determine feature name from the most recent `.5/features/*/state.json`, or ask the user.
+Use the `feature:` argument when given. Otherwise use the feature of the most recently modified plan in `.5/planning/` — its `feature` frontmatter field, or its file name without `.md` — or ask the user.
 
 Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-FINDINGS.md`.
 
@@ -91,6 +101,8 @@ When the findings come from the `code-review` skill, map its reported fields ont
 | the concrete fix, else `short_summary` | **Suggested Fix:** |
 | `failure_scenario` | **Original Reviewer Message:** |
 
+Findings from `security-review` map to **Category:** `Fixable` when the fix is local, otherwise `Manual`, always with **Severity:** `error`; its explanation of the exploit goes into **Original Reviewer Message:**.
+
 Findings from the fallback path map directly: Fixable Issues, Questions, and Manual Review become their matching categories.
 
 Findings from `review-style` map like this. Leave out its Suppressed findings; a repository standard overrides them.
@@ -104,7 +116,7 @@ Findings from `review-style` map like this. Leave out its Suppressed findings; a
 | the `→` fix | **Suggested Fix:** |
 | the cited standards and rules | **Original Reviewer Message:** |
 
-Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` will present each finding interactively and record decisions separately.
+Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` decides on the findings and records the decisions separately.
 
 ## Step 4: Report and Hand Off
 
@@ -122,12 +134,7 @@ Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
 
 If there are no findings, stop here.
 
-Otherwise ask the user directly whether to continue:
+Otherwise hand off to `/5:address-review-findings {feature-name}`. It fixes the clear findings on its own, asks the user one question at a time only about real decisions, and then runs build, test, and lint.
 
-- "Address these findings now?"
-  - Options:
-    1. "Yes, run `/5:address-review-findings {feature-name}`" — decide on each finding interactively, then apply approved fixes
-    2. "No, stop here" — findings stay on disk for later
-
-- If the user chooses yes: invoke `/5:address-review-findings {feature-name}`.
-- If the user chooses no: tell them to run `/5:address-review-findings {feature-name}` when they are ready, and stop.
+- **Called by `/5:implement`** (the `since … files:` scope): run `/5:address-review-findings {feature-name} dirty: {dirty-paths}` right away. The user approved the plan, and these are the run's own files — except the dirty ones, which also hold the user's earlier work.
+- **Started on its own:** the reviewed code may come from someone else's branch, and the fixes are followed by the project's build and test commands. Ask once: "Fix the clear findings on my own and then run build, test, and lint?" On yes, run it. On no, stop and tell the user they can run `/5:address-review-findings {feature-name}` (or `--interactive`) later.

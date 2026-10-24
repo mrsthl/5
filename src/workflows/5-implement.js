@@ -1,9 +1,9 @@
 export const meta = {
   name: '5-implement',
-  description: 'Execute a unified plan: derive steps, run executors in parallel waves, verify. Claude Code only; Codex uses the prose loop.',
-  whenToUse: 'Invoked by the /5:implement command when the Workflow tool is available. Reads args from the command, returns the run result for the command to persist to the slim state.json.',
+  description: 'Execute a full plan: derive steps, run executors in parallel waves, verify. Claude Code only; Codex uses the prose loop.',
+  whenToUse: 'Invoked by the /5:implement command for full plans when the Workflow tool is available. Compact plans never reach it; the command implements them inline.',
   phases: [
-    { title: 'Orchestrate', detail: 'derive steps + components (agent for non-trivial plans, inline for compact)' },
+    { title: 'Orchestrate', detail: 'one orchestrator agent derives steps + components' },
     { title: 'Execute', detail: 'one executor agent per component; parallel components fire together per step' },
     { title: 'Verify', detail: 'inline when all passed + mechanical, else one verification agent' }
   ]
@@ -15,12 +15,11 @@ export const meta = {
 // the canonical human-readable contract; keep these prompts in sync with them.
 //
 // This script has NO filesystem access. It orchestrates agents and RETURNS the
-// final result. The /5:implement command (which has Write) persists the slim
-// state.json and runs auto-commit after this returns.
+// final result. The /5:implement command runs the fast-path build/test check and
+// auto-commit after this returns. Nothing is persisted: a rerun starts over.
 //
-// The execution graph (steps/components) is derived fresh on every run and is
-// NOT persisted. Resume works because component names are copied verbatim from
-// the plan's Component Checklist, so re-derivation is stable by name.
+// Models: haiku for mechanical work, sonnet for ordinary logic, opus at effort
+// medium for complex work and for every retry.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESULT_SCHEMA = {
@@ -41,13 +40,12 @@ const RESULT_SCHEMA = {
 const VERIFICATION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'completeness', 'infrastructure', 'quality', 'scope'],
+  required: ['status', 'completeness', 'infrastructure', 'scope'],
   properties: {
     status: { enum: ['passed', 'partial', 'failed'] },
     completeness: { enum: ['passed', 'partial', 'failed'] },
     infrastructure: { enum: ['passed', 'failed'] },
     acceptanceCriteria: { type: 'string', description: 'satisfied/total, e.g. "3/3"' },
-    quality: { enum: ['passed', 'partial', 'failed'] },
     scope: { enum: ['passed', 'drift'] },
     commands: {
       type: 'array',
@@ -81,7 +79,7 @@ const STATE_SCHEMA = {
           number: { type: 'integer' },
           name: { type: 'string' },
           mode: { enum: ['parallel', 'sequential'] },
-          model: { enum: ['haiku', 'sonnet'] },
+          model: { enum: ['haiku', 'sonnet', 'opus'] },
           components: { type: 'array', items: { type: 'string' } }
         }
       }
@@ -97,7 +95,7 @@ const STATE_SCHEMA = {
           action: { enum: ['create', 'modify', 'delete', 'rename'] },
           step: { type: 'integer' },
           mode: { enum: ['parallel', 'sequential'] },
-          model: { enum: ['haiku', 'sonnet'] },
+          model: { enum: ['haiku', 'sonnet', 'opus'] },
           file: { type: 'string' },
           sourceFile: { type: ['string', 'null'] },
           description: { type: 'string' },
@@ -132,14 +130,13 @@ Feature: ${a.feature}
 Plan: ${a.paths.plan}
 Config: ${a.paths.config} (read only if present)
 
-Turn the lean component checklist in the plan into steps + components:
-- COPY EVERY COMPONENT NAME VERBATIM from the plan's Component Checklist. Resume matches components by name across runs, so a renamed or reformatted name makes completed work run twice.
+The plan has no fixed shape. Derive the components from whatever it describes: one component per target file (or tightly coupled file group), named in short kebab-case, then turn them into steps + components:
 - Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same file, one imports another, or there is an explicit dependency.
 - Prefer fewer steps. Tests run after the components they validate.
-- model "haiku" by default (mechanical, UI, tests, docs, config, single-file). model "sonnet" only for complex logic, cross-module, security/auth, migrations, or public API.
-- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan's Existing Patterns to Follow, else find them with Glob/Grep.
+- model "haiku" for mechanical work (UI tweaks, tests, docs, config, simple single-file edits); "sonnet" for ordinary logic; "opus" only for complex logic, cross-module behavior, security/auth, data migrations, or public API contracts.
+- 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan where it names patterns, else find them with Glob/Grep.
 - verifyCommands: narrowest relevant check first, then project build/test.
-- Exclude [DEFERRED] work. Represent every other component once. dependsOn must reference existing component names.
+- Exclude work the plan defers or rules out. Represent every other component once. dependsOn must reference existing component names.
 
 Return an object matching the schema (steps[] and pendingComponents[]).`
 }
@@ -160,7 +157,7 @@ Action: ${c.action}
 Target file: ${c.file}${c.sourceFile ? `\nSource file (rename from): ${c.sourceFile}` : ''}
 Intent: ${c.description || ''}
 
-Read only these pattern references (ranges/symbols), plus the target file for modify/rename:
+Read only these pattern references (ranges/symbols), plus the target file for modify/rename — and for create when it already exists:
 ${refs}
 
 Standards — read the parts that apply to your target and follow them. Repository standards win over the style skills.
@@ -169,20 +166,17 @@ ${repoStandards}
 Style skills:
 ${styles}
 
-Rules: smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
+Rules: Nothing is persisted between runs, so your work may already be done: for \`create\`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
 
 Then run: ${verify}
 
 Return structured output: status, filesCreated, filesModified, verify, deviations (none or brief), skipped (none, or what you deliberately did not build — add when ...), error (none or description). Keep it concise — no logs or diffs unless failed.`
 }
 
-function verifyPrompt(a, results, resumeDone) {
+function verifyPrompt(a, results) {
   const ran = results.flatMap(s => s.items.map(i =>
-    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to sonnet]' : ''}`))
-  const prior = [...(resumeDone || [])]
-    .filter(n => !results.some(s => s.items.some(i => i.component.name === n)))
-    .map(n => `  ${n}: completed in a prior session`)
-  const summary = [...ran, ...prior].join('\n') || '  (no components ran this invocation)'
+    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to opus]' : ''}`))
+  const summary = ran.join('\n') || '  (no components ran)'
   const repoStandards = ((a.standards && a.standards.repo) || []).join(', ') || 'none found'
   const baseline = (a.baseline && a.baseline.length)
     ? a.baseline.map(b => `  ${b.command || b.details && b.details.command || '?'}: ${b.status}${b.summary ? ` — ${b.summary}` : ''}`).join('\n')
@@ -200,40 +194,16 @@ ${baseline}
 Component results:
 ${summary}
 
-Checks: completeness (every planned component done, acceptance criteria addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); correctness (inspect changed files, not just existence); quality (logic-bearing changes have tests when a test framework exists); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan's Scope marks Out or [DEFERRED], new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
+Checks — only whether the plan was built and works; code quality and correctness belong to /5:review, which runs next: completeness (every planned component done, and any acceptance criteria the plan states addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan rules out or defers, new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
-Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), quality, scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
+Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-// Build a single trivial step in JS for compact plans (no orchestrator agent).
-function compactSteps(components) {
-  const norm = components.map((c, i) => ({
-    name: c.name,
-    action: c.action || 'modify',
-    step: 1,
-    mode: 'parallel',
-    model: c.model || 'haiku',
-    file: c.file,
-    sourceFile: c.sourceFile || null,
-    description: c.description || '',
-    dependsOn: c.dependsOn || [],
-    patternRefs: c.patternRefs || [],
-    verifyCommands: c.verifyCommands || [],
-    notes: []
-  }))
-  // If two components write the same file or one depends on another, fall back to sequential.
-  const files = norm.map(c => c.file)
-  const fileConflict = new Set(files).size !== files.length
-  const hasDep = norm.some(c => c.dependsOn && c.dependsOn.length)
-  const mode = (fileConflict || hasDep) ? 'sequential' : 'parallel'
-  norm.forEach(c => { c.mode = mode })
-  const stepModel = norm.some(c => c.model === 'sonnet') ? 'sonnet' : 'haiku'
-  return {
-    steps: [{ number: 1, name: 'implement', mode, model: stepModel, components: norm.map(c => c.name) }],
-    pendingComponents: norm
-  }
+// Model options per tier. Opus runs at medium effort: deep enough for complex work, cheaper than high.
+function modelOpts(model) {
+  return model === 'opus' ? { model: 'opus', effort: 'medium' } : { model: model || 'haiku' }
 }
 
 async function runStep(step, components, a) {
@@ -244,28 +214,28 @@ async function runStep(step, components, a) {
   if (step.mode === 'parallel' && stepComps.length > 1) {
     // Fire every parallel component together — true concurrency, one wave.
     waveResults = await parallel(stepComps.map(c => () =>
-      agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', model: c.model || 'haiku', schema: RESULT_SCHEMA })
+      agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', ...modelOpts(c.model), schema: RESULT_SCHEMA })
         .then(result => ({ component: c, result }))
         .catch(() => ({ component: c, result: null }))))
   } else {
     waveResults = []
     for (const c of stepComps) {
-      const result = await agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', model: c.model || 'haiku', schema: RESULT_SCHEMA })
+      const result = await agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', ...modelOpts(c.model), schema: RESULT_SCHEMA })
         .catch(() => null)
       waveResults.push({ component: c, result })
     }
   }
 
-  // Retry failed OR crashed (null) components up to twice, escalating to sonnet.
+  // Retry failed OR crashed (null) components up to twice, escalating to opus.
   // A crashed agent (null result) is retried too — an infra error should not be
   // treated more harshly than a clean structured failure.
   for (const wr of waveResults) {
     let attempt = 1
     while ((wr.result == null || wr.result.status === 'failed') && attempt <= 2) {
-      log(`retry ${wr.component.name} (attempt ${attempt + 1}) on sonnet`)
+      log(`retry ${wr.component.name} (attempt ${attempt + 1}) on opus`)
       wr.escalated = true
       const retried = await agent(executorPrompt(wr.component, a, { retry: true }),
-        { label: `retry:${wr.component.name}`, phase: 'Execute', model: 'sonnet', schema: RESULT_SCHEMA }).catch(() => null)
+        { label: `retry:${wr.component.name}`, phase: 'Execute', ...modelOpts('opus'), schema: RESULT_SCHEMA }).catch(() => null)
       if (retried) wr.result = retried
       attempt++
     }
@@ -277,35 +247,25 @@ async function runStep(step, components, a) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const a = args || {}
-const resumeDone = new Set(a.completedComponents || [])
 
 phase('Orchestrate')
-if (resumeDone.size) log(`resume: ${resumeDone.size} component(s) already complete, matched by name`)
-let plan
-if (a.isCompact && Array.isArray(a.components) && a.components.length) {
-  log(`compact plan: ${a.components.length} component(s), no orchestrator agent`)
-  plan = compactSteps(a.components)
-} else {
-  plan = await agent(orchestratorPrompt(a), { label: 'orchestrate', phase: 'Orchestrate', schema: STATE_SCHEMA })
-}
+const plan = await agent(orchestratorPrompt(a), { label: 'orchestrate', phase: 'Orchestrate', schema: STATE_SCHEMA })
 const steps = plan.steps
 const components = plan.pendingComponents
 
 phase('Execute')
 const results = []
 for (const step of steps) {
-  const remaining = components.filter(c => step.components.includes(c.name) && !resumeDone.has(c.name))
-  if (!remaining.length) { log(`step ${step.number} already complete (resume), skipping`); continue }
-  const stepResult = await runStep({ ...step, components: remaining.map(c => c.name) }, components, a)
-  results.push(stepResult)
+  results.push(await runStep(step, components, a))
 }
 
 phase('Verify')
 const allItems = results.flatMap(s => s.items)
 const allPassed = allItems.length > 0 && allItems.every(i => i.result && i.result.status === 'success' && i.result.verify !== 'failed')
-// Non-mechanical when a component was planned as sonnet OR needed a sonnet retry to pass —
-// either signals reasoning-level work that warrants the full verification agent.
-const usedSonnet = components.some(c => (c.model || 'haiku') === 'sonnet') || allItems.some(i => i.escalated)
+// Mechanical when every component was planned as haiku and none needed a retry; anything
+// else signals reasoning-level work that warrants the full verification agent.
+const usedOpus = components.some(c => c.model === 'opus') || allItems.some(i => i.escalated)
+const mechanical = !usedOpus && components.every(c => (c.model || 'haiku') === 'haiku')
 // Deterministic scope signal: files an executor touched beyond its planned target(s).
 // Tests and import sites are legitimate, so this is reported for the user, never a failure.
 const extraFiles = allItems.flatMap(i => {
@@ -316,29 +276,21 @@ const extraFiles = allItems.flatMap(i => {
 })
 if (extraFiles.length) log(`scope: ${extraFiles.length} file(s) touched outside planned targets`)
 let verification
-if (allPassed && !usedSonnet) {
-  log('all components passed + mechanical (no sonnet, no escalation) — inline verify, no verification agent')
-  // No git access here: /5:implement runs the fast-path scope check itself when it sees inline: true.
-  verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', acceptanceCriteria: 'n/a', quality: 'passed', commands: [], failures: [], inline: true }
+if (allPassed && mechanical) {
+  log('all components passed + mechanical — no verification agent; /5:implement runs build/test and the scope check')
+  // No shell access here: /5:implement runs build/test and the scope check itself when it sees inline: true.
+  verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', acceptanceCriteria: 'n/a', commands: [], failures: [], inline: true }
 } else {
-  if (!allItems.length) log('no components ran this invocation (resume) — verifying the already-completed feature against the plan')
-  verification = await agent(verifyPrompt(a, results, resumeDone), {
-    label: 'verify', phase: 'Verify', model: usedSonnet ? 'sonnet' : 'haiku', schema: VERIFICATION_SCHEMA
+  verification = await agent(verifyPrompt(a, results), {
+    label: 'verify', phase: 'Verify', ...modelOpts(usedOpus ? 'opus' : 'sonnet'), schema: VERIFICATION_SCHEMA
   })
 }
 
-// Union prior + newly-succeeded so the command can MERGE (not replace) completed history on resume.
-const newlyCompleted = allItems.filter(i => i.result && i.result.status === 'success').map(i => i.component.name)
-const completedComponents = [...new Set([...resumeDone, ...newlyCompleted])]
-
-// Returned to the /5:implement command, which persists the slim state.json and auto-commits.
-// steps + components are returned for reporting and per-step staging only — they are NOT persisted;
-// the next run re-derives them, and resume matches on completedComponents by name.
+// Returned to the /5:implement command for the fast-path check, per-step staging, and the report.
 return {
   feature: a.feature,
   steps,
   components,
-  completedComponents,
   results: results.map(s => ({
     step: s.step,
     name: s.name,

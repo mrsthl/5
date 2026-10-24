@@ -13,7 +13,7 @@ You do NOT modify files manually. After reporting, you are DONE.
 
 # Synchronize Agent Runtimes
 
-Synchronizes user-generated content (skills, commands, agents, rules) between the Claude Code (`.claude/`) and Codex (`.codex/`) runtimes.
+Synchronizes user-generated content (skills, commands, agents, rules) between the Claude Code (`.claude/`) and Codex (`.codex/`) runtimes. Codex reads only `AGENTS.md`, so Claude rules and agent references go into the foifi block there.
 
 ## Step 1: Locate the Sync Script
 

@@ -103,14 +103,14 @@ function compareLists(category, repoList, installList) {
 const managed = getManagedFiles();
 let errors = 0;
 
-function verifyReviewReplyContract() {
-  console.log('=== Review Reply Contract ===');
+function verifyReviewContract() {
+  console.log('=== Review Contract ===');
   console.log('');
 
   const addressCommand = fs.readFileSync('src/commands/5/address-review-findings.md', 'utf8');
-  const replyCommand = fs.readFileSync('src/commands/5/reply-pr-comments.md', 'utf8');
   const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
-  const summaryTemplate = fs.readFileSync('src/templates/workflow/REVIEW-SUMMARY.md', 'utf8');
+  const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
+  const install = fs.readFileSync('bin/install.js', 'utf8');
   const required = [
     {
       label: 'review delegates to the built-in code-review skill',
@@ -125,32 +125,60 @@ function verifyReviewReplyContract() {
       ok: !/coderabbit/i.test(reviewCommand)
     },
     {
-      label: 'address-review invokes reply helper',
-      ok: addressCommand.includes('Invoke `/5:reply-pr-comments {feature}`')
+      label: 'security-review runs once, in /5:review, on security-sensitive diffs',
+      ok: reviewCommand.includes('Skill(skill: "security-review")') && !implementCommand.includes('Skill(skill: "security-review")')
     },
     {
-      label: 'address-review parses reply result block',
-      ok: addressCommand.includes('---PR-REPLIES---')
+      label: 'Codex adapter maps security-review',
+      ok: install.includes('Skill(skill="security-review")')
     },
     {
-      label: 'address-review forbids silent reply omission',
-      ok: addressCommand.includes('silent omission of the reply step is not allowed')
+      label: 'address-review applies fixes itself, without helper commands',
+      ok: !/\/5:(apply-review-findings|triage-pr-comments|reply-pr-comments)/.test(addressCommand)
+    }
+  ];
+
+  let failures = 0;
+  for (const check of required) {
+    if (check.ok) {
+      console.log(`${GREEN}✓ ${check.label}${NC}`);
+    } else {
+      console.log(`${RED}✗ ${check.label}${NC}`);
+      failures += 1;
+    }
+  }
+  console.log('');
+  return failures > 0 ? 1 : 0;
+}
+
+function verifyProjectInstructionsContract() {
+  console.log('=== Project Instructions Contract ===');
+  console.log('');
+
+  const template = fs.readFileSync('src/templates/AGENTS.md', 'utf8');
+  const agentsSkill = fs.readFileSync('src/skills/configure-agents-md/SKILL.md', 'utf8');
+  const reviewStyle = fs.readFileSync('src/skills/review-style/SKILL.md', 'utf8');
+  const settings = fs.readFileSync('src/settings.json', 'utf8');
+  const required = [
+    {
+      label: 'AGENTS.md template is one marked block',
+      ok: template.startsWith('<!-- foifi:start') && template.trimEnd().endsWith('<!-- foifi:end -->')
     },
     {
-      label: 'reply helper posts inline replies',
-      ok: replyCommand.includes('/pulls/{number}/comments/{comment_id}/replies')
+      label: 'configure-agents-md leaves content outside the block unchanged',
+      ok: agentsSkill.includes('Leave every other byte unchanged') && !/overwrite `CLAUDE\.md`/.test(agentsSkill)
     },
     {
-      label: 'reply helper posts general PR replies',
-      ok: replyCommand.includes('/issues/{number}/comments')
+      label: 'review-style treats the foifi block as workflow rules',
+      ok: reviewStyle.includes('<!-- foifi:start')
     },
     {
-      label: 'reply helper fails on missing decisions',
-      ok: replyCommand.includes('If it is missing or invalid')
+      label: 'Codex rules go into the AGENTS.md foifi block, not unread files',
+      ok: fs.readFileSync('src/skills/configure-rules/SKILL.md', 'utf8').includes('## Codex: rules in AGENTS.md') && fs.readFileSync('bin/sync-agents.js', 'utf8').includes("path.join(root, 'AGENTS.md')") && !fs.readFileSync('bin/sync-agents.js', 'utf8').includes("'instructions.md'") && !fs.readFileSync('bin/install.js', 'utf8').includes('generateCodexInstructions') && agentsSkill.includes('5-sync:rules-start')
     },
     {
-      label: 'summary records PR replies',
-      ok: summaryTemplate.includes('## PR Comment Replies')
+      label: 'config-guard hook is gone from settings.json',
+      ok: !settings.includes('config-guard')
     }
   ];
 
@@ -171,6 +199,12 @@ errors += compareLists(
   'Commands',
   listEntries('src/commands', { directoriesOnly: true }),
   [...(managed.commands || [])].sort()
+);
+
+errors += compareLists(
+  'Codex-only Commands',
+  listEntries('src/codex-commands', { filesOnly: true }),
+  [...(managed.codexCommands || [])].sort()
 );
 
 errors += compareLists(
@@ -240,7 +274,8 @@ function verifyPlanModeContract() {
   console.log('=== Plan Mode Contract ===');
   console.log('');
 
-  const planCommand = fs.readFileSync('src/commands/5/plan.md', 'utf8');
+  const planCommand = fs.readFileSync('src/codex-commands/plan.md', 'utf8');
+  const agentsTemplate = fs.readFileSync('src/templates/AGENTS.md', 'utf8');
   const implementCommand = fs.readFileSync('src/commands/5/implement.md', 'utf8');
   const configureCommand = fs.readFileSync('src/commands/5/configure.md', 'utf8');
   const reviewCommand = fs.readFileSync('src/commands/5/review.md', 'utf8');
@@ -250,48 +285,48 @@ function verifyPlanModeContract() {
 
   const required = [
     {
-      label: 'plan delegates to native plan mode',
-      ok: planCommand.includes('EnterPlanMode')
+      label: 'Claude Code has no plan command and plans have no prescribed template',
+      ok: !fs.existsSync('src/commands/5/plan.md') && agentsTemplate.includes('## Planning') && !fs.existsSync('src/templates/workflow/PLAN.md')
     },
     {
-      label: 'plan keeps a fallback path for runtimes without plan mode',
-      ok: planCommand.includes('## Fallback path')
+      label: 'AGENTS.md hands an approved plan to /5:implement',
+      ok: agentsTemplate.includes('After the user approves a plan, run `/5:implement {plan-path}`')
     },
     {
-      label: 'plan handles refine mode and replaces the refined plan file',
-      ok: /refine mode/i.test(planCommand) && planCommand.includes('delete the plan file this plan replaces')
+      label: 'Codex plan command writes to .5/planning and hands off to /5:implement',
+      ok: planCommand.includes('.5/planning/{name}.md') && planCommand.includes('/5:implement {name}') && !planCommand.includes('EnterPlanMode')
     },
     {
       label: 'native plan mode file is the only planning artifact',
-      ok: planCommand.includes('.5/planning') && !planCommand.includes('codebase-scan') && !workflow.includes('paths.scan')
+      ok: !planCommand.includes('codebase-scan') && !workflow.includes('paths.scan')
     },
     {
       label: 'configure points plan mode at .5/planning',
       ok: configureCommand.includes('`plansDirectory`') && configureCommand.includes('".5/planning"')
     },
     {
-      label: 'implement finds plans by their feature frontmatter',
-      ok: implementCommand.includes('`feature: {argument}`')
+      label: 'implement finds plans by path, file name, or feature frontmatter',
+      ok: implementCommand.includes('`{argument}.md`') && implementCommand.includes('`feature: {argument}`')
     },
     {
-      label: 'plan and implement review the change with review-style',
-      ok: planCommand.includes('Skill(skill: "review-style"') && implementCommand.includes('Skill(skill: "review-style"')
+      label: 'implement runs /5:review once, scoped to the run, before auto-commit',
+      ok: implementCommand.includes('Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}`') && reviewCommand.includes('since {fixed-point} files: {paths} feature: {name} dirty: {paths}') && implementCommand.includes('do not commit; report it') && implementCommand.includes('Never stage a pre-run dirty file') && reviewCommand.includes('drop every finding whose file is not in `{paths}`') && reviewCommand.includes('Ask once:') && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
+    },
+    {
+      label: 'verification checks only built-and-works; review-style uses two reviewers',
+      ok: !workflow.includes('quality:') && !/QUALITY:/.test(implementCommand) && fs.readFileSync('src/skills/review-style/SKILL.md', 'utf8').includes('One **style reviewer** for all styles together')
     },
     {
       label: 'review records review-style findings without fixing them',
       ok: reviewCommand.includes('Skill(skill: "review-style"') && reviewCommand.includes('report only')
     },
     {
-      label: 'plan branches the handoff on plan format',
-      ok: planCommand.includes('planFormat: compact') && planCommand.includes('/5:implement {name}')
+      label: 'implement builds compact plans inline, without agents or the workflow',
+      ok: implementCommand.includes('### Compact plan: implement inline') && /^allowed-tools:.*\bEdit\b/m.test(implementCommand) && !workflow.includes('isCompact')
     },
     {
-      label: 'plan can implement compact plans inline (needs Edit)',
-      ok: /^allowed-tools:.*\bEdit\b/m.test(planCommand)
-    },
-    {
-      label: 'implement tolerates a compact plan already done inline',
-      ok: /implements compact plans inline/i.test(implementCommand)
+      label: 'fast path runs build and test after the change',
+      ok: implementCommand.includes('**Fast-path check**') && implementCommand.includes('Run the configured build and test commands once')
     },
     {
       label: 'plan-guard hook is gone from settings.json',
@@ -302,16 +337,12 @@ function verifyPlanModeContract() {
       ok: !planCommand.includes('.planning-active') && !implementCommand.includes('.planning-active')
     },
     {
-      label: 'state.json no longer carries an event log',
-      ok: !implementCommand.includes('state-events') && !orchestratorAgent.includes('state-events')
+      label: 'implement persists no run state and creates no tasks',
+      ok: !/state\.json|TaskCreate|completedComponents/.test(implementCommand) && !workflow.includes('completedComponents') && !orchestratorAgent.includes('resume')
     },
     {
-      label: 'orchestrator pins component names to the plan checklist',
-      ok: /verbatim/i.test(orchestratorAgent) && /VERBATIM/i.test(workflow)
-    },
-    {
-      label: 'workflow resumes on completedComponents alone',
-      ok: workflow.includes('a.completedComponents') && !workflow.includes('resume.pendingComponents')
+      label: 'complex work and retries run on opus at medium effort',
+      ok: workflow.includes("{ model: 'opus', effort: 'medium' }") && implementCommand.includes('`opus` at `effort: "medium"`') && orchestratorAgent.includes('"opus"')
     }
   ];
 
@@ -328,7 +359,8 @@ function verifyPlanModeContract() {
   return failures > 0 ? 1 : 0;
 }
 
-errors += verifyReviewReplyContract();
+errors += verifyReviewContract();
+errors += verifyProjectInstructionsContract();
 errors += verifySyncAgentsSkills();
 errors += verifyPlanModeContract();
 

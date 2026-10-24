@@ -105,6 +105,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Agent(subagent_type="Explore")\` | \`spawn_agent(agent_type="explorer", model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="haiku")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="sonnet")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="medium", message="...")\` |
+| \`Agent(prompt="...", model="opus", effort="medium")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="high", message="...")\` |
 | \`Agent(prompt="...")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` unless the prompt explicitly requires complex reasoning |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |

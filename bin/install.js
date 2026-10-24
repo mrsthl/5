@@ -573,6 +573,7 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Agent(subagent_type="Explore")\` | \`spawn_agent(agent_type="explorer", model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="haiku")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` |
 | \`Agent(prompt="...", model="sonnet")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="medium", message="...")\` |
+| \`Agent(prompt="...", model="opus", effort="medium")\` | \`spawn_agent(model="gpt-5.4", reasoning_effort="high", message="...")\` |
 | \`Agent(prompt="...")\` | \`spawn_agent(model="gpt-5.4-mini", reasoning_effort="low", message="...")\` unless the prompt explicitly requires complex reasoning |
 | \`Read\` | \`read_file\` |
 | \`Write\` | \`write_file\` |
@@ -580,7 +581,6 @@ This skill was authored for Claude Code. Map these tool references:
 | \`Bash\` | \`shell\` |
 | \`Glob\` | \`glob\` / \`list_directory\` |
 | \`Grep\` | \`grep\` / \`search\` |
-| \`TaskCreate/TaskUpdate\` | Track progress internally |
 | \`Workflow\` | Not available — run the command's prose fallback loop instead |
 | \`Skill(skill="code-review")\` | Not available — run the command's prose fallback loop instead |
 | \`Skill(skill="security-review")\` | Not available — skip it; the prose review fallback of \`$5-review\` covers security |
@@ -594,13 +594,15 @@ When a skill, plan, or execution-graph component names a model, map it to Codex 
 |-------------|-------------|------------------|
 | \`haiku\` (or unset) | \`gpt-5.4-mini\` | \`low\` |
 | \`sonnet\` | \`gpt-5.4\` | \`medium\` |
+| \`opus\` | \`gpt-5.4\` | \`high\` |
 | Explore / explorer agent | \`gpt-5.4-mini\` (\`agent_type: explorer\`) | \`low\` |
 
 This table is authoritative — skill bodies do not repeat per-call model mappings.
 
 ## Codex Token Budget
 - Default to \`gpt-5.4-mini\` with \`reasoning_effort: low\` for exploration, orchestration, simple implementation, and mechanical file edits.
-- Use \`gpt-5.4\` with \`reasoning_effort: medium\` only for complex logic, cross-module behavior, security-sensitive changes, data migrations, final verification with meaningful logic review, or retries after failure.
+- Use \`gpt-5.4\` with \`reasoning_effort: medium\` for ordinary logic and final verification with meaningful logic review.
+- Use \`gpt-5.4\` with \`reasoning_effort: high\` only for complex logic, cross-module behavior, security-sensitive changes, data migrations, public API contracts, or retries after failure.
 - Use stronger models only when a previous cheaper attempt failed for reasoning reasons.
 - Keep the parent skill context lean: delegate read-heavy exploration to explorer agents and pass only compact findings, target paths, pattern references, and command summaries between agents.
 
@@ -1342,7 +1344,7 @@ The workflow provides structured feature development:
 All workflow state lives in \`.5/\` at the project root:
 - \`.5/config.json\` — Project configuration
 - \`.5/planning/{name}.md\` — Plans
-- \`.5/features/{name}/state.json\` — Implementation resume state
+- \`.5/features/{name}/\` — Review findings and decisions
 
 ## Guard Rules
 
@@ -1360,7 +1362,7 @@ Run \`$5-configure\` after installation to set up your project.
 
 ## Codex Token Budget
 
-Workflow skills use \`gpt-5.4-mini\` with low reasoning for exploration, orchestration, and simple executors by default. They escalate to \`gpt-5.4\` with medium reasoning only for complex logic, security-sensitive work, data migrations, public API changes, final verification that needs logic review, or retries after a cheaper attempt fails.
+Workflow skills use \`gpt-5.4-mini\` with low reasoning for exploration, orchestration, and simple executors by default. Ordinary logic and final verification use \`gpt-5.4\` with medium reasoning. Complex logic, security-sensitive work, data migrations, public API changes, and retries after a failed attempt use \`gpt-5.4\` with high reasoning.
 
 ## Templates & References
 

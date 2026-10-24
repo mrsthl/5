@@ -125,8 +125,8 @@ function verifyReviewContract() {
       ok: !/coderabbit/i.test(reviewCommand)
     },
     {
-      label: 'review and implement run security-review on security-sensitive diffs',
-      ok: reviewCommand.includes('Skill(skill: "security-review")') && implementCommand.includes('Skill(skill: "security-review")')
+      label: 'security-review runs once, in /5:review, on security-sensitive diffs',
+      ok: reviewCommand.includes('Skill(skill: "security-review")') && !implementCommand.includes('Skill(skill: "security-review")')
     },
     {
       label: 'Codex adapter maps security-review',
@@ -305,16 +305,24 @@ function verifyPlanModeContract() {
       ok: implementCommand.includes('`{argument}.md`') && implementCommand.includes('`feature: {argument}`')
     },
     {
-      label: 'implement reviews the change with review-style',
-      ok: implementCommand.includes('Skill(skill: "review-style"')
+      label: 'implement runs /5:review once, scoped to the run, before auto-commit',
+      ok: implementCommand.includes('Run `/5:review since {fixed-point} files: {run-files}`') && reviewCommand.includes('since {fixed-point} files: {paths}') && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
+    },
+    {
+      label: 'verification checks only built-and-works; review-style uses two reviewers',
+      ok: !workflow.includes('quality:') && !/QUALITY:/.test(implementCommand) && fs.readFileSync('src/skills/review-style/SKILL.md', 'utf8').includes('One **style reviewer** for all styles together')
     },
     {
       label: 'review records review-style findings without fixing them',
       ok: reviewCommand.includes('Skill(skill: "review-style"') && reviewCommand.includes('report only')
     },
     {
-      label: 'implement builds compact plans inline without the orchestrator',
-      ok: implementCommand.includes('A compact plan skips the orchestrator')
+      label: 'implement builds compact plans inline, without agents or the workflow',
+      ok: implementCommand.includes('### Compact plan: implement inline') && /^allowed-tools:.*\bEdit\b/m.test(implementCommand) && !workflow.includes('isCompact')
+    },
+    {
+      label: 'fast path runs build and test after the change',
+      ok: implementCommand.includes('**Fast-path check**') && implementCommand.includes('Run the configured build and test commands once')
     },
     {
       label: 'plan-guard hook is gone from settings.json',
@@ -325,16 +333,12 @@ function verifyPlanModeContract() {
       ok: !planCommand.includes('.planning-active') && !implementCommand.includes('.planning-active')
     },
     {
-      label: 'state.json no longer carries an event log',
-      ok: !implementCommand.includes('state-events') && !orchestratorAgent.includes('state-events')
+      label: 'implement persists no run state and creates no tasks',
+      ok: !/state\.json|TaskCreate|completedComponents/.test(implementCommand) && !workflow.includes('completedComponents') && !orchestratorAgent.includes('resume')
     },
     {
-      label: 'resume reuses the component names persisted on the first run',
-      ok: /reuse/i.test(orchestratorAgent) && workflow.includes('knownComponents') && implementCommand.includes('"knownComponents"')
-    },
-    {
-      label: 'workflow resumes on completedComponents alone',
-      ok: workflow.includes('a.completedComponents') && !workflow.includes('resume.pendingComponents')
+      label: 'complex work and retries run on opus at medium effort',
+      ok: workflow.includes("{ model: 'opus', effort: 'medium' }") && implementCommand.includes('`opus` at `effort: "medium"`') && orchestratorAgent.includes('"opus"')
     }
   ];
 

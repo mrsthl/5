@@ -2,7 +2,7 @@
 name: 5:review
 description: Reviews code changes for correctness via the built-in code-review skill, for security via security-review when the diff is security-sensitive, and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
-argument-hint: [low|medium|high|max]
+argument-hint: [low|medium|high|max] [since {fixed-point} files: {paths}]
 user-invocable: true
 model: sonnet
 ---
@@ -16,7 +16,9 @@ You do NOT apply fixes. Fix application is handled by /5:address-review-findings
 
 ## Step 1: Determine Scope
 
-Ask what to review:
+When the arguments say `since {fixed-point} files: {paths}` — `/5:implement` passes this — review exactly those files' changes since that commit and skip the question. `/5:implement` runs this before it commits, so the changes are in the working tree.
+
+Otherwise ask what to review:
 
 1. Staged changes (`git diff --cached`)
 2. Unstaged changes (`git diff`)
@@ -36,7 +38,7 @@ Never pass `--fix` or `--comment`. This command only records findings; applying 
 Skill(skill: "code-review", args: "{target} {effort}")
 ```
 
-Derive `{target}` from the scope answer: options 1-3 review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
+Derive `{target}` from the scope answer: options 1-3 and the `since … files:` scope review the current working-tree diff (no target argument needed); option 4 passes the branch. Use the findings it reports.
 
 **Security review** — when the diff touches authentication, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction, and the built-in `security-review` skill is available, invoke it on the same scope:
 
@@ -52,7 +54,7 @@ Use the vulnerabilities it reports. Skip it for diffs that touch none of these a
 Skill(skill: "review-style", args: "{mode} report only")
 ```
 
-Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, and option 4 `{base-branch} committed only`.
+Derive `{mode}` from the scope answer: option 1 passes `staged`, option 2 `unstaged`, option 3 `uncommitted`, option 4 `{base-branch} committed only`, and the `since … files:` scope `{fixed-point} files: {paths}`.
 
 **Fallback path** — on Codex, or when the `code-review` skill is unavailable, spawn one review agent instead:
 
@@ -81,7 +83,7 @@ On Codex, or when the `review-style` skill cannot be invoked, read `.claude/skil
 
 ## Step 3: Save Findings
 
-Determine feature name from the most recent `.5/features/*/state.json`, or ask the user.
+Use the feature of the most recently modified plan in `.5/planning/` — its `feature` frontmatter field, or its file name without `.md` — or ask the user.
 
 Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-FINDINGS.md`.
 

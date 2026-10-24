@@ -27,7 +27,7 @@ Two rules keep foifi honest:
 
 **Structured implementation workflow** — Instead of asking Claude or Codex to "just implement this," foifi enforces a three-phase loop:
 1. **Plan** (native plan mode) — there is no plan command to remember. Claude shapes each plan as the change needs; the "Planning" section of the generated `AGENTS.md` only asks for a mermaid diagram where the change has a flow worth drawing and for what the repository standards require. Plan mode saves the plan in `.5/planning/`. On approval Claude runs step 2. Codex has no plan mode and uses `$5-plan`.
-2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph, then delegates each component to a focused executor agent, firing independent components in parallel waves. A verification agent checks completeness, correctness, and test coverage at the end of every run, and `review-style` checks the change against the repository's standards and the style skills.
+2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph, then delegates each component to a focused executor agent, firing independent components in parallel waves. Verification checks that the plan was built and works — completeness, build, tests, scope — and then `/5:implement` runs step 3 on the change, before any auto-commit.
 3. **Review** (`/5:review`) — wraps Claude Code's built-in `code-review` skill for correctness, its `security-review` skill for security-sensitive changes, and `review-style` for standards, produces structured findings, and feeds them into `/5:address-review-findings` for interactive fix decisions.
 
 This separation keeps planning readable, implementation mechanical, and review structured. Where Claude Code ships a native capability, foifi wraps it rather than reimplementing it — what foifi adds is the durable repo-local artifact and the ticket/config conventions around it.
@@ -98,7 +98,7 @@ $5-review
 $5-address-review-findings {feature-name}
 ```
 
-Verification runs at the end of `/5:implement` and records a concise result in `state.json`. A standards review with `review-style` follows and asks which findings to fix.
+Verification runs at the end of `/5:implement`, then `/5:review` runs once on the run's files and offers to address the findings.
 
 ## Commands
 
@@ -120,9 +120,8 @@ Verification runs at the end of `/5:implement` and records a concise result in `
 
 Plans live in `.5/planning/`, where plan mode saves them. A plan's file name is its feature name.
 
-Each feature's runtime state lives under `.5/features/{feature-name}/`:
+Each feature's review files live under `.5/features/{feature-name}/`:
 
-- `state.json` - small resume record: status, completed components, verification result
 - `review-findings-*.md` - review output for `/5:address-review-findings`
 - `review-decisions-*.json` - interactive fix/wont-fix/wait decisions
 
@@ -130,13 +129,13 @@ Each feature's runtime state lives under `.5/features/{feature-name}/`:
 
 Planning stays human-readable. Claude Code's native plan mode does the exploring, the asking, and the approval gate, and saves the plan in `.5/planning/`; the "Planning" rules in `AGENTS.md` add only the diagram, the repository standards, the ticket lookup, and the hand-off. There is no plan template and no parallel plan command to drift from plan mode, and no second copy or scan cache. `/5:implement` derives model choices, verify commands, step grouping, and pattern wiring itself.
 
-Delegation is matched to the size of the job. Approving a plan means you want it built, so Claude runs `/5:implement` right away. Compact plans skip the orchestrator. Full plans get the whole pipeline, where the cost is repaid: `step-orchestrator-agent` reads the plan and returns an execution graph, then each component goes to a `step-executor-agent` with an inline executor contract, independent components firing in parallel. Pattern context is passed as targeted references instead of broad file lists so executors read only the relevant ranges, and mechanical components run on a cheaper model than the ones that need reasoning.
+Delegation is matched to the size of the job. Approving a plan means you want it built, so Claude runs `/5:implement` right away. Compact plans are implemented inline in that session, without agents. Full plans get the whole pipeline, where the cost is repaid: `step-orchestrator-agent` reads the plan and returns an execution graph, then each component goes to a `step-executor-agent` with an inline executor contract, independent components firing in parallel. Pattern context is passed as targeted references instead of broad file lists so executors read only the relevant ranges, and each component runs on the model its work needs: `haiku` for mechanical work, `sonnet` for ordinary logic, `opus` at medium effort for complex work and retries.
 
-State is kept to what is actually read. The execution graph is derived fresh on every run and never written to disk; `state.json` persists only the status, the component names, the completed ones, and the verification result, which is all a resume needs. `state.json` also keeps the component names from the first run, and later runs reuse them, so a re-derived graph still matches what already ran. Live progress comes from the task list, not from a file.
+Nothing about a run is persisted. The execution graph is derived on every run and never written to disk, and there is no state file or task list. A rerun starts over; executors see work already in the files.
 
-Verification uses a dedicated agent. `/5:implement` runs `verification-agent` at the end, passing it the pre-change baseline so pre-existing failures are not blamed on the change, and records a concise final status without generating an extra report.
+Verification matches the work too. Compact plans and fully mechanical runs get one build/test pass plus a scope check. Everything else gets `verification-agent`, which receives the pre-change baseline so pre-existing failures are not blamed on the change. Verification only asks whether the plan was built and works; code quality is `/5:review`'s job, so every check runs exactly once.
 
-Standards come in a fixed order. The repository's own standards always win. The style skills set the baseline wherever the repository says nothing, and the workflow's rules in `AGENTS.md` apply on top. Executors read the standards that apply to their target before writing code. After every implementation, `review-style` runs one reviewer for the repository standards and one per style, and reports each finding as a hard breach or a judgement call.
+Standards come in a fixed order. The repository's own standards always win. The style skills set the baseline wherever the repository says nothing, and the workflow's rules in `AGENTS.md` apply on top. Executors read the standards that apply to their target before writing code. In every review, `review-style` runs two reviewers — one for the repository standards, one for all style skills together — and reports each finding as a hard breach or a judgement call.
 
 Review delegates to Claude Code's built-in `code-review` skill (default effort `high`, override with `/5:review {low|medium|high|max}`) and maps its findings into the workflow's findings file. Where that skill is unavailable — Codex, for example — a built-in review agent takes over and triages changed files by risk instead. When the diff touches authentication, user input, secrets, cryptography, or SQL/shell/path construction, the built-in `security-review` skill runs as well; `/5:implement` does the same at the end of a run. `/5:address-review-findings` presents each finding one by one with a recommendation, records `fix`/`wont_fix`/`wait` decisions, applies the approved fixes, and verifies the result. For comments on a GitHub PR, ask Claude directly.
 

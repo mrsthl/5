@@ -19,8 +19,8 @@ This is the stable entrypoint after `/5:review`. For comments on a GitHub PR, as
 
 1. Determine feature context:
    - Use the feature name argument when given.
-   - Otherwise find `.5/features/*/state.json` and select the most recent `startedAt` or `lastUpdated`.
-   - If none exists, ask for the feature name.
+   - Otherwise use the feature of the most recently modified plan in `.5/planning/`: its `feature` frontmatter field, or its file name without `.md`.
+   - If there is none, ask for the feature name.
 2. Collect decisions:
    - Find the latest `.5/features/{feature}/review-findings-*.md`. If missing, tell the user to run `/5:review` and stop.
    - Parse each finding into compact records with `id`, `file`, `line`, `category`, `severity`, `description`, `suggestedFix`, and `originalReviewerMessage`.

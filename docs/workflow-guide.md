@@ -15,7 +15,7 @@ The workflow separates human decisions from mechanical execution.
 - The plan in `.5/planning/` is the only planning artifact. Claude Code's plan mode saves it there because `/5:configure` sets `plansDirectory`.
 - There is no codebase index or scan cache. What implementation needs, such as the patterns to follow, goes into the plan.
 - The execution graph is derived by `step-orchestrator-agent` on every run and is never written to disk.
-- `state.json` persists only what a resume needs: status, completed component names, and the verification result.
+- Nothing about a run is persisted; a rerun of `/5:implement` starts over.
 
 Where Claude Code ships a native capability, the workflow uses it: planning happens in native plan mode, shaped by the `AGENTS.md` rules, and `/5:review` calls the built-in `code-review` skill. Codex has neither, so it gets `$5-plan` and a prose review fallback.
 
@@ -49,27 +49,18 @@ Run:
 /5:implement {feature-name}
 ```
 
-Claude runs it right after you approve a plan; run it yourself to resume. The executors work in their own contexts, so the planning conversation does not crowd them.
+Claude runs it right after you approve a plan; run it yourself to run a plan again.
 
-Implementation does four things:
+A compact plan (1-2 files, no migration, security/auth, or public API change) is implemented inline in that session — no agents. Then build and tests run once, and a scope check compares the diff with the plan. `/5:review` follows, as for a full plan.
 
-1. Spawns `step-orchestrator-agent` to derive the execution graph from the plan — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
-2. Spawns executor agents for each component using an inline executor contract, parallelizing independent work. Each executor follows the repository standards and style skills that apply to its target.
-3. Spawns `verification-agent` to verify completeness, correctness, build/tests, the plan's acceptance criteria when it states any, and test coverage.
-4. Runs `review-style` on everything the run changed, then asks which findings to fix.
+A full plan goes through four steps:
 
-The graph is transient. `state.json` records only:
+1. `step-orchestrator-agent` derives the execution graph — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
+2. Executor agents implement the components using an inline executor contract, independent ones in parallel. Each follows the repository standards and style skills that apply to its target. Mechanical work runs on `haiku`, ordinary logic on `sonnet`, complex work and every retry on `opus` at medium effort.
+3. When every component was mechanical and passed, build and tests run once plus the scope check. Otherwise `verification-agent` checks completeness, build/tests, the plan's acceptance criteria when it states any, and scope.
+4. `/5:review` runs once on the files the run changed — `code-review`, `security-review` for security-sensitive files, and `review-style` — and offers to address the findings. Auto-commit comes after, so approved fixes land in the same commit.
 
-- `status` — `in-progress`, `completed`, or `failed`
-- `completedComponents` — the names of components that finished
-- `verification` — final status plus a one-line summary
-- `startedAt` / `lastUpdated`
-
-Live progress during a run comes from the task list rather than the file.
-
-If implementation is interrupted, rerun `/5:implement {feature-name}` to resume. The graph is re-derived and components already in `completedComponents` are skipped — which works because `state.json` keeps the component names from the first run, and later runs reuse them. Note that the Workflow path writes `state.json` only when the run returns, so a run killed mid-way repeats the components it had finished.
-
-Verification runs inline during `/5:implement`. It checks planned files, final build/test commands, any acceptance criteria the plan states, and recorded component verification outcomes.
+Nothing is persisted. If a run fails or is interrupted, fix the cause and rerun `/5:implement`; executors see work already in the files.
 
 ## Review
 
@@ -116,9 +107,9 @@ Refresh the AGENTS.md block and the rules later with:
 
 If an implementation failed:
 
-1. Read `.5/features/{feature-name}/state.json`.
+1. Read the verification result in the `/5:implement` report.
 2. Fix external blockers if needed.
-3. Re-run `/5:implement {feature-name}` to resume.
+3. Re-run `/5:implement {feature-name}`.
 
 If an upgrade left old command files installed, run:
 

@@ -41,13 +41,13 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Planning engine | Native plan mode, shaped by the "Planning" section of the generated `AGENTS.md` block; no plan command. `/5:configure` sets `plansDirectory` so the plan file lands in `.5/planning/` | `$5-plan` from `src/codex-commands/plan.md`, which writes `.5/planning/{name}.md` itself, + the "Guard Rules" block in `getCodexSkillAdapterHeader()` (no plan mode) |
 | Implement orchestration | `.claude/workflows/5-implement.js` (Workflow tool) when available, else the prose loop in `implement.md` | prose loop only (no Workflow tool) |
 | Review engine | Built-in `code-review` skill via the `Skill` tool when available, else the prose fallback in `review.md`; plus `security-review` for security-sensitive diffs and `review-style` | prose fallback only (no `Skill` tool); `review-style` by reading its SKILL.md |
-| Standards review | `Skill(review-style)` at the end of `/5:implement` and in `/5:review` | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
-| Model mapping (haiku/sonnet) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
+| Standards review | `Skill(review-style)` in `/5:review`, which `/5:implement` runs at its end | `Skill(skill="review-style")` row in the "Tool Mapping" of `getCodexSkillAdapterHeader()` |
+| Model mapping (haiku/sonnet/opus) | real model names inline | centralized in `getCodexSkillAdapterHeader()` "Model Mapping" |
 | Hooks | `src/hooks/*.js` via `settings.json` (`statusline`, `check-updates`, `check-reconfig`, `dependency-guard`) | Embedded as instructions in skill adapter preamble; the `dependency-guard` Stop hook becomes the "Scope Discipline" rule in `generateCodexInstructions()` because it must apply outside the workflow skills too |
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
-| Security review | `Skill(security-review)` in `/5:review` and at the end of `/5:implement` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
+| Security review | `Skill(security-review)` in `/5:review` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
 | Upgrade migrations | `performUpdate()` in `install.js` | `performCodexUpdate()` in `install.js` — must mirror all migrations |
 
 **Rule:** When adding a hook, statusline indicator, or upgrade migration for Claude Code, add an equivalent for Codex. The most common Codex equivalent is an instruction in `getCodexSkillAdapterHeader()`.
@@ -57,7 +57,7 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 Primary commands:
 
 1. Plan mode / `$5-plan` — on Claude Code there is no plan command: the "Planning" section of the `AGENTS.md` template asks Claude, in native plan mode, for a diagram where it helps, what the repository standards require, and the ticket handling, and to run `/5:implement {plan-path}` after approval. It prescribes no plan structure and no save location; plan mode saves the plan where `plansDirectory` points (`.5/planning/`). Codex has no plan mode and runs `$5-plan` (`src/codex-commands/plan.md`), which ends with the same hand-off.
-2. `/5:implement {name}` / `$5-implement {name}` — takes a plan path, or finds the plan in `.5/planning/` by file name or `feature` frontmatter (newest plan without an argument), derives the execution graph (inline for a compact plan, via the orchestrator otherwise), executes components in parallel waves, verifies inline, then runs `review-style` on the change. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
+2. `/5:implement {name}` / `$5-implement {name}` — takes a plan path, or finds the plan in `.5/planning/` by file name or `feature` frontmatter (newest plan without an argument), derives the execution graph (inline for a compact plan, via the orchestrator otherwise), executes components in parallel waves, verifies that it was built and works, then runs `/5:review` on the run's files before any auto-commit. On Claude Code it runs `.claude/workflows/5-implement.js` via the Workflow tool when available (the orchestrator/executor/verifier prompts in that script are the schema-validated form of `src/agents/*-agent.md` — keep them in sync), and falls back to the prose loop in `implement.md` otherwise. Codex always uses the prose loop.
 3. `/5:review [low|medium|high|max]` / `$5-review` — reviews code and writes review findings. On Claude Code it delegates to the built-in `code-review` skill (default effort `high`), adds the built-in `security-review` skill when the diff is security-sensitive, and maps their reported findings onto `REVIEW-FINDINGS.md`; Codex uses the condensed prose fallback in `review.md`. Both then run `review-style` in report-only mode and map its findings too.
 
 Helpers:
@@ -86,29 +86,17 @@ The plan file that native plan mode saves in `.5/planning/` is the only planning
 
 ## Execution State
 
-The execution graph — steps, component wiring, model choices, `patternRefs`, verify commands — is derived fresh on every `/5:implement` run and never persisted. `.5/features/{name}/state.json` holds only what resume needs:
+Nothing about a run is persisted. A compact plan (1-2 files, no migration, security/auth, or public API change) is implemented inline in the `/5:implement` session. A full plan's execution graph — steps, component wiring, model choices, `patternRefs`, verify commands — is derived on every run; a rerun starts over, and executors see already-done work in the files. There is no `state.json` and no task list.
 
-```json
-{
-  "feature": "{name}",
-  "status": "in-progress|completed|failed",
-  "components": ["component-name"],
-  "completedComponents": ["component-name"],
-  "verification": {"status": "passed|partial|failed", "summary": "one line"},
-  "startedAt": "{ISO}",
-  "lastUpdated": "{ISO}"
-}
-```
-
-Resume matches components by name across runs. Because plans have no fixed shape, the first run's derived names are persisted in `components`, and every later run passes them back as `knownComponents` so the orchestrator **reuses them verbatim**. That rule lives in `step-orchestrator-agent.md`, `orchestratorPrompt()` in `5-implement.js`, and `implement.md` — keep all three. In-run progress the user sees comes from `TaskCreate` / `TaskUpdate`, not from a file.
+Model tiers: `haiku` for mechanical work, `sonnet` for ordinary logic, `opus` at effort `medium` for complex logic, cross-module, security/auth, migrations, public API, and every retry. Keep the tiers in sync across `step-orchestrator-agent.md`, `orchestratorPrompt()` / `modelOpts()` in `5-implement.js`, `implement.md`, and the Codex "Model Mapping" in `getCodexSkillAdapterHeader()`.
 
 ## Agents
 
 - `step-orchestrator-agent.md` reads the plan, then returns the execution graph.
 - `step-executor-agent.md` implements assigned components and reports a strict `---RESULT---` block.
-- `verification-agent.md` verifies completeness, correctness, build/tests, acceptance criteria, and test coverage, then returns a `---VERIFICATION---` block.
+- `verification-agent.md` verifies that the plan was built and works — completeness, build/tests, acceptance criteria, scope — then returns a `---VERIFICATION---` block. Code quality and correctness are `/5:review`'s job; keep each check in exactly one place.
 
-None of the three writes `state.json`; `/5:implement` owns every write.
+None of the three writes files outside its assigned component.
 
 The scope contract is shared across runtimes and workflows: executors report deliberate omissions under `SKIPPED`, the verifier reports `SCOPE: passed | drift`, and outside the workflow the same rules live in the generated project `AGENTS.md` ("Simplicity First", "Surgical Changes") plus `/5:lean-check`, plus the `dependency-guard` Stop hook (Claude Code) that makes Claude justify any dependency the uncommitted diff adds, once per session. Keep the simplicity ladder in `src/templates/AGENTS.md`, `step-executor-agent.md`, `executorPrompt()` in `5-implement.js`, and the executor contract in `implement.md` in sync.
 

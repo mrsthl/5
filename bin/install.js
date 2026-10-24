@@ -1222,10 +1222,14 @@ function removeRetiredHooks(targetPath) {
     const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
     const pre = settings.hooks && settings.hooks.PreToolUse;
     if (!Array.isArray(pre)) return;
-    const kept = pre.filter(entry =>
-      !(entry.hooks || []).some(h =>
-        typeof h.command === 'string' && RETIRED_HOOKS.some(hook => h.command.includes(hook))));
-    if (kept.length === pre.length) return;
+    const isRetired = h => typeof h.command === 'string' && RETIRED_HOOKS.some(hook => h.command.includes(hook));
+    if (!pre.some(entry => (entry.hooks || []).some(isRetired))) return;
+    // Drop only the retired hooks; an entry survives while it still holds the user's own hooks
+    const kept = pre
+      .map(entry => (entry.hooks || []).some(isRetired)
+        ? { ...entry, hooks: entry.hooks.filter(h => !isRetired(h)) }
+        : entry)
+      .filter(entry => !Array.isArray(entry.hooks) || entry.hooks.length);
     if (kept.length) settings.hooks.PreToolUse = kept;
     else delete settings.hooks.PreToolUse;
     if (settings.hooks && !Object.keys(settings.hooks).length) delete settings.hooks;

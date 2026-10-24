@@ -160,7 +160,7 @@ echo "---------------------------"
 cd /tmp
 rm -rf test-5phase-3
 mkdir -p test-5phase-3/.claude/commands/5
-echo '{"permissions":{"allow":["Bash"]},"customSetting":"test","statusLine":{"type":"command","command":"my-statusline.sh"},"hooks":{"PreToolUse":[{"matcher":"Task|Agent","hooks":[{"type":"command","command":"node .claude/hooks/config-guard.js"}]}]}}' > test-5phase-3/.claude/settings.json
+echo '{"permissions":{"allow":["Bash"]},"customSetting":"test","statusLine":{"type":"command","command":"my-statusline.sh"},"hooks":{"PreToolUse":[{"matcher":"Task|Agent","hooks":[{"type":"command","command":"node .claude/hooks/config-guard.js"},{"type":"command","command":"my-own-agent-hook.sh"}]}]}}' > test-5phase-3/.claude/settings.json
 touch test-5phase-3/.claude/commands/5/plan-feature.md
 cd test-5phase-3
 node "$INSTALL_SCRIPT" --upgrade
@@ -181,6 +181,12 @@ if grep -q "config-guard" .claude/settings.json; then
   exit 1
 else
   echo "✓ Retired config-guard hook removed on upgrade"
+fi
+if grep -q "my-own-agent-hook.sh" .claude/settings.json; then
+  echo "✓ User hook in the same entry kept"
+else
+  echo "✗ User hook in the same entry removed with config-guard"
+  exit 1
 fi
 echo ""
 

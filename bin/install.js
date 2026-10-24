@@ -1254,8 +1254,9 @@ function removePlanningActiveMarker(dataDir) {
 // is shared, so performUpdate() and performCodexUpdate() both run this.
 function movePlansToPlanningDir(dataDir) {
   const featuresDir = path.join(dataDir, 'features');
-  if (!fs.existsSync(featuresDir)) return;
+  if (!fs.existsSync(featuresDir)) return 0;
   const planningDir = path.join(dataDir, 'planning');
+  let moved = 0;
   try {
     for (const feature of fs.readdirSync(featuresDir)) {
       const planFile = path.join(featuresDir, feature, 'plan.md');
@@ -1263,8 +1264,52 @@ function movePlansToPlanningDir(dataDir) {
       if (!fs.existsSync(planFile) || fs.existsSync(target)) continue;
       fs.mkdirSync(planningDir, { recursive: true });
       fs.renameSync(planFile, target);
+      moved++;
       log.info(`Moved plan: features/${feature}/plan.md → planning/${feature}.md`);
     }
+  } catch (e) {}
+  return moved;
+}
+
+// Before .5/planning/ existed, plans lived in .5/features/, so a project that git-ignored
+// .5/features/ also ignored its plans. Carry that choice over to .5/planning/, but only for
+// projects that come from that layout: plans moved by this upgrade, or an install that was
+// upgraded into 3.1.0 (whose migration moved them without this). A project configured on 3.1
+// may have chosen "Only .5/features/" on purpose; /5:configure now marks that with
+// `!.5/planning/`, and any .5/planning rule or plan tracked in git (checked before the move) is left alone.
+// Shared .5/ data, so both update paths run this.
+// True when git tracks any plan, in the old or the new location. Call it before plans move:
+// afterwards the index still lists them only under .5/features/.
+function hasTrackedPlans(dataDir) {
+  try {
+    return require('child_process')
+      .execFileSync('git', ['ls-files', '--', '.5/features/*/plan.md', '.5/planning'],
+        { cwd: path.dirname(dataDir), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .trim() !== '';
+  } catch (e) {
+    return false; // not a git checkout: nothing is tracked
+  }
+}
+
+function ignorePlanningLikeFeatures(dataDir, movedPlans, previousVersion, plansTracked) {
+  const projectRoot = path.dirname(dataDir);
+  const gitignorePath = path.join(projectRoot, '.gitignore');
+  if (!fs.existsSync(gitignorePath)) return;
+  try {
+    if (!movedPlans) {
+      if (previousVersion !== '3.1.0') return;
+      // A fresh 3.1.0 install has installedAt === lastUpdated; an upgraded one does not
+      const versionData = JSON.parse(fs.readFileSync(path.join(dataDir, 'version.json'), 'utf8'));
+      if (!versionData.installedAt || versionData.installedAt === versionData.lastUpdated) return;
+    }
+    if (plansTracked) return;
+    const content = fs.readFileSync(gitignorePath, 'utf8');
+    const rules = content.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    const ignoresFeatures = rules.some(l => /^\/?\.5\/features\/?(\*\*?)?$/.test(l));
+    const hasPlanningRule = rules.some(l => /^!?\/?\.5\/planning\/?(\*\*?)?$/.test(l));
+    if (!ignoresFeatures || hasPlanningRule) return;
+    fs.writeFileSync(gitignorePath, content.trimEnd() + '\n.5/planning/\n');
+    log.info('Added .5/planning/ to .gitignore (plans were ignored under .5/features/)');
   } catch (e) {}
 }
 
@@ -1294,7 +1339,8 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   removePlanningActiveMarker(dataDir);
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
-  movePlansToPlanningDir(dataDir);
+  const plansTracked = hasTrackedPlans(dataDir);
+  ignorePlanningLikeFeatures(dataDir, movePlansToPlanningDir(dataDir), versionInfo.installed, plansTracked);
 
   // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
@@ -1490,7 +1536,8 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   removePlanningActiveMarker(dataDir);
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
-  movePlansToPlanningDir(dataDir);
+  const plansTracked = hasTrackedPlans(dataDir);
+  ignorePlanningLikeFeatures(dataDir, movePlansToPlanningDir(dataDir), versionInfo.installed, plansTracked);
 
   // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;

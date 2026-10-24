@@ -216,7 +216,8 @@ Native plan mode must save its plans in `.5/planning/`, where `/5:implement` fin
 For each folder the user chose to ignore in step 2l (`.5/planning/`, `.5/features/`):
 1. Check if `.gitignore` exists in the project root — create it if not
 2. Check if the folder is already listed — if not, append it on a new line
-3. Inform the user which folders were added to `.gitignore`
+3. When the user chose "Only `.5/features/`", also append `!.5/planning/`, so upgrades know the plans are shared on purpose and do not ignore them
+4. Inform the user which folders were added to `.gitignore`
 
 **Always gitignore `.5/.reconfig-reminder`:**
 

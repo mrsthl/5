@@ -77,7 +77,42 @@ echo "Test 4: Auto-Upgrade"
 echo "--------------------"
 mkdir -p .5/features/foo
 printf -- '---\nfeature: foo\n---\n# Plan\n' > .5/features/foo/plan.md
+printf 'node_modules/\n.5/features/\n' > .gitignore
 node "$INSTALL_SCRIPT" --upgrade
+if grep -qx ".5/planning/" .gitignore; then
+  echo "✓ .5/planning/ ignored like .5/features/ was"
+else
+  echo "✗ Moved plans are no longer git-ignored"
+  exit 1
+fi
+node "$INSTALL_SCRIPT" --upgrade >/dev/null
+if [ "$(grep -c '.5/planning' .gitignore)" = "1" ]; then
+  echo "✓ Gitignore migration runs once"
+else
+  echo "✗ Gitignore migration duplicated .5/planning/"
+  exit 1
+fi
+# Projects already on 3.1.0: carry over only for upgraded installs, never for ones configured fresh on 3.1
+for case in upgraded fresh; do
+  dir="$(mktemp -d)"
+  mkdir -p "$dir/.5" && printf '# keep .5/planning-backups out of this\n.5/planning-backups/\n.5/features/\n' > "$dir/.gitignore"
+  if [ "$case" = "upgraded" ]; then installed="2026-01-01T00:00:00Z"; else installed="2026-10-24T11:00:00Z"; fi
+  echo "{\"installedAt\":\"$installed\",\"lastUpdated\":\"2026-10-24T11:00:00Z\"}" > "$dir/.5/version.json"
+  node -e '
+    const src = require("fs").readFileSync(process.argv[1], "utf8");
+    const fn = src.slice(src.indexOf("function ignorePlanningLikeFeatures"), src.indexOf("// Perform update"));
+    const log = { info() {} };
+    eval(fn + "; ignorePlanningLikeFeatures(process.argv[2], 0, \"3.1.0\", false)");
+  ' "$INSTALL_SCRIPT" "$dir/.5"
+  if grep -qx ".5/planning/" "$dir/.gitignore"; then got=added; else got=kept; fi
+  rm -rf "$dir"
+  if { [ "$case" = "upgraded" ] && [ "$got" = "added" ]; } || { [ "$case" = "fresh" ] && [ "$got" = "kept" ]; }; then
+    echo "✓ 3.1.0 $case install: .5/planning $got"
+  else
+    echo "✗ 3.1.0 $case install: .5/planning $got"
+    exit 1
+  fi
+done
 UPDATED=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.5/version.json','utf8')).packageVersion || '')")
 echo "✓ Updated to version: $UPDATED"
 if [ -f ".5/planning/foo.md" ] && [ ! -e ".5/features/foo/plan.md" ]; then

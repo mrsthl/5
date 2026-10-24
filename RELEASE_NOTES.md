@@ -1,5 +1,25 @@
 # Release Notes
 
+## v3.1.1
+
+**Release Date:** 2026-10-24
+
+### Moved Plans Stay Git-Ignored
+
+The 3.1.0 upgrade moved plans from `.5/features/` to `.5/planning/`. Projects that git-ignored `.5/features/` had ignored their plans with it, but `.5/planning/` was not ignored — plans suddenly showed up in `git status`.
+
+**Bug Fixes**
+- **Plans ignore carries over**: upgrades add `.5/planning/` to `.gitignore` when it ignores `.5/features/`, for projects that come from the old layout — plans moved by this upgrade, or an install that was upgraded into 3.1.0. Projects already on 3.1.0 get the fix on this upgrade.
+- **Deliberate choices are kept**: installs set up fresh on 3.1, an existing `.5/planning` rule, and plans already tracked in git (checked before the move) are left alone. Only effective rules count; comments and look-alikes such as `.5/planning-backups/` do not.
+- **`/5:configure`** writes `!.5/planning/` when you choose "Only `.5/features/`", so shared plans stay shared on later upgrades.
+
+**Affected files:**
+- `bin/install.js` (modified)
+- `src/commands/5/configure.md` (modified)
+- `test/test-update-system.sh` (modified)
+
+---
+
 ## v3.1.0
 
 **Release Date:** 2026-10-24

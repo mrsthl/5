@@ -2,7 +2,7 @@
 name: 5:review
 description: Reviews code changes for correctness via the built-in code-review skill, for security via security-review when the diff is security-sensitive, and for standards via review-style. Categorizes findings and saves them for /5:address-review-findings.
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__jetbrains__*
-argument-hint: [low|medium|high|max] [since {fixed-point} files: {paths}]
+argument-hint: [low|medium|high|max] [since {fixed-point} files: {paths} feature: {name}]
 user-invocable: true
 model: sonnet
 ---
@@ -16,7 +16,7 @@ You do NOT apply fixes. Fix application is handled by /5:address-review-findings
 
 ## Step 1: Determine Scope
 
-When the arguments say `since {fixed-point} files: {paths}` — `/5:implement` passes this — review exactly those files' changes since that commit and skip the question. `/5:implement` runs this before it commits, so the changes are in the working tree.
+When the arguments say `since {fixed-point} files: {paths} feature: {name}` — `/5:implement` passes this — review exactly those files' changes since that commit and skip the question. `/5:implement` runs this before it commits, so the changes are in the working tree. The working tree can also hold changes the user had before the run: in this scope, **drop every finding whose file is not in `{paths}`**, from every reviewer, before saving.
 
 Otherwise ask what to review:
 
@@ -83,7 +83,7 @@ On Codex, or when the `review-style` skill cannot be invoked, read `.claude/skil
 
 ## Step 3: Save Findings
 
-Use the feature of the most recently modified plan in `.5/planning/` — its `feature` frontmatter field, or its file name without `.md` — or ask the user.
+Use the `feature:` argument when given. Otherwise use the feature of the most recently modified plan in `.5/planning/` — its `feature` frontmatter field, or its file name without `.md` — or ask the user.
 
 Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` using `.claude/templates/workflow/REVIEW-FINDINGS.md`.
 
@@ -134,4 +134,7 @@ Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
 
 If there are no findings, stop here.
 
-Otherwise run `/5:address-review-findings {feature-name}` right away. It fixes the clear findings on its own and asks the user, one question at a time, only about real decisions.
+Otherwise hand off to `/5:address-review-findings {feature-name}`. It fixes the clear findings on its own, asks the user one question at a time only about real decisions, and then runs build, test, and lint.
+
+- **Called by `/5:implement`** (the `since … files:` scope): run it right away. The user approved the plan, and these are the run's own files.
+- **Started on its own:** the reviewed code may come from someone else's branch, and the fixes are followed by the project's build and test commands. Ask once: "Fix the clear findings on my own and then run build, test, and lint?" On yes, run it. On no, stop and tell the user they can run `/5:address-review-findings {feature-name}` (or `--interactive`) later.

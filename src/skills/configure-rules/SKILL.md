@@ -75,6 +75,7 @@ paths:
 paths:
   - "src/**/*.{ts,tsx}"
 ---
+<!-- foifi:generated -->
 
 # Code Style
 
@@ -87,6 +88,7 @@ paths:
 **Example — `dependencies.md` (unconditional):**
 
 ```markdown
+<!-- foifi:generated -->
 # Dependency Conventions
 
 - Database access through Prisma client only, never raw SQL

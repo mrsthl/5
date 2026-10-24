@@ -76,7 +76,7 @@ On Claude Code, review delegates to the built-in `code-review` skill. Effort def
 .5/features/{feature-name}/review-findings-{timestamp}.md
 ```
 
-When findings exist, `/5:review` hands them straight to `/5:address-review-findings`. It fixes clear findings on its own — confirmed bugs, security issues, breaches of a repository standard, and style findings with a clear local fix — skips obsolete or out-of-scope ones, and asks you only about real decisions, one question at a time. Then it runs build, tests, and lint, and reports what it fixed, what it skipped, and what you decided. To go through saved findings again, or to decide on every finding yourself:
+When findings exist after `/5:implement`, `/5:review` hands them straight to `/5:address-review-findings`. When you start `/5:review` yourself — possibly on someone else's branch — it asks once before fixing anything and running build and tests. It fixes clear findings on its own — confirmed bugs, security issues, breaches of a repository standard, and style findings with a clear local fix — skips obsolete or out-of-scope ones, and asks you only about real decisions, one question at a time. Then it runs build, tests, and lint, and reports what it fixed, what it skipped, and what you decided. To go through saved findings again, or to decide on every finding yourself:
 
 ```text
 /5:address-review-findings {feature-name} [--interactive]

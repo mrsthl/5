@@ -144,7 +144,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
 
 **2g. Commit message pattern:**
 
-Skip this question when the repository already documents a commit convention (step 1e or 1e2); that convention wins and AGENTS.md links it. Otherwise ask:
+When the repository already documents a commit convention (step 1e or 1e2), that convention wins and AGENTS.md links it. Skip the question, and derive the closest pattern from the convention with the `{ticket-id}` and `{short-description}` placeholders — for example `feat({ticket-id}): {short-description}` for Conventional Commits — and store it as `git.commitMessage.pattern`, so auto-commits follow the convention too. Otherwise ask:
 - "What commit message format would you like?"
   - Options:
     1. "Default: `{ticket-id} {short-description}` (Recommended)"

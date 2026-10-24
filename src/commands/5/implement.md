@@ -134,7 +134,7 @@ Set `SCOPE: passed | drift`. Drift never changes the verification status; it onl
 
 ## Step 4: Review
 
-Run `/5:review since {fixed-point} files: {run-files}` with the fixed point from Step 2. `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
+Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name}` with the fixed point from Step 2. `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
 
 ## Step 5: Auto-commit
 

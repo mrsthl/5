@@ -13,141 +13,45 @@ Two rules keep foifi honest:
 - **Stay lean.** What Claude Code already does well — plan mode, code review, exploring the code — foifi uses as it is. foifi adds only the glue: conventions, durable artifacts, and checks. It never runs a parallel process that competes with the native one.
 - **Your standards win.** foifi reads the standards a project already has, such as `CONTRIBUTING.md`, a code style guide, or an existing `CLAUDE.md` / `AGENTS.md`, and follows them. It never overwrites them. Its own style rules only fill the gaps a project leaves open.
 
-## Overview
-
-**foifi** is an opinionated AI development workflow layer that sits on top of Claude Code and Codex. It handles project setup, structured feature implementation, and code review — so you spend less time managing the AI and more time shipping.
-
-### What it does
-
-**Project setup** — The `/5:configure` command detects your stack, adds the workflow rules to `AGENTS.md` as one marked block that links your repository's own standards, points Claude Code's plan mode at `.5/planning/`, and generates file-scoped rules from your conventions. Nothing outside that block changes: an existing `CLAUDE.md` only gets an `@AGENTS.md` line if it lacks one, and settings you already set, such as your own status line, are kept. Every AI session gets the rules that matter from the start; the code itself it explores on demand.
-
-**Clean code by default** — foifi ships review styles as skills: `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions`. `review-style` checks a change against them and against the repository's own standards, such as `CONTRIBUTING.md` or `CODESTYLE.md`. Repository standards always win. Where a repository documents nothing, the styles still keep the codebase clean.
-
-**Status line** — foifi installs a Claude Code status line that surfaces the installed version, available updates, and pending reconfigure/migration reminders directly in the terminal footer. If you already have a status line, yours stays.
-
-**Structured implementation workflow** — Instead of asking Claude or Codex to "just implement this," foifi enforces a three-phase loop:
-1. **Plan** (native plan mode) — there is no plan command to remember. Claude shapes each plan as the change needs; the "Planning" section of the generated `AGENTS.md` only asks for a mermaid diagram where the change has a flow worth drawing and for what the repository standards require. Plan mode saves the plan in `.5/planning/`. On approval Claude runs step 2. Codex has no plan mode and uses `$5-plan`.
-2. **Implement** (`/5:implement`) — an orchestrator agent turns the plan into a typed execution graph, then delegates each component to a focused executor agent, firing independent components in parallel waves. Verification checks that the plan was built and works — completeness, build, tests, scope — and then `/5:implement` runs step 3 on the change, before any auto-commit.
-3. **Review** (`/5:review`) — wraps Claude Code's built-in `code-review` skill for correctness, its `security-review` skill for security-sensitive changes, and `review-style` for standards, produces structured findings, and feeds them into `/5:address-review-findings` for interactive fix decisions.
-
-This separation keeps planning readable, implementation mechanical, and review structured. Where Claude Code ships a native capability, foifi wraps it rather than reimplementing it — what foifi adds is the durable repo-local artifact and the ticket/config conventions around it.
-
-**Code review and findings** — `/5:review` produces structured `review-findings-*.md`. `/5:address-review-findings` presents each finding interactively, records `fix`/`wont_fix`/`wait` decisions, applies the approved fixes, and verifies the result — all without losing context between sessions.
-
-**Diagrams** — Plans carry a mermaid diagram when a flow, state machine, or component relationships explain the change better than text. `/5:analyze-feature` documents an existing feature or dataflow end-to-end with mermaid diagrams.
-
-**Maintenance** — `/5:reconfigure` refreshes the AGENTS.md block and the generated rules when the project evolves, and is the upgrade path after a major update.
-
-**Codex support** — Every command has a `$5-*` Codex equivalent. Codex runs are token-budgeted: simple steps use a lighter model and low reasoning, complex or security-sensitive steps escalate automatically.
-
-### The name
-
-"foifi" is Swiss German for *five*. The name comes from the project's original 5-phase workflow. That workflow has since been streamlined into the current 3-phase plan → implement → review loop, but the name stuck — and all commands still carry the `/5:` prefix.
-
 ## Install
 
 ```bash
-npx foifi
-npx foifi --codex
+npx foifi              # Claude Code, this project
+npx foifi --codex      # Codex
+npx foifi --global     # all projects (~/.claude/)
 ```
 
-Global installs are also supported:
-
-```bash
-npx foifi --global
-npx foifi --codex --global
-```
-
-Claude Code installs commands under `.claude/`. Codex installs converted skills under `.codex/skills/`.
-
-## Configure
-
-Run configuration once per project:
+Then configure the project once:
 
 ```bash
 /5:configure
-# or in Codex
-$5-configure
-```
-
-Configuration writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, and writes `.5/planning/CONFIGURE.md`. Then run:
-
-```bash
 /5:implement CONFIGURE
-# or
-$5-implement CONFIGURE
 ```
 
-That writes the foifi block into AGENTS.md, makes CLAUDE.md include AGENTS.md, and generates the selected scoped rules.
+This adds the foifi rules to `AGENTS.md` as one marked block, links your existing standards from it, and makes `CLAUDE.md` include it. Nothing else in your files or settings changes.
 
 ## Workflow
 
-```bash
-# plan in plan mode (shift+tab); on approval Claude runs:
-/5:implement {feature-name}
-/5:review
-/5:address-review-findings {feature-name}
-```
+1. **Plan** — use Claude Code's plan mode (shift+tab). Plans include a mermaid diagram where it helps.
+2. **Approve** — Claude runs `/5:implement` on its own: small plans directly, larger ones with parallel agents. It checks that the build and tests pass.
+3. **Review** — runs automatically after the implementation: correctness, security, and your standards. Claude walks you through each finding and fixes what you approve.
 
-Codex equivalents:
-
-```bash
-$5-plan
-$5-implement {feature-name}
-$5-review
-$5-address-review-findings {feature-name}
-```
-
-Verification runs at the end of `/5:implement`, then `/5:review` runs once on the run's files and offers to address the findings.
+On Codex, start with `$5-plan`; the rest is the same.
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `/5:configure` / `$5-configure` | Detect project settings and write the CONFIGURE plan |
-| plan mode / `$5-plan` | Create one plan in `.5/planning/` — or refine an existing one. Claude Code plans in native plan mode; `$5-plan` is the Codex equivalent |
-| `/5:implement` / `$5-implement` | Derive the execution graph, execute steps with agents, and verify inline |
-| `/5:review` / `$5-review` | Review code changes for correctness and standards, and save findings |
-| `/5:lean-check` / `$5-lean-check` | Check any diff for scope drift and over-engineering — works without a plan |
-| `/5:address-review-findings` / `$5-address-review-findings` | Decide on review findings interactively, then apply the approved fixes |
-| `/5:analyze-feature` / `$5-analyze-feature` | Document a feature or dataflow with mermaid diagrams |
-| `/5:reconfigure` / `$5-reconfigure` | Refresh the AGENTS.md block and the generated rules |
-| `/5:update` / `$5-update` | Upgrade installed workflow files |
-| `/5:eject` / `$5-eject` | Stop workflow-managed updates |
-| `/5:synchronize-agents` / `$5-synchronize-agents` | Sync user content between Claude Code and Codex |
+| `/5:implement [plan]` | Implement a plan (runs automatically after approval) |
+| `/5:review [low\|medium\|high\|max]` | Review any change on its own |
+| `/5:address-review-findings` | Go through saved review findings again |
+| `/5:lean-check` | Check a diff for scope drift and over-engineering |
+| `/5:analyze-feature` | Document an existing feature with diagrams |
+| `/5:configure` / `/5:reconfigure` | Set up the project / refresh the AGENTS.md block and rules |
+| `/5:update` / `/5:eject` | Update foifi / stop automatic updates |
+| `/5:synchronize-agents` | Sync your own skills and rules between Claude Code and Codex |
 
-## Artifacts
-
-Plans live in `.5/planning/`, where plan mode saves them. A plan's file name is its feature name.
-
-Each feature's review files live under `.5/features/{feature-name}/`:
-
-- `review-findings-*.md` - review output for `/5:address-review-findings`
-- `review-decisions-*.json` - interactive fix/wont-fix/wait decisions
-
-## Design
-
-Planning stays human-readable. Claude Code's native plan mode does the exploring, the asking, and the approval gate, and saves the plan in `.5/planning/`; the "Planning" rules in `AGENTS.md` add only the diagram, the repository standards, the ticket lookup, and the hand-off. There is no plan template and no parallel plan command to drift from plan mode, and no second copy or scan cache. `/5:implement` derives model choices, verify commands, step grouping, and pattern wiring itself.
-
-Delegation is matched to the size of the job. Approving a plan means you want it built, so Claude runs `/5:implement` right away. Compact plans are implemented inline in that session, without agents. Full plans get the whole pipeline, where the cost is repaid: `step-orchestrator-agent` reads the plan and returns an execution graph, then each component goes to a `step-executor-agent` with an inline executor contract, independent components firing in parallel. Pattern context is passed as targeted references instead of broad file lists so executors read only the relevant ranges, and each component runs on the model its work needs: `haiku` for mechanical work, `sonnet` for ordinary logic, `opus` at medium effort for complex work and retries.
-
-Nothing about a run is persisted. The execution graph is derived on every run and never written to disk, and there is no state file or task list. A rerun starts over; executors see work already in the files.
-
-Verification matches the work too. Compact plans and fully mechanical runs get one build/test pass plus a scope check. Everything else gets `verification-agent`, which receives the pre-change baseline so pre-existing failures are not blamed on the change. Verification only asks whether the plan was built and works; code quality is `/5:review`'s job, so every check runs exactly once.
-
-Standards come in a fixed order. The repository's own standards always win. The style skills set the baseline wherever the repository says nothing, and the workflow's rules in `AGENTS.md` apply on top. Executors read the standards that apply to their target before writing code. In every review, `review-style` runs two reviewers — one for the repository standards, one for all style skills together — and reports each finding as a hard breach or a judgement call.
-
-Review delegates to Claude Code's built-in `code-review` skill (default effort `high`, override with `/5:review {low|medium|high|max}`) and maps its findings into the workflow's findings file. Where that skill is unavailable — Codex, for example — a built-in review agent takes over and triages changed files by risk instead. When the diff touches authentication, user input, secrets, cryptography, or SQL/shell/path construction, the built-in `security-review` skill runs as well; `/5:implement` does the same at the end of a run. `/5:address-review-findings` presents each finding one by one with a recommendation, records `fix`/`wont_fix`/`wait` decisions, applies the approved fixes, and verifies the result. For comments on a GitHub PR, ask Claude directly.
-
-Scope drift is checked, not just discouraged, and not only inside the workflow. The generated `AGENTS.md` carries a simplicity ladder and a "check your own diff before finishing" rule for every session. `/5:lean-check` checks any diff against the request for drift, new dependencies, and over-engineering. On Claude Code, the `dependency-guard` Stop hook makes Claude justify or remove any dependency the uncommitted diff adds, once per session; Codex gets the same rule through its generated instructions. Inside `/5:implement`, executors report what they deliberately skipped and verification reports `SCOPE: passed | drift`.
-
-Reconfiguration uses a compact `.5/reconfigure-manifest.json` to pass refresh decisions to the AGENTS.md and rule generation helpers without duplicating long detection summaries in prompts.
-
-foifi generates no project-specific skills. Claude explores the code itself, and per-pattern skills went stale like the codebase index did. Build and test commands and the commit convention live in the AGENTS.md block instead. Skills from earlier versions stay untouched.
-
-foifi no longer generates a codebase index or architecture, testing, concerns, and conventions docs. Agents explore the code on demand, and generated summaries went stale. Existing `.5/*.md` docs stay untouched and linked, since a team may maintain them.
-
-For Codex installs, the workflow is token-budgeted: exploration, orchestration, and simple executors default to `gpt-5.4-mini` with low reasoning. Complex logic, security-sensitive work, data migrations, public API changes, final verification that needs deeper review, and failed retries escalate to `gpt-5.4` with medium reasoning.
+Codex uses `$5-…` instead of `/5:…`.
 
 ## Updating
 
@@ -155,3 +59,9 @@ For Codex installs, the workflow is token-budgeted: exploration, orchestration, 
 npx foifi --upgrade
 npx foifi --codex --upgrade
 ```
+
+The status line shows when an update is available. Run `/5:reconfigure` after a major version.
+
+## The name
+
+"foifi" is Swiss German for *five*. The name comes from the original 5-phase workflow; the commands still carry the `/5:` prefix.

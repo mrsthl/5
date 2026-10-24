@@ -90,10 +90,9 @@ First-time setup:
 
 ```text
 /5:configure
-/5:implement CONFIGURE
 ```
 
-`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, and writes the CONFIGURE plan. `/5:implement CONFIGURE` adds the workflow rules to AGENTS.md as one marked block that links the repository's own standards, appends `@AGENTS.md` to CLAUDE.md when it lacks that line, and generates scoped rules. Nothing outside the block changes.
+`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, writes the CONFIGURE plan, and then runs `/5:implement CONFIGURE` itself, which adds the workflow rules to AGENTS.md as one marked block that links the repository's own standards, appends `@AGENTS.md` to CLAUDE.md when it lacks that line, and generates scoped rules. Nothing outside the block changes.
 
 Refresh the AGENTS.md block and the rules later with:
 
@@ -135,5 +134,5 @@ v2.0.0 removes old commands during upgrade:
 | `/5:review` | Review changes for correctness and standards |
 | `/5:address-review-findings` | Fix clear findings, ask about real decisions |
 | `/5:analyze-feature` | Document a feature with mermaid diagrams |
-| `/5:configure` | Create project config and CONFIGURE plan |
+| `/5:configure` | Create project config and CONFIGURE plan, then implement it |
 | `/5:reconfigure` | Refresh the AGENTS.md block and rules |

@@ -116,7 +116,7 @@ Findings from `review-style` map like this. Leave out its Suppressed findings; a
 | the `→` fix | **Suggested Fix:** |
 | the cited standards and rules | **Original Reviewer Message:** |
 
-Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` will present each finding interactively and record decisions separately.
+Do not ask the user to edit action markers in the findings file. The findings file is the review record; `/5:address-review-findings` decides on the findings and records the decisions separately.
 
 ## Step 4: Report and Hand Off
 
@@ -134,12 +134,4 @@ Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
 
 If there are no findings, stop here.
 
-Otherwise ask the user directly whether to continue:
-
-- "Address these findings now?"
-  - Options:
-    1. "Yes, run `/5:address-review-findings {feature-name}`" — decide on each finding interactively, then apply approved fixes
-    2. "No, stop here" — findings stay on disk for later
-
-- If the user chooses yes: invoke `/5:address-review-findings {feature-name}`.
-- If the user chooses no: tell them to run `/5:address-review-findings {feature-name}` when they are ready, and stop.
+Otherwise run `/5:address-review-findings {feature-name}` right away. It fixes the clear findings on its own and asks the user, one question at a time, only about real decisions.

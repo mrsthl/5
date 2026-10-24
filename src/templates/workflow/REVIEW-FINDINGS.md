@@ -8,12 +8,7 @@
 
 ## How to Use This File
 
-1. Review this file if you want context before applying fixes
-2. Run: `/5:address-review-findings`
-3. The command will present each finding one by one with a recommendation
-4. Choose `fix`, `wont_fix`, `wait`, or provide textual instructions
-
-The command records your decisions separately and applies only findings marked `fix`.
+`/5:review` hands this file to `/5:address-review-findings`, which fixes the clear findings on its own and asks you, one question at a time, about the rest. Run `/5:address-review-findings --interactive` to decide on every finding yourself.
 
 ---
 
@@ -44,6 +39,4 @@ The command records your decisions separately and applies only findings marked `
 - Questions: {N}
 - Manual Review: {N}
 
-**Next Steps:**
-1. Run: `/5:address-review-findings`
-2. Decide on each finding interactively
+**Next Step:** `/5:address-review-findings` (runs automatically after `/5:review`)

@@ -34,7 +34,7 @@ This adds the foifi rules to `AGENTS.md` as one marked block, links your existin
 
 1. **Plan** — use Claude Code's plan mode (shift+tab). Plans include a mermaid diagram where it helps.
 2. **Approve** — Claude runs `/5:implement` on its own: small plans directly, larger ones with parallel agents. It checks that the build and tests pass.
-3. **Review** — runs automatically after the implementation: correctness, security, and your standards. Claude walks you through each finding and fixes what you approve.
+3. **Review** — runs automatically after the implementation: correctness, security, and your standards. Claude fixes the clear findings itself and asks you only about real decisions, one question at a time.
 
 On Codex, start with `$5-plan`; the rest is the same.
 
@@ -44,7 +44,7 @@ On Codex, start with `$5-plan`; the rest is the same.
 |---------|---------|
 | `/5:implement [plan]` | Implement a plan (runs automatically after approval) |
 | `/5:review [low\|medium\|high\|max]` | Review any change on its own |
-| `/5:address-review-findings` | Go through saved review findings again |
+| `/5:address-review-findings [--interactive]` | Address saved review findings again; `--interactive` asks about each one |
 | `/5:lean-check` | Check a diff for scope drift and over-engineering |
 | `/5:analyze-feature` | Document an existing feature with diagrams |
 | `/5:configure` / `/5:reconfigure` | Set up the project / refresh the AGENTS.md block and rules |

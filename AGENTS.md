@@ -63,7 +63,7 @@ Primary commands:
 Helpers:
 
 - `/5:lean-check [base-branch|feature-name] [request]` checks any diff — with or without a plan — for scope drift and over-engineering, and can revert the drift.
-- `/5:address-review-findings {name}` decides on review findings one by one and applies the approved ones.
+- `/5:address-review-findings {name} [--interactive]` runs after every `/5:review`: it fixes clear findings on its own, asks the user one question at a time only for real decisions, and verifies the result.
 - `/5:analyze-feature {topic}` documents a feature or dataflow with mermaid diagrams.
 - `/5:configure` writes config and the CONFIGURE plan.
 - `/5:reconfigure`, `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.

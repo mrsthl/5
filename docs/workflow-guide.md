@@ -58,7 +58,7 @@ A full plan goes through four steps:
 1. `step-orchestrator-agent` derives the execution graph — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
 2. Executor agents implement the components using an inline executor contract, independent ones in parallel. Each follows the repository standards and style skills that apply to its target. Mechanical work runs on `haiku`, ordinary logic on `sonnet`, complex work and every retry on `opus` at medium effort.
 3. When every component was mechanical and passed, build and tests run once plus the scope check. Otherwise `verification-agent` checks completeness, build/tests, the plan's acceptance criteria when it states any, and scope.
-4. `/5:review` runs once on the files the run changed — `code-review`, `security-review` for security-sensitive files, and `review-style` — and offers to address the findings. Auto-commit comes after, so approved fixes land in the same commit.
+4. `/5:review` runs once on the files the run changed — `code-review`, `security-review` for security-sensitive files, and `review-style` — and `/5:address-review-findings` then fixes the clear findings on its own and asks you only about real decisions, one question at a time. Auto-commit comes after, so approved fixes land in the same commit.
 
 Nothing is persisted. If a run fails or is interrupted, fix the cause and rerun `/5:implement`; executors see work already in the files.
 
@@ -76,13 +76,13 @@ On Claude Code, review delegates to the built-in `code-review` skill. Effort def
 .5/features/{feature-name}/review-findings-{timestamp}.md
 ```
 
-When findings exist, `/5:review` asks whether to address them right away and hands off automatically if you say yes. To pick it up later instead:
+When findings exist, `/5:review` hands them straight to `/5:address-review-findings`. It fixes clear findings on its own — confirmed bugs, security issues, breaches of a repository standard, and style findings with a clear local fix — skips obsolete or out-of-scope ones, and asks you only about real decisions, one question at a time. Then it runs build, tests, and lint, and reports what it fixed, what it skipped, and what you decided. To go through saved findings again, or to decide on every finding yourself:
 
 ```text
-/5:address-review-findings {feature-name}
+/5:address-review-findings {feature-name} [--interactive]
 ```
 
-`/5:address-review-findings` presents each finding with a recommendation, records `fix`/`wont_fix`/`wait` decisions, applies the approved fixes, and runs build, tests, and lint afterwards. For comments on a GitHub PR, ask Claude directly.
+For comments on a GitHub PR, ask Claude directly.
 
 ## Configuration
 
@@ -133,7 +133,7 @@ v2.0.0 removes old commands during upgrade:
 | plan mode / `$5-plan` | Create a plan, or refine an existing one |
 | `/5:implement` | Implement and verify |
 | `/5:review` | Review changes for correctness and standards |
-| `/5:address-review-findings` | Decide on findings and apply the approved ones |
+| `/5:address-review-findings` | Fix clear findings, ask about real decisions |
 | `/5:analyze-feature` | Document a feature with mermaid diagrams |
 | `/5:configure` | Create project config and CONFIGURE plan |
 | `/5:reconfigure` | Refresh the AGENTS.md block and rules |

@@ -17,7 +17,7 @@ The "Planning" section of `AGENTS.md` applies to every plan. This command adds t
 
 ## Step 1: Resolve Feature and Description
 
-**Refine mode.** The argument names an existing plan when it is a path to a plan file, or when a file in `.5/planning/` has `feature: {argument}` in its frontmatter. A ticket prefix matches `feature: {prefix}*`. Read that plan; you are refining it. If several plans match, ask which one.
+**Refine mode.** The argument names an existing plan when it is a path to a plan file, when `.5/planning/{argument}.md` exists, or when a file in `.5/planning/` has `feature: {argument}` in its frontmatter. A ticket prefix matches `feature: {prefix}*`. Read that plan; you are refining it. If several plans match, ask which one.
 
 **New plan.** Otherwise:
 

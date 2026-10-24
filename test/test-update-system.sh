@@ -339,7 +339,13 @@ echo ""
 # Test 11: Codex Uninstall
 echo "Test 11: Codex Uninstall"
 echo "------------------------"
+mkdir -p .codex/skills/5-commit .codex/skills/generate-readme && echo "# old" > .codex/skills/5-commit/SKILL.md
 node "$INSTALL_SCRIPT" --codex --uninstall
+if [ -e ".codex/skills/5-commit" ] || [ -e ".codex/skills/generate-readme" ]; then
+  echo "✗ Retired Codex skills left after uninstall"
+  exit 1
+fi
+echo "✓ Retired Codex skills removed on uninstall"
 for skill in 5-plan 5-implement 5-review 5-address-review-findings; do
   if [ -f ".codex/skills/${skill}/SKILL.md" ]; then
     echo "✗ Workflow skill not removed: ${skill}"

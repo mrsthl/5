@@ -1528,6 +1528,15 @@ function codexUninstall() {
     return;
   }
 
+  // Remove workflow files retired from the package, which the current source no longer lists
+  for (const entry of LEGACY_REMOVED_FILES) {
+    const fullPath = path.join(targetPath, entry);
+    if (!fs.existsSync(fullPath)) continue;
+    if (fs.statSync(fullPath).isDirectory()) removeDir(fullPath);
+    else fs.unlinkSync(fullPath);
+    log.info(`Removed legacy orphan: ${entry}`);
+  }
+
   // Remove workflow command skills (5-*)
   for (const { name } of getCodexCommandFiles(getSourcePath())) {
     const skillDir = path.join(targetPath, 'skills', `5-${name}`);

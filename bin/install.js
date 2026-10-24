@@ -1254,8 +1254,9 @@ function removePlanningActiveMarker(dataDir) {
 // is shared, so performUpdate() and performCodexUpdate() both run this.
 function movePlansToPlanningDir(dataDir) {
   const featuresDir = path.join(dataDir, 'features');
-  if (!fs.existsSync(featuresDir)) return;
+  if (!fs.existsSync(featuresDir)) return 0;
   const planningDir = path.join(dataDir, 'planning');
+  let moved = 0;
   try {
     for (const feature of fs.readdirSync(featuresDir)) {
       const planFile = path.join(featuresDir, feature, 'plan.md');
@@ -1263,19 +1264,37 @@ function movePlansToPlanningDir(dataDir) {
       if (!fs.existsSync(planFile) || fs.existsSync(target)) continue;
       fs.mkdirSync(planningDir, { recursive: true });
       fs.renameSync(planFile, target);
+      moved++;
       log.info(`Moved plan: features/${feature}/plan.md → planning/${feature}.md`);
     }
   } catch (e) {}
+  return moved;
 }
 
 // Before .5/planning/ existed, plans lived in .5/features/, so a project that git-ignored
-// .5/features/ also ignored its plans. Carry that choice over to .5/planning/ — unless the
-// .gitignore already says anything about .5/planning (/5:configure writes `!.5/planning/`
-// when the user chose to share plans). Shared .5/ data, so both update paths run this.
-function ignorePlanningLikeFeatures(dataDir) {
-  const gitignorePath = path.join(path.dirname(dataDir), '.gitignore');
+// .5/features/ also ignored its plans. Carry that choice over to .5/planning/, but only for
+// projects that come from that layout: plans moved by this upgrade, or an install that was
+// upgraded into 3.1.0 (whose migration moved them without this). A project configured on 3.1
+// may have chosen "Only .5/features/" on purpose; /5:configure now marks that with
+// `!.5/planning/`, and any .5/planning rule or plan already tracked in git is left alone.
+// Shared .5/ data, so both update paths run this.
+function ignorePlanningLikeFeatures(dataDir, movedPlans, previousVersion) {
+  const projectRoot = path.dirname(dataDir);
+  const gitignorePath = path.join(projectRoot, '.gitignore');
   if (!fs.existsSync(gitignorePath)) return;
   try {
+    if (!movedPlans) {
+      if (previousVersion !== '3.1.0') return;
+      // A fresh 3.1.0 install has installedAt === lastUpdated; an upgraded one does not
+      const versionData = JSON.parse(fs.readFileSync(path.join(dataDir, 'version.json'), 'utf8'));
+      if (!versionData.installedAt || versionData.installedAt === versionData.lastUpdated) return;
+    }
+    let tracked = '';
+    try {
+      tracked = require('child_process')
+        .execFileSync('git', ['ls-files', '--', '.5/planning'], { cwd: projectRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    } catch (e) {} // not a git checkout: nothing is tracked
+    if (tracked.trim()) return;
     const content = fs.readFileSync(gitignorePath, 'utf8');
     const lines = content.split('\n').map(l => l.trim());
     const ignoresFeatures = lines.some(l => /^\/?\.5\/features\/?(\*\*?)?$/.test(l));
@@ -1311,8 +1330,7 @@ function performUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   removePlanningActiveMarker(dataDir);
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
-  movePlansToPlanningDir(dataDir);
-  ignorePlanningLikeFeatures(dataDir);
+  ignorePlanningLikeFeatures(dataDir, movePlansToPlanningDir(dataDir), versionInfo.installed);
 
   // Flag v1 → v2 major upgrade so statusline can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;
@@ -1508,8 +1526,7 @@ function performCodexUpdate(targetPath, sourcePath, isGlobal, versionInfo) {
   removePlanningActiveMarker(dataDir);
 
   // Plans moved from .5/features/{name}/plan.md to .5/planning/{name}.md
-  movePlansToPlanningDir(dataDir);
-  ignorePlanningLikeFeatures(dataDir);
+  ignorePlanningLikeFeatures(dataDir, movePlansToPlanningDir(dataDir), versionInfo.installed);
 
   // Flag v1 → v2 major upgrade so skills can prompt for reconfigure
   const prevMajor = versionInfo.installed ? parseInt(versionInfo.installed.split('.')[0], 10) : 0;

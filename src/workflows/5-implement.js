@@ -235,14 +235,16 @@ async function runComponent(c, a) {
   const run = (model, label, previous) => agent(executorPrompt(c, a, previous),
     { label, phase: 'Execute', ...modelOpts(model), schema: RESULT_SCHEMA }).catch(() => null)
 
-  const item = { component: c, result: await run(c.model, `exec:${c.name}`), retried: false, escalated: false }
+  // `last` is the latest attempt, null when it crashed; `item.result` keeps the latest structured result.
+  let last = await run(c.model, `exec:${c.name}`)
+  const item = { component: c, result: last, retried: false, escalated: false }
   for (let attempt = 1; attempt <= 2 && needsRetry(item.result); attempt++) {
     const model = retryModel(c, attempt, a)
     log(`retry ${c.name} (attempt ${attempt + 1}) on ${model || 'haiku'}`)
     item.retried = true
     item.escalated = item.escalated || model === 'opus'
-    const retried = await run(model, `retry:${c.name}`, { retry: true, result: item.result })
-    if (retried) item.result = retried
+    last = await run(model, `retry:${c.name}`, { retry: true, result: last })
+    if (last) item.result = last
   }
   return item
 }

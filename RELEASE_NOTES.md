@@ -1,5 +1,37 @@
 # Release Notes
 
+## v3.2.0
+
+**Release Date:** 2026-10-25
+
+### Opt-In Advisor and Smarter Retries
+
+`/5:implement` can now let executors consult Claude Code's advisor at hard decisions, and every retry gets the previous attempt's failure instead of a bare "this is a retry".
+
+**What's New**
+- **Advisor during implementation (opt-in)**: `advisor: true` in `.5/config.json` (Claude Code only, off by default) gives every executor the advisor rule. Turn the advisor on with `/advisor opus`. `/5:configure` asks about it. Codex ignores the setting.
+
+**Improvements**
+- **Retries see what failed**: a retry receives the previous attempt's status, verify result, error and deviations.
+- **Retry right after a failure**: each component is retried as soon as it fails; parallel steps retry concurrently, sequential steps retry before the next component starts.
+- **First retry stays on the planned model** when the advisor is on; only the second retry escalates to `opus`.
+
+**Bug Fixes**
+- **Crashed attempts are retried with the latest attempt**: a retry gets the most recent attempt's details even when that attempt crashed.
+- **Advisor retries no longer skip the mechanical fast path**: retried and escalated components are tracked separately, so an advisor retry on `haiku` still rules out the fast path.
+
+**Affected files:**
+- `src/workflows/5-implement.js` (modified)
+- `src/commands/5/implement.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/references/configure-tables.md` (modified)
+- `docs/workflow-guide.md` (modified)
+- `AGENTS.md` (modified)
+- `test/verify-install-js.sh` (modified)
+
+---
+
 ## v3.1.2
 
 **Release Date:** 2026-10-24

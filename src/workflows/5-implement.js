@@ -19,7 +19,9 @@ export const meta = {
 // auto-commit after this returns. Nothing is persisted: a rerun starts over.
 //
 // Models: haiku for mechanical work, sonnet for ordinary logic, opus at effort
-// medium for complex work and for every retry.
+// medium for complex work and for every retry. With args.advisor (opt-in, from
+// .5/config.json) executors consult Claude Code's advisor tool at decision points
+// and the first retry stays on the planned model.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESULT_SCHEMA = {
@@ -141,15 +143,24 @@ The plan has no fixed shape. Derive the components from whatever it describes: o
 Return an object matching the schema (steps[] and pendingComponents[]).`
 }
 
+const ADVISOR_RULE = 'Advisor: if an advisor tool is available, consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes.'
+
+function retryContext(previous, a) {
+  const failure = previous
+    ? `status ${previous.status}, verify ${previous.verify}, error: ${previous.error || 'none'}, deviations: ${previous.deviations || 'none'}`
+    : 'the agent crashed without returning a result'
+  const advisor = a.advisor ? ' Consult the advisor, if available, before your first edit.' : ''
+  return `This is a RETRY of a failed attempt (${failure}). Read the target as the previous attempt left it, find the root cause, and correct it.${advisor}`
+}
+
 function executorPrompt(c, a, opts) {
   const refs = (c.patternRefs || []).map(r => `  - ${r.file}${r.read ? ` (${r.read})` : ''}${r.reason ? ` — ${r.reason}` : ''}`).join('\n') || '  - none'
   const verify = (c.verifyCommands || []).join(' && ') || 'infer the narrowest relevant test/build command'
   const standards = a.standards || {}
   const repoStandards = (standards.repo || []).map(f => `  - ${f}`).join('\n') || '  - none found'
   const styles = (standards.styles || []).map(f => `  - ${f}`).join('\n') || '  - none found'
-  const retry = opts && opts.retry
-    ? '\nThis is a RETRY of a failed attempt — read the error context carefully and correct the root cause.'
-    : ''
+  const retry = opts && opts.retry ? `\n${retryContext(opts.result, a)}` : ''
+  const advisor = a.advisor ? `\n\n${ADVISOR_RULE}` : ''
   return `You are a Step Executor. Implement EXACTLY this component and nothing more.${retry}
 
 Component: ${c.name}
@@ -166,7 +177,7 @@ ${repoStandards}
 Style skills:
 ${styles}
 
-Rules: Nothing is persisted between runs, so your work may already be done: for \`create\`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.
+Rules: Nothing is persisted between runs, so your work may already be done: for \`create\`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). STOP and report failed for missing dependencies, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.${advisor}
 
 Then run: ${verify}
 
@@ -175,7 +186,7 @@ Return structured output: status, filesCreated, filesModified, verify, deviation
 
 function verifyPrompt(a, results) {
   const ran = results.flatMap(s => s.items.map(i =>
-    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to opus]' : ''}`))
+    `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to opus]' : i.retried ? ' [retried]' : ''}`))
   const summary = ran.join('\n') || '  (no components ran)'
   const repoStandards = ((a.standards && a.standards.repo) || []).join(', ') || 'none found'
   const baseline = (a.baseline && a.baseline.length)
@@ -206,42 +217,48 @@ function modelOpts(model) {
   return model === 'opus' ? { model: 'opus', effort: 'medium' } : { model: model || 'haiku' }
 }
 
+// A crashed agent (null result) counts as failed: an infra error should not be treated more
+// harshly than a clean structured failure. verify "failed" alone is no retry reason: it can come
+// from pre-existing issues, which the verifier separates using the baseline.
+function needsRetry(result) {
+  return result == null || result.status === 'failed'
+}
+
+// Retries escalate to opus. With the advisor opted in, the first retry stays on the planned model
+// and consults the advisor instead; only the second escalates.
+function retryModel(c, attempt, a) {
+  return a.advisor && attempt === 1 ? c.model : 'opus'
+}
+
+// Runs one component and retries it up to twice, handing each retry the previous failure.
+async function runComponent(c, a) {
+  const run = (model, label, previous) => agent(executorPrompt(c, a, previous),
+    { label, phase: 'Execute', ...modelOpts(model), schema: RESULT_SCHEMA }).catch(() => null)
+
+  const item = { component: c, result: await run(c.model, `exec:${c.name}`), retried: false, escalated: false }
+  for (let attempt = 1; attempt <= 2 && needsRetry(item.result); attempt++) {
+    const model = retryModel(c, attempt, a)
+    log(`retry ${c.name} (attempt ${attempt + 1}) on ${model || 'haiku'}`)
+    item.retried = true
+    item.escalated = item.escalated || model === 'opus'
+    const retried = await run(model, `retry:${c.name}`, { retry: true, result: item.result })
+    if (retried) item.result = retried
+  }
+  return item
+}
+
 async function runStep(step, components, a) {
   const stepComps = components.filter(c => step.components.includes(c.name))
-  if (!stepComps.length) return { step: step.number, name: step.name, mode: step.mode, items: [] }
-
-  let waveResults
-  if (step.mode === 'parallel' && stepComps.length > 1) {
-    // Fire every parallel component together — true concurrency, one wave.
-    waveResults = await parallel(stepComps.map(c => () =>
-      agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', ...modelOpts(c.model), schema: RESULT_SCHEMA })
-        .then(result => ({ component: c, result }))
-        .catch(() => ({ component: c, result: null }))))
+  let items
+  if (step.mode === 'parallel') {
+    // Fire every parallel component together, retries included — true concurrency, one wave.
+    items = await parallel(stepComps.map(c => () => runComponent(c, a)))
   } else {
-    waveResults = []
-    for (const c of stepComps) {
-      const result = await agent(executorPrompt(c, a), { label: `exec:${c.name}`, phase: 'Execute', ...modelOpts(c.model), schema: RESULT_SCHEMA })
-        .catch(() => null)
-      waveResults.push({ component: c, result })
-    }
+    // Sequential components depend on each other, so each one is retried before the next starts.
+    items = []
+    for (const c of stepComps) items.push(await runComponent(c, a))
   }
-
-  // Retry failed OR crashed (null) components up to twice, escalating to opus.
-  // A crashed agent (null result) is retried too — an infra error should not be
-  // treated more harshly than a clean structured failure.
-  for (const wr of waveResults) {
-    let attempt = 1
-    while ((wr.result == null || wr.result.status === 'failed') && attempt <= 2) {
-      log(`retry ${wr.component.name} (attempt ${attempt + 1}) on opus`)
-      wr.escalated = true
-      const retried = await agent(executorPrompt(wr.component, a, { retry: true }),
-        { label: `retry:${wr.component.name}`, phase: 'Execute', ...modelOpts('opus'), schema: RESULT_SCHEMA }).catch(() => null)
-      if (retried) wr.result = retried
-      attempt++
-    }
-  }
-
-  return { step: step.number, name: step.name, mode: step.mode, items: waveResults }
+  return { step: step.number, name: step.name, mode: step.mode, items }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -265,7 +282,7 @@ const allPassed = allItems.length > 0 && allItems.every(i => i.result && i.resul
 // Mechanical when every component was planned as haiku and none needed a retry; anything
 // else signals reasoning-level work that warrants the full verification agent.
 const usedOpus = components.some(c => c.model === 'opus') || allItems.some(i => i.escalated)
-const mechanical = !usedOpus && components.every(c => (c.model || 'haiku') === 'haiku')
+const mechanical = !usedOpus && !allItems.some(i => i.retried) && components.every(c => (c.model || 'haiku') === 'haiku')
 // Deterministic scope signal: files an executor touched beyond its planned target(s).
 // Tests and import sites are legitimate, so this is reported for the user, never a failure.
 const extraFiles = allItems.flatMap(i => {
@@ -295,7 +312,7 @@ return {
     step: s.step,
     name: s.name,
     mode: s.mode,
-    items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, escalated: !!i.escalated, result: i.result }))
+    items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, retried: i.retried, escalated: i.escalated, result: i.result }))
   })),
   verification,
   extraFiles,

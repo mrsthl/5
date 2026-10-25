@@ -49,6 +49,7 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
 | Generated rules | `.claude/rules/*.md` from `configure-rules` | `File-Scoped Rules` section in the foifi block of `AGENTS.md` — Codex reads only `AGENTS.md`, never `.codex/instructions.md`; `/5:synchronize-agents` writes the same section from `.claude/rules/` |
 | Security review | `Skill(security-review)` in `/5:review` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
+| Advisor (opt-in, `advisor: true` in `.5/config.json`) | Executors get the advisor rule; first retry stays on the planned model. Needs `/advisor opus` in Claude Code | Not available; the setting is ignored and retries go to `opus` |
 | Upgrade migrations | `performUpdate()` in `install.js` | `performCodexUpdate()` in `install.js` — must mirror all migrations |
 
 **Rule:** When adding a hook, statusline indicator, or upgrade migration for Claude Code, add an equivalent for Codex. The most common Codex equivalent is an instruction in `getCodexSkillAdapterHeader()`.
@@ -90,6 +91,8 @@ The plan file that native plan mode saves in `.5/planning/` is the only planning
 Nothing about a run is persisted. A compact plan (1-2 files, no migration, security/auth, or public API change) is implemented inline in the `/5:implement` session. A full plan's execution graph — steps, component wiring, model choices, `patternRefs`, verify commands — is derived on every run; a rerun starts over, and executors see already-done work in the files. There is no `state.json` and no task list.
 
 Model tiers: `haiku` for mechanical work, `sonnet` for ordinary logic, `opus` at effort `medium` for complex logic, cross-module, security/auth, migrations, public API, and every retry. Keep the tiers in sync across `step-orchestrator-agent.md`, `orchestratorPrompt()` / `modelOpts()` in `5-implement.js`, `implement.md`, and the Codex "Model Mapping" in `getCodexSkillAdapterHeader()`.
+
+Advisor (opt-in, Claude Code only): `.5/config.json` `advisor: true` (default `false`) makes `/5:implement` add the advisor rule to every executor and keep the first retry on the planned model (`retryModel()` in `5-implement.js`); only the second retry escalates to `opus`. The advisor tool itself is a Claude Code setting (`/advisor opus`), which subagents inherit; foifi never turns it on. Keep the rule in sync across `ADVISOR_RULE` in `5-implement.js`, the "Advisor" section of `step-executor-agent.md`, and the advisor line in `implement.md`. Codex has no advisor and ignores the setting.
 
 ## Agents
 

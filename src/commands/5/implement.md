@@ -23,7 +23,7 @@ Find the plan:
 
 Plans have no fixed shape. The feature name is the plan's `feature` frontmatter field when it has one, otherwise the file name without `.md`.
 
-Read the plan and `.5/config.json` if it exists. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
+Read the plan and `.5/config.json` if it exists. The advisor is **enabled** for this run only when `.5/config.json` has `advisor: true` and the runtime is Claude Code; Codex has no advisor tool and ignores the setting. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
 
 A plan is **compact** when it changes 1-2 files with no data migration, no security/auth change, and no public API change. Every other plan is **full**.
 
@@ -59,12 +59,14 @@ It moves orchestration into deterministic JS, fires parallel components concurre
   "feature": "{feature-name}",
   "paths": {"plan": "{plan-path}", "config": ".5/config.json"},
   "standards": {"repo": ["CONTRIBUTING.md"], "styles": ["/abs/path/.claude/skills/fowler-code-smells/SKILL.md"]},
-  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}]
+  "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
+  "advisor": false
 }
 ```
 
 - `standards` holds the repository standards and style skill paths from Step 1. Executors follow them while writing code.
 - `baseline` is the array from Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
+- `advisor` is `true` only when the advisor is enabled (Step 1). It adds the advisor rule to the executors and keeps their first retry on the planned model.
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline.
 
 2. If the returned `verification.inline` is `true` (every component was mechanical and passed, so no verification agent ran), run the **fast-path check** (3c) and take its result as the verification.
@@ -86,7 +88,7 @@ For each step:
 2. Spawn executors with the component's model. Run `opus` at `effort: "medium"`.
    - **Parallel step: emit all of the step's executor Agent calls in a single message so they run concurrently.**
    - Sequential step (same-file or dependency): one executor at a time.
-   - Give each executor only its component block, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below — do not make it read `step-executor-agent.md`.
+   - Give each executor only its component block, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below — do not make it read `step-executor-agent.md`. When the advisor is enabled, append the advisor line after the contract.
 
 ```text
 Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
@@ -103,9 +105,15 @@ ERROR: none | {error description}
 ---END---
 ```
 
+Advisor line (only when the advisor is enabled):
+
+```text
+Advisor: if an advisor tool is available, consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes.
+```
+
 3. Parse only the `---RESULT---` block from each executor. Trust the executor's report — do not re-read files you did not change to confirm them.
 
-Retry failed components up to twice on `opus` at `effort: "medium"`. Never fix code in the orchestrator context.
+Retry a failed component up to twice, right after it fails (in a sequential step, before the next component starts), on `opus` at `effort: "medium"`. When the advisor is enabled, the first retry stays on the component's planned model and asks the executor to consult the advisor before its first edit; only the second escalates to `opus`. Give every retry the previous attempt's `STATUS`, `VERIFY`, `ERROR`, and `DEVIATIONS` (or that it returned no result). A `STATUS: success` with `VERIFY: failed` is no retry reason: it can come from pre-existing failures, which verification separates using the baseline. Never fix code in the orchestrator context.
 
 #### 3c. Verify
 

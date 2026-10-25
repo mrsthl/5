@@ -325,6 +325,16 @@ function verifyPlanModeContract() {
       ok: implementCommand.includes('### Compact plan: implement inline') && /^allowed-tools:.*\bEdit\b/m.test(implementCommand) && !workflow.includes('isCompact')
     },
     {
+      label: 'advisor is opt-in and its rule matches across workflow, prose loop, and executor agent',
+      ok: (() => {
+        const rule = (workflow.match(/const ADVISOR_RULE = '([^']+)'/) || [])[1];
+        const executorAgent = fs.readFileSync('src/agents/step-executor-agent.md', 'utf8');
+        const schema = fs.readFileSync('src/references/configure-tables.md', 'utf8');
+        return !!rule && implementCommand.includes(rule) && executorAgent.includes(rule.replace('Advisor: if an advisor tool is available, c', 'c'))
+          && workflow.includes('a.advisor &&') && schema.includes('"advisor": false');
+      })()
+    },
+    {
       label: 'fast path runs build and test after the change',
       ok: implementCommand.includes('**Fast-path check**') && implementCommand.includes('Run the configured build and test commands once')
     },

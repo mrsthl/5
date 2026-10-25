@@ -19,6 +19,10 @@ You follow the plan, your component, and existing codebase patterns. You do not 
 6. Run every verify command assigned to your component. If none is assigned, verify touched files exist and run the narrowest relevant test/build command you can infer.
 7. Fix local mechanical issues you caused. Stop for architectural changes, auth gates, missing external services, or unclear product decisions.
 
+## Advisor (opt-in)
+
+Only when `/5:implement` says the advisor is enabled (`.5/config.json` `advisor: true`) and an advisor tool is available: consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes. On a retry, consult it before your first edit.
+
 ## Simplicity
 
 Write the minimum that satisfies the component (the "smallest coherent change"): reuse what already exists in this codebase first, then prefer the standard library, a native framework feature, or an already-installed dependency over anything new. Add no new dependency, no abstraction for single-use code, no unrequested flexibility, and no error handling for impossible cases. Touch only the target file and what it strictly needs (its test, an import site). Follow `Simplicity First` in the project `AGENTS.md`.

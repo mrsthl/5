@@ -56,7 +56,7 @@ A compact plan (1-2 files, no migration, security/auth, or public API change) is
 A full plan goes through four steps:
 
 1. `step-orchestrator-agent` derives the execution graph — steps, execution mode, dependency edges, model choice, targeted pattern references, and verify commands.
-2. Executor agents implement the components using an inline executor contract, independent ones in parallel. Each follows the repository standards and style skills that apply to its target. Mechanical work runs on `haiku`, ordinary logic on `sonnet`, complex work and every retry on `opus` at medium effort.
+2. Executor agents implement the components using an inline executor contract, independent ones in parallel. Each follows the repository standards and style skills that apply to its target. Mechanical work runs on `haiku`, ordinary logic on `sonnet`, complex work and every retry on `opus` at medium effort. With `advisor: true` in `.5/config.json` (opt-in, Claude Code only, off by default), executors consult Claude Code's advisor tool at hard decisions and the first retry stays on the planned model; turn the advisor on with `/advisor opus`.
 3. When every component was mechanical and passed, build and tests run once plus the scope check. Otherwise `verification-agent` checks completeness, build/tests, the plan's acceptance criteria when it states any, and scope.
 4. `/5:review` runs once on the files the run changed — `code-review`, `security-review` for security-sensitive files, and `review-style` — and `/5:address-review-findings` then fixes the clear findings on its own and asks you only about real decisions, one question at a time. Auto-commit comes after, so approved fixes land in the same commit.
 

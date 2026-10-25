@@ -137,6 +137,12 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     1. "No (recommended)" → `git.autoCommit: false`
     2. "Yes - commit after each implementation step" → `git.autoCommit: true`
 
+**2f2. Advisor during implementation (Claude Code only — skip on Codex and set `advisor: false`):**
+- "Let `/5:implement` executors consult Claude Code's advisor tool at hard decisions, and retry a failed component once on its planned model before escalating to opus? Needs the advisor turned on in Claude Code (`/advisor opus`); it is experimental and Anthropic-API only."
+  - Options:
+    1. "No (recommended)" → `advisor: false`
+    2. "Yes" → `advisor: true`
+
 **2g. Commit message pattern:**
 
 When the repository already documents a commit convention (step 1e or 1e2), that convention wins and AGENTS.md links it. Skip the question, and derive the closest pattern from the convention with the `{ticket-id}` and `{short-description}` placeholders — for example `feat({ticket-id}): {short-description}` for Conventional Commits — and store it as `git.commitMessage.pattern`, so auto-commits follow the convention too. Otherwise ask:
@@ -189,7 +195,7 @@ Using the values gathered from Steps 1 and 2, write `.5/config.json` directly.
 mkdir -p .5
 ```
 
-**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `rules.generate` from step 2j2). Write with pretty-printed JSON. Read back to verify correctness.
+**Schema:** Read `.claude/references/configure-tables.md` section "Config Schema" for the full JSON structure. Fill all values from user responses (including `advisor` from step 2f2 and `rules.generate` from step 2j2). Write with pretty-printed JSON. Read back to verify correctness.
 
 **Update `.5/version.json` with configure timestamp:**
 

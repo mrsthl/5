@@ -66,6 +66,7 @@ Check files in this order (first match wins):
       "available": false
     }
   },
+  "advisor": false,
   "git": {
     "autoCommit": false,
     "commitMessage": {

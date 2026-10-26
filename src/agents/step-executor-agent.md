@@ -18,10 +18,11 @@ You follow the plan, your component, and existing codebase patterns. You do not 
 5. Follow the standards `/5:implement` assigns: read the parts of the repository standards and style skills that apply to your target. Repository standards win over the style skills. If the target area has a local skill or rule, follow it too.
 6. Run every verify command assigned to your component. If none is assigned, verify touched files exist and run the narrowest relevant test/build command you can infer.
 7. Fix local mechanical issues you caused. Stop for architectural changes, auth gates, missing external services, or unclear product decisions.
+8. When a project file or symbol your component needs does not exist yet, do not create it: stop with `STATUS: blocked` and name it under `BLOCKED_BY`. `/5:implement` reruns you after the next step instead of retrying.
 
 ## Advisor (opt-in)
 
-Only when `/5:implement` says the advisor is enabled (`.5/config.json` `advisor: true`) and an advisor tool is available: consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes. On a retry, consult it before your first edit.
+Only when `/5:implement` says the advisor is enabled (`.5/config.json` `advisor: true`, and the session has the advisor tool): consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes. On a retry, consult it before your first edit.
 
 ## Simplicity
 
@@ -31,7 +32,8 @@ End with exactly:
 
 ```text
 ---RESULT---
-STATUS: success | failed
+STATUS: success | failed | blocked
+BLOCKED_BY: none | {the missing project file or symbol}
 FILES_CREATED: [comma-separated paths]
 FILES_MODIFIED: [comma-separated paths]
 VERIFY: passed | failed | skipped
@@ -47,7 +49,9 @@ Keep the result block concise. Do not include command logs, diffs, or long expla
 
 **Fix and note** in deviations: imports, type mismatches, or lint you caused; a nearby existing convention that contradicts the plan (follow the convention).
 
-**Stop and report** as failed: a required dependency/package is absent; a database/schema/auth/API contract change not in the plan.
+**Stop and report** as failed: a required package is absent; a database/schema/auth/API contract change not in the plan.
+
+**Stop and report** as blocked: a project file or symbol the component needs has not been created yet.
 
 **Report the exact evidence, but do not mark the component failed**, when verify fails only from pre-existing unrelated issues (your change is complete and correct; record the failure as a deviation so verification can treat it as pre-existing).
 

@@ -310,7 +310,7 @@ function verifyPlanModeContract() {
     },
     {
       label: 'implement runs /5:review once, scoped to the run, before auto-commit',
-      ok: implementCommand.includes('Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}`') && reviewCommand.includes('since {fixed-point} files: {paths} feature: {name} dirty: {paths}') && implementCommand.includes('do not commit; report it') && implementCommand.includes('Never stage a pre-run dirty file') && reviewCommand.includes('drop every finding whose file is not in `{paths}`') && reviewCommand.includes('Ask once:') && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
+      ok: implementCommand.includes('Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}`') && reviewCommand.includes('since {fixed-point} files: {paths} feature: {name} dirty: {paths}') && implementCommand.includes('do not commit; report it') && implementCommand.includes('Never stage a pre-run dirty file') && reviewCommand.includes('drop every finding whose file is not in `{paths}`') && !reviewCommand.includes('Ask once:') && implementCommand.includes('**After the Workflow route:**') && workflow.includes("phase('Review')") && workflow.includes("phase('Fix')") && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
     },
     {
       label: 'verification checks only built-and-works; review-style uses two reviewers',
@@ -333,6 +333,10 @@ function verifyPlanModeContract() {
         return !!rule && implementCommand.includes(rule) && executorAgent.includes(rule.replace('Advisor: if an advisor tool is available, c', 'c'))
           && workflow.includes('a.advisor &&') && schema.includes('"advisor": false');
       })()
+    },
+    {
+      label: 'blocked components wait for the next step instead of retrying',
+      ok: workflow.includes("result.status === 'blocked'") && implementCommand.includes('`STATUS: blocked` is no retry reason') && fs.readFileSync('src/agents/step-executor-agent.md', 'utf8').includes('BLOCKED_BY')
     },
     {
       label: 'fast path runs build and test after the change',

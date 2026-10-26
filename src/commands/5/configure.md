@@ -138,7 +138,7 @@ If "Cancel": Exit immediately with message "Configuration unchanged."
     2. "Yes - commit after each implementation step" → `git.autoCommit: true`
 
 **2f2. Advisor during implementation (Claude Code only — skip on Codex and set `advisor: false`):**
-- "Let `/5:implement` executors consult Claude Code's advisor tool at hard decisions, and retry a failed component once on its planned model before escalating to opus? Needs the advisor turned on in Claude Code (`/advisor opus`); it is experimental and Anthropic-API only."
+- "Let `/5:implement` executors consult Claude Code's advisor tool at hard decisions, and retry a failed component once on its planned model before escalating to opus? Needs the advisor turned on in Claude Code (`/advisor opus`); it is experimental and Anthropic-API only. Without the tool in the session, `/5:implement` warns and runs without it."
   - Options:
     1. "No (recommended)" → `advisor: false`
     2. "Yes" → `advisor: true`

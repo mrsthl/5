@@ -17,6 +17,7 @@ Turn the plan into execution state that `/5:implement` can run without rethinkin
 - Name each component in short kebab-case.
 - Group independent components into the same step with `mode: "parallel"`.
 - Use `mode: "sequential"` when components touch the same file, one imports another, or an explicit dependency exists.
+- For each component, list the project files and symbols it includes, requires, imports, calls, or tests. When another component creates one of them, add it to `dependsOn` and put it in an earlier step — never the same parallel step or a later one.
 - Prefer fewer steps when dependencies allow.
 - Tests normally run after the components they validate.
 - Choose `model: "haiku"` for mechanical work: localized UI changes, tests, docs, config edits, and simple single-file changes.
@@ -25,6 +26,7 @@ Turn the plan into execution state that `/5:implement` can run without rethinkin
 - Pick `patternRefs` from patterns the plan names, or from nearby existing files found with Glob/Grep. Prefer one primary reference; use a second only when it adds a distinct convention. Include line ranges or symbols when known so executors avoid reading whole files.
 - Pick `verifyCommands` from `.5/config.json`, the plan, package scripts, and target-specific checks. Prefer narrow checks first, then project-level build/test.
 - Preserve user decisions exactly. Exclude work the plan defers or rules out.
+- Set `securitySensitive` when the plan touches auth, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction, and `lifecycleSensitive` when it touches install, update, migration, deploy, or bootstrap paths, or the order in which files are written, uploaded, or loaded. They decide which reviewers run after the implementation.
 
 ## Output
 
@@ -32,6 +34,8 @@ Return this shape:
 
 ```json
 {
+  "securitySensitive": false,
+  "lifecycleSensitive": false,
   "steps": [
     {
       "number": 1,
@@ -71,7 +75,7 @@ Return this shape:
 Before returning:
 
 - Every piece of planned work is represented once unless the plan defers it.
-- Every non-first-step dependency refers to an existing component name.
+- Every non-first-step dependency refers to an existing component name in an earlier step.
 - Every component has 1-2 high-signal `patternRefs`, or a note explaining why no pattern exists.
 - Every component has at least one verify command or a note explaining why verification is manual.
 - Rename components must set `sourceFile` to the original path and `file` to the destination path.

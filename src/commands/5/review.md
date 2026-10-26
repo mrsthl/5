@@ -48,6 +48,19 @@ Skill(skill: "security-review")
 
 Use the vulnerabilities it reports. Skip it for diffs that touch none of these areas.
 
+**Flow review** — a diff reviewer reads file by file and misses failures that only show across files and states. When the diff touches install, update, migration, deploy, or bootstrap paths, the order in which files are written, uploaded, or loaded, or is security-sensitive, spawn one agent on `opus` at `effort: "medium"`:
+
+```text
+Trace behavior ACROSS the changed files and the states they run in. Read the entry points, then follow each flow end to end:
+- a fresh install with no earlier state: missing directories, files, config, or database rows;
+- an upgrade from the previous version, and an update that stops halfway;
+- the order of operations across files: what is written, uploaded, loaded, or required first, and what breaks when that order changes or one step fails;
+- output, headers, or side effects that happen before guards, error handling, or error suppression are in place;
+- files and helpers the change relies on but does not check, and tests that assert the old order or state.
+Report only failures you can describe as a concrete sequence of states. Do not edit files.
+Output the same blocks as the fallback path below.
+```
+
 **Standards review** — then invoke `review-style` in report-only mode. It checks the same changes against the repository's own standards and the style skills it lists, and repository standards win:
 
 ```text
@@ -92,7 +105,7 @@ When the findings come from the `code-review` skill, map its reported fields ont
 | Reported finding | Template field |
 |---|---|
 | `verdict: CONFIRMED` with a localized, single-file fix | **Category:** `Fixable` |
-| `verdict: PLAUSIBLE` | **Category:** `Question` |
+| `verdict: PLAUSIBLE` | read the code and confirm or refute it yourself: confirmed → as `CONFIRMED`, refuted → leave it out, still open → **Category:** `Question` |
 | `verdict: CONFIRMED` but spanning files or needing a design decision | **Category:** `Manual` |
 | `category: correctness` | **Severity:** `error` (`warning` when `PLAUSIBLE`) |
 | `category: simplification` / `efficiency` / `test-coverage` | **Severity:** `suggestion` |
@@ -103,7 +116,9 @@ When the findings come from the `code-review` skill, map its reported fields ont
 
 Findings from `security-review` map to **Category:** `Fixable` when the fix is local, otherwise `Manual`, always with **Severity:** `error`; its explanation of the exploit goes into **Original Reviewer Message:**.
 
-Findings from the fallback path map directly: Fixable Issues, Questions, and Manual Review become their matching categories.
+Findings from the fallback path and the flow review map directly: Fixable Issues, Questions, and Manual Review become their matching categories.
+
+Use `Question` sparingly: only for a finding whose fix depends on a decision the user must make. A clearly better way to do the same thing is `Fixable`, not a question.
 
 Findings from `review-style` map like this. Leave out its Suppressed findings; a repository standard overrides them.
 
@@ -134,7 +149,4 @@ Findings saved at `.5/features/{feature-name}/review-findings-{timestamp}.md`
 
 If there are no findings, stop here.
 
-Otherwise hand off to `/5:address-review-findings {feature-name}`. It fixes the clear findings on its own, asks the user one question at a time only about real decisions, and then runs build, test, and lint.
-
-- **Called by `/5:implement`** (the `since … files:` scope): run `/5:address-review-findings {feature-name} dirty: {dirty-paths}` right away. The user approved the plan, and these are the run's own files — except the dirty ones, which also hold the user's earlier work.
-- **Started on its own:** the reviewed code may come from someone else's branch, and the fixes are followed by the project's build and test commands. Ask once: "Fix the clear findings on my own and then run build, test, and lint?" On yes, run it. On no, stop and tell the user they can run `/5:address-review-findings {feature-name}` (or `--interactive`) later.
+Otherwise run `/5:address-review-findings {feature-name}` right away — with `dirty: {dirty-paths}` when `/5:implement` called this review. It fixes the clear findings on its own, asks the user one question at a time only about real decisions, and then runs build, test, and lint. Do not ask before handing off: the user asked for the review, and the findings exist to be fixed. A user who wants to decide every finding runs `/5:address-review-findings {feature-name} --interactive`.

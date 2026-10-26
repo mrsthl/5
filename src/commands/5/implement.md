@@ -1,6 +1,6 @@
 ---
 name: 5:implement
-description: Executes a plan from .5/planning/. Compact plans are implemented inline in this session; full plans run through the Workflow tool when available (parallel waves, schema-validated agents), otherwise an equivalent prose loop. Codex always uses the prose loop. Verifies that the plan was built and works, then runs /5:review.
+description: Executes a plan from .5/planning/. Compact plans are implemented inline in this session; full plans run through the Workflow tool when available (parallel waves, schema-validated agents), otherwise an equivalent prose loop. Codex always uses the prose loop. Verifies that the plan was built and works, then reviews the run's files and fixes the clear findings — inside the workflow on Claude Code, via /5:review otherwise.
 allowed-tools: Agent, Read, Write, Edit, Glob, Grep, Bash, Workflow, Skill, AskUserQuestion
 user-invocable: true
 argument-hint: [feature-name-or-plan-path]
@@ -23,7 +23,7 @@ Find the plan:
 
 Plans have no fixed shape. The feature name is the plan's `feature` frontmatter field when it has one, otherwise the file name without `.md`.
 
-Read the plan and `.5/config.json` if it exists. The advisor is **enabled** for this run only when `.5/config.json` has `advisor: true` and the runtime is Claude Code; Codex has no advisor tool and ignores the setting. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
+Read the plan and `.5/config.json` if it exists. The advisor is **enabled** for this run only when `.5/config.json` has `advisor: true`, the runtime is Claude Code, and this session actually has an advisor tool — subagents inherit it from here. When the setting is on but the tool is missing, tell the user once — "Advisor is on in `.5/config.json`, but no advisor tool is available in this session (`/advisor opus`, Anthropic API only); running without it." — and run with the advisor disabled. Codex has no advisor tool and ignores the setting. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
 
 A plan is **compact** when it changes 1-2 files with no data migration, no security/auth change, and no public API change. Every other plan is **full**.
 
@@ -37,6 +37,8 @@ Collect the standards once for this run:
 Record `git rev-parse HEAD` as this run's **fixed point** for the review in Step 4, and the files `git status --porcelain` lists now as **pre-run dirty files**: they hold the user's own uncommitted work.
 
 Run build/test commands from `.5/config.json`. Skip commands set to `none`. Keep the results in context for this run — they are what lets verification tell pre-existing failures apart from new ones. If baseline fails, warn and continue.
+
+When a command cannot run at all — a tool or dependency is not installed, or a download fails because the network is blocked — say so right away: "Build/test cannot run here ({reason}); this run is verified only by reading the code." Carry the same line into the report, so the user knows CI is the first real check.
 
 ## Step 3: Run
 
@@ -60,16 +62,21 @@ It moves orchestration into deterministic JS, fires parallel components concurre
   "paths": {"plan": "{plan-path}", "config": ".5/config.json"},
   "standards": {"repo": ["CONTRIBUTING.md"], "styles": ["/abs/path/.claude/skills/fowler-code-smells/SKILL.md"]},
   "baseline": [{"command": "...", "status": "passed|failed|skipped", "summary": "one line"}],
-  "advisor": false
+  "advisor": false,
+  "fixedPoint": "{fixed-point}",
+  "dirty": ["{pre-run dirty file}"]
 }
 ```
 
 - `standards` holds the repository standards and style skill paths from Step 1. Executors follow them while writing code.
 - `baseline` is the array from Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
-- `advisor` is `true` only when the advisor is enabled (Step 1). It adds the advisor rule to the executors and keeps their first retry on the planned model.
+- `advisor` is `true` only when the advisor is enabled (Step 1). It adds the advisor rule to the executors and keeps their first retry on the planned model, at least `sonnet`.
+- `fixedPoint` and `dirty` are the fixed point and the pre-run dirty files from Step 2. The workflow reviews only the run's files since the fixed point and never edits a dirty file.
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline.
 
-2. If the returned `verification.inline` is `true` (every component was mechanical and passed, so no verification agent ran), run the **fast-path check** (3c) and take its result as the verification.
+The workflow also reviews and fixes: after verification it runs the correctness and standards reviewers — plus security and flow reviewers when the plan touches security or install/update/ordering paths — fixes every clear finding with one fixer per file, and reruns build, test, e2e, and lint with up to two repair attempts. It skips review and fix when verification failed.
+
+2. If the returned `verification.inline` is `true` (every component was mechanical and passed, so no verification agent ran), run steps 2-4 of the **fast-path check** (3c) — the scope part. Build and test already ran in `review.checks`; take their result as the verification.
 3. Continue with Step 4.
 
 ### Full plan, without the `Workflow` tool (prose loop)
@@ -91,11 +98,12 @@ For each step:
    - Give each executor only its component block, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below — do not make it read `step-executor-agent.md`. When the advisor is enabled, append the advisor line after the contract.
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands, and stop (STATUS: failed) for missing dependencies, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands. When a project file or symbol your component needs does not exist yet, do not create it: stop with STATUS: blocked and name it under BLOCKED_BY. Stop (STATUS: failed) for a missing package, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
-STATUS: success | failed
+STATUS: success | failed | blocked
+BLOCKED_BY: none | {the missing project file or symbol}
 FILES_CREATED: [comma-separated paths]
 FILES_MODIFIED: [comma-separated paths]
 VERIFY: passed | failed | skipped
@@ -113,7 +121,9 @@ Advisor: if an advisor tool is available, consult it before committing to an app
 
 3. Parse only the `---RESULT---` block from each executor. Trust the executor's report — do not re-read files you did not change to confirm them.
 
-Retry a failed component up to twice, right after it fails (in a sequential step, before the next component starts), on `opus` at `effort: "medium"`. When the advisor is enabled, the first retry stays on the component's planned model and asks the executor to consult the advisor before its first edit; only the second escalates to `opus`. Give every retry the previous attempt's `STATUS`, `VERIFY`, `ERROR`, and `DEVIATIONS` (or that it returned no result). A `STATUS: success` with `VERIFY: failed` is no retry reason: it can come from pre-existing failures, which verification separates using the baseline. Never fix code in the orchestrator context.
+Retry a failed component up to twice, right after it fails (in a sequential step, before the next component starts), on `opus` at `effort: "medium"`. When the advisor is enabled, the first retry stays on the component's planned model — at least `sonnet` — and asks the executor to consult the advisor before its first edit; only the second escalates to `opus`.
+
+`STATUS: blocked` is no retry reason: the component needs a project file or symbol another component has not created yet, and no model can fix that. Rerun it on its planned model once the next step has finished; if it is still blocked, rerun it once more after the last step. Still blocked after that counts as failed. Give every retry the previous attempt's `STATUS`, `VERIFY`, `ERROR`, and `DEVIATIONS` (or that it returned no result). A `STATUS: success` with `VERIFY: failed` is no retry reason: it can come from pre-existing failures, which verification separates using the baseline. Never fix code in the orchestrator context.
 
 #### 3c. Verify
 
@@ -142,11 +152,21 @@ Set `SCOPE: passed | drift`. Drift never changes the verification status; it onl
 
 ## Step 4: Review
 
-Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}` with the fixed point and the pre-run dirty files from Step 2 (`dirty: none` when there are none). `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, and `review-style` against the repository standards and the style skills — saves the findings, fixes the clear ones on its own, and asks the user only about real decisions, one at a time. Run it on every path, and before the auto-commit, so approved fixes land in the same commit.
+Review and fix the run's files before the auto-commit, so fixes land in the same commit. The user should be involved as little as possible: every clear finding — including a clearly better way the review points out — is fixed without asking.
+
+**After the Workflow route:** the workflow already reviewed and fixed. If `review` is `null`, verification failed and there is nothing to review yet. Otherwise:
+
+1. Write `.5/features/{feature-name}/review-findings-{YYYYMMDD-HHmmss}.md` from `review.findings` using `.claude/templates/workflow/REVIEW-FINDINGS.md`: `action: fix` → **Category:** `Fixable`, `decide` → `Question`, `report` and `skip` → `Manual` with their `reason`; `severity`, `file`, `line`, `description`, and `fix` map to their fields, and the reviewer name goes into **Original Reviewer Message:**.
+2. Findings with `action: decide` are the only ones you ask about — one finding per question, one question at a time, in the format of `/5:address-review-findings` step 2. Apply the chosen fixes and run its post-fix verification (steps 3-4). Also retry each `fix` finding with `status: failed` once yourself; one that still fails goes into the report, not to the user.
+3. Write `.5/features/{feature-name}/review-decisions-{YYYYMMDD-HHmmss}.json` in the format of `/5:address-review-findings`: the workflow's fixes as `decidedBy: claude`, the answers as `decidedBy: user`.
+
+The code is **green** when `review.checks` is `null` or `passed` and the post-fix verification of step 2, if any ran, passed.
+
+**Every other route** (compact plan, prose loop, Codex): Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}` with the fixed point and the pre-run dirty files from Step 2 (`dirty: none` when there are none). `{run-files}` lists the files this run created, modified, or deleted, so changes the user already had stay out of the review. `/5:review` runs every quality check exactly once — the built-in `code-review`, `security-review` for security-sensitive files, the flow review for install/update/ordering paths, and `review-style` against the repository standards and the style skills — saves the findings, and hands them to `/5:address-review-findings`, which fixes the clear ones on its own and asks the user only about real decisions. The code is green when no review fix was applied or it reported `Review findings addressed: yes`.
 
 ## Step 5: Auto-commit
 
-If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — no review fix was applied, or `/5:address-review-findings` reported `Review findings addressed: yes` — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
+If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
 
 1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes. **Never stage a pre-run dirty file** (Step 2), on any plan: it holds the user's own unfinished work. Leave it uncommitted and list it in the report.
 2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}` (compact plan: a short summary of the change); trim redundant whitespace/punctuation when the ticket is empty.
@@ -158,7 +178,9 @@ When a review fix left build, tests, e2e, or lint failing, do not commit; report
 
 Report: completed/failed component counts, verification status, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. When verification failed, tell the user to fix the reported issues and rerun `/5:implement {feature-name}`. Also list, one line each:
 
-- **Review:** the findings count from `/5:review` and how many were fixed.
+- **Review:** the findings count, how many were fixed without asking, how many you asked about, and every failed fix.
+- **Blocked:** components that stayed blocked, with what they were waiting for — a sign the plan's step order is wrong.
+- **Not verified locally:** the line from Step 2, when build/test could not run here.
 - **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.
 - **Skipped:** every non-`none` `SKIPPED` entry from the executors, so deliberate omissions stay visible.
 - **Not committed:** pre-run dirty files the run changed — they also hold the user's earlier work, so the user commits them.

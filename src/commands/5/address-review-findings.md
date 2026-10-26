@@ -19,7 +19,7 @@ You are a Review Fix Coordinator. You fix what is clear, ask the user only what 
 ## Options
 
 - `--interactive` — ask about every finding, one at a time, instead of deciding the clear ones yourself.
-- `dirty: {paths}` — files that held the user's own uncommitted work before the run (`/5:implement` passes this). A finding in one of them may sit in that earlier work, so it is always **ask**, never fixed on your own.
+- `dirty: {paths}` — files that held the user's own uncommitted work before the run (`/5:implement` passes this). A finding in one of them may sit in that earlier work, so it is never fixed on your own and never asked about: record it as `wait` with the reason "pre-run dirty file" and list it in the report.
 
 ## Process
 
@@ -31,9 +31,10 @@ You are a Review Fix Coordinator. You fix what is clear, ask the user only what 
    - Find the latest `.5/features/{feature}/review-findings-*.md`. If missing, tell the user to run `/5:review` and stop.
    - Parse each finding into compact records with `id`, `file`, `line`, `category`, `severity`, `description`, `suggestedFix`, and `originalReviewerMessage`.
    - Sort each finding into one group:
-     - **fix** — a confirmed bug, security issue, breach of a repository standard, or style finding with a clear, local fix that changes no behavior beyond the finding.
-     - **wont_fix** — obsolete, a duplicate, outside the feature scope, or based on an incorrect premise.
-     - **ask** — uncertain (`Question` category), spanning several files, or needing a design, product, or API decision; also any fix whose suggested change you cannot apply with confidence.
+     - **fix** — a confirmed bug, security issue, breach of a repository standard, style finding, or a clearly better way to do the same thing (simpler, reuses existing code, more robust), with a concrete fix. Spanning several files is no reason to ask.
+     - **wont_fix** — obsolete, a duplicate, outside the feature scope, based on an incorrect premise, or a marginal gain.
+     - **ask** — only when the right fix depends on a product, API, data, or security trade-off the plan does not settle, or would contradict the plan. Before asking about a `Question` finding or a fix you are unsure of, read the code: confirmed → **fix**, refuted → **wont_fix**. Ask only what is still open after that.
+   - The user wants to be involved as little as possible. When in doubt between **fix** and **ask**, and the fix is reversible and inside the reviewed files, choose **fix**.
    - Record `fix` and `wont_fix` yourself, each with a one-line reason.
    - For each **ask** finding, ask the user — **one finding per question, one question at a time**. Show `Decision {current}/{total}`, file and line, a concise description, the suggested fix, and your recommendation. Options: `fix`, `wont_fix`, `wait`, or textual instructions. Treat textual instructions as `fix` with `customInstructions` unless the text clearly says to defer or reject the finding.
    - With `--interactive`, ask about every finding this way instead.

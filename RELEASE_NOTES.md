@@ -1,5 +1,40 @@
 # Release Notes
 
+## v3.2.1
+
+**Release Date:** 2026-10-26
+
+### Review and Fix Inside the Workflow, Fewer Questions
+
+`/5:implement` now reviews the run's files and fixes the findings inside the workflow, and asks you only when a finding needs a real decision.
+
+**Improvements**
+- **Review and fix in the workflow (Claude Code)**: `5-implement.js` gains Review and Fix phases. The correctness and standards reviewers always run. A security reviewer joins for security-sensitive plans, and a flow reviewer for plans that are security-sensitive or touch install, update, or ordering paths. Each file gets one fixer, then build, test, e2e, and lint run with up to two repair attempts.
+- **Flow review**: traces fresh installs, interrupted updates, missing directories, ordering across files, and output before error handling. A file-by-file diff review misses these. Also in `/5:review` for Codex and compact plans.
+- **Fewer questions**: clear findings and clearly better approaches are fixed without asking. Uncertain findings are checked against the code first. You are asked only when the plan leaves a product, API, data, or security decision open. `/5:review` hands off to `/5:address-review-findings` without asking first.
+- **Blocked components wait instead of retrying**: an executor that needs a project file not created yet reports `blocked`. The component reruns after the next step instead of failing three times on the same model. The orchestrator now puts such dependencies in an earlier step.
+- **Advisor only when available**: `/5:implement` warns and runs without the advisor when the session has no advisor tool. The first retry now runs on at least `sonnet`.
+- **Unverified runs are flagged**: when build/test cannot run locally (missing tools or network), `/5:implement` says so right away and in the report.
+
+**Bug Fixes**
+- **Dependency-guard test**: aborts when its temp repo setup fails instead of committing into the caller's repository, and now runs on macOS (`perl -pi`, bash 3.2 quoting).
+
+**Affected files:**
+- `src/workflows/5-implement.js` (modified)
+- `src/commands/5/implement.md` (modified)
+- `src/commands/5/review.md` (modified)
+- `src/commands/5/address-review-findings.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/agents/step-orchestrator-agent.md` (modified)
+- `docs/workflow-guide.md` (modified)
+- `README.md` (modified)
+- `AGENTS.md` (modified)
+- `test/test-dependency-guard.sh` (modified)
+- `test/verify-install-js.sh` (modified)
+
+---
+
 ## v3.2.0
 
 **Release Date:** 2026-10-25

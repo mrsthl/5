@@ -17,7 +17,7 @@ Read the plan `/5:implement` names and `.5/config.json` if present.
 ## Checks
 
 1. Completeness: every planned component is completed, none remain pending, and any acceptance criteria the plan states are addressed.
-2. Files: every planned create/modify target exists unless action is `delete`; `rename` actions verify both that `sourceFile` is removed and `file` exists at the destination path.
+2. Files: every path in each planned component's `files` exists unless action is `delete`. For `rename`, verify that `sourceFile` is removed and the destination in `files` exists.
 3. Build: run the configured build command unless it is `none` or the baseline and component results already prove its status.
 4. Tests: run the configured test command unless it is `none` or the baseline and component results already prove its status.
 5. Scope: run `git status --short` and `git diff HEAD --stat`, and read untracked (`??`) files directly — `git diff HEAD` omits them. Every changed file traces to a planned component (its target, its test, or an import site it needs) or is a file a repository standard requires, such as a changelog entry. Flag files outside the plan, work the plan rules out or defers, new dependencies no component requires, and abstractions or configurability no acceptance criterion asks for. Report drift only in `SCOPE`; it does not change `STATUS` — the user decides what to revert.

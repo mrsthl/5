@@ -3,11 +3,11 @@ export const meta = {
   description: 'Execute a full plan: derive steps, run executors in parallel waves, verify, review, fix the findings. Claude Code only; Codex uses the prose loop.',
   whenToUse: 'Invoked by the /5:implement command for full plans when the Workflow tool is available. Compact plans never reach it; the command implements them inline.',
   phases: [
-    { title: 'Orchestrate', detail: 'one orchestrator agent derives steps + components' },
-    { title: 'Execute', detail: 'one executor agent per component; parallel components fire together per step; blocked components rerun after the next step' },
+    { title: 'Orchestrate', detail: 'one opus orchestrator agent derives the approach summary, steps + components' },
+    { title: 'Execute', detail: 'one executor agent per component; parallel components fire together per step; blocked components rerun after the next step; a failed step stops the run' },
     { title: 'Verify', detail: 'inline when all passed + mechanical, else one verification agent' },
-    { title: 'Review', detail: 'correctness, standards, and — when the plan calls for them — security and flow reviewers in parallel' },
-    { title: 'Fix', detail: 'one fixer per file for every clear finding, then build/test/lint with one repair round' }
+    { title: 'Review', detail: 'correctness, standards, and — when the plan calls for them — security and flow reviewers in parallel. One sonnet skeptic per reviewer tries to refute its findings as soon as that reviewer finishes' },
+    { title: 'Fix', detail: 'one fixer for every clear finding across files, then build/test/lint with one repair round' }
   ]
 }
 
@@ -25,10 +25,11 @@ export const meta = {
 // auto-commits after this returns. Nothing is persisted: a rerun starts over.
 //
 // Models: haiku for mechanical work, sonnet for ordinary logic, opus at effort
-// medium for complex work and for every retry. With args.advisor (opt-in, from
-// .5/config.json; the command sets it only when the advisor tool is available)
-// executors consult Claude Code's advisor tool at decision points and the first
-// retry stays on the planned model, at least sonnet.
+// medium for complex work, for every retry, and for the orchestrator.
+// args.advisor is opt-in from .5/config.json. The command sets it only when the
+// advisor tool is available. Then executors planned as opus consult it at decision
+// points, and the first retry stays on the planned model, at least sonnet.
+// Every other agent is told not to call the advisor tool.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RESULT_SCHEMA = {
@@ -94,6 +95,27 @@ const FIX_SCHEMA = {
   }
 }
 
+const VERDICTS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['verdicts'],
+  properties: {
+    verdicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['number', 'real', 'reason'],
+        properties: {
+          number: { type: 'integer', description: 'number of the finding in the list' },
+          real: { type: 'boolean' },
+          reason: { type: 'string' }
+        }
+      }
+    }
+  }
+}
+
 const CHECKS_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -148,8 +170,9 @@ const VERIFICATION_SCHEMA = {
 const STATE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['steps', 'pendingComponents'],
+  required: ['summary', 'steps', 'pendingComponents'],
   properties: {
+    summary: { type: 'string', description: 'short summary of the approach' },
     securitySensitive: { type: 'boolean', description: 'the change touches auth, authorization, user input, secrets, crypto, or SQL/shell/path construction' },
     lifecycleSensitive: { type: 'boolean', description: 'the change touches install, update, migration, deploy, or bootstrap paths, or ordering across files' },
     steps: {
@@ -172,16 +195,17 @@ const STATE_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['name', 'action', 'step', 'mode', 'model', 'file'],
+        required: ['name', 'action', 'step', 'mode', 'model', 'files'],
         properties: {
           name: { type: 'string' },
           action: { enum: ['create', 'modify', 'delete', 'rename'] },
           step: { type: 'integer' },
           mode: { enum: ['parallel', 'sequential'] },
           model: { enum: ['haiku', 'sonnet', 'opus'] },
-          file: { type: 'string' },
-          sourceFile: { type: ['string', 'null'] },
+          files: { type: 'array', items: { type: 'string' }, description: 'target files; for rename the destination' },
+          sourceFile: { type: ['string', 'null'], description: 'for rename: the origin' },
           description: { type: 'string' },
+          acceptanceCriteria: { type: 'array', items: { type: 'string' } },
           dependsOn: { type: 'array', items: { type: 'string' } },
           patternRefs: {
             type: 'array',
@@ -213,27 +237,40 @@ Feature: ${a.feature}
 Plan: ${a.paths.plan}
 Config: ${a.paths.config} (read only if present)
 
-The plan has no fixed shape. Derive the components from whatever it describes: one component per target file (or tightly coupled file group), named in short kebab-case, then turn them into steps + components:
-- Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same file, one imports another, or there is an explicit dependency.
+The plan has no fixed shape. Derive the components from whatever it describes, named in short kebab-case, then turn them into steps + components:
+- One component is one coherent change to one or a few tightly coupled files. Do not split such a change into one component per file. List its target files in files. For a rename, sourceFile is the origin and files holds the destination.
+- Group independent components into one step with mode "parallel"; use "sequential" only when components touch the same files, one imports another, or there is an explicit dependency.
 - Prefer fewer steps. Tests run after the components they validate.
 - model "haiku" for mechanical work (UI tweaks, tests, docs, config, simple single-file edits); "sonnet" for ordinary logic; "opus" only for complex logic, cross-module behavior, security/auth, data migrations, or public API contracts.
 - 1-2 high-signal patternRefs per component with line ranges or symbols so executors avoid whole-file reads. Take them from the plan where it names patterns, else find them with Glob/Grep.
 - verifyCommands: narrowest relevant check first, then project build/test.
 - Exclude work the plan defers or rules out. Represent every other component once. dependsOn must reference existing component names.
 - Dependencies: for each component, list the project files and symbols it includes, requires, imports, calls, or tests. When another component creates one of them, add that component to dependsOn and put it in an EARLIER step — never the same parallel step or a later one.
+- acceptanceCriteria: per component, the checkable outcomes it must meet. Take them from the plan where it states them.
+- summary: a short summary of the overall approach. Executors get it as context.
 - securitySensitive: true when the plan touches auth, authorization, user input handling, secrets, cryptography, or SQL/shell/path construction. lifecycleSensitive: true when it touches install, update, migration, deploy, or bootstrap paths, or the order in which files are written, uploaded, or loaded.
 
-Return an object matching the schema (securitySensitive, lifecycleSensitive, steps[] and pendingComponents[]).`
+Return an object matching the schema (summary, securitySensitive, lifecycleSensitive, steps[] and pendingComponents[]).${noAdvisorBlock(a)}`
 }
 
 const ADVISOR_RULE = 'Advisor: if an advisor tool is available, consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes.'
 
-function retryContext(previous, a) {
+// The session advisor reaches every subagent. Only executors planned as opus may use it.
+// The advisor line goes at the end of a prompt as its own paragraph, or nothing when the advisor is off.
+function advisorBlock(a, advised) {
+  if (!a.advisor) return ''
+  return `\n\n${advised ? ADVISOR_RULE : 'Do not call the advisor tool.'}`
+}
+
+// For every agent that is not an executor planned as opus.
+const noAdvisorBlock = a => advisorBlock(a, false)
+
+function retryContext(previous, a, advised) {
   const failure = previous
     ? `status ${previous.status}, verify ${previous.verify}, error: ${previous.error || 'none'}, deviations: ${previous.deviations || 'none'}`
     : 'the agent crashed without returning a result'
-  const advisor = a.advisor ? ' Consult the advisor, if available, before your first edit.' : ''
-  return `This is a RETRY of a failed attempt (${failure}). Read the target as the previous attempt left it, find the root cause, and correct it.${advisor}`
+  const advisor = a.advisor && advised ? ' Consult the advisor, if available, before your first edit.' : ''
+  return `This is a RETRY of a failed attempt (${failure}). Read the target files as the previous attempt left them, find the root cause, and correct it.${advisor}`
 }
 
 function executorPrompt(c, a, opts) {
@@ -242,35 +279,45 @@ function executorPrompt(c, a, opts) {
   const standards = a.standards || {}
   const repoStandards = (standards.repo || []).map(f => `  - ${f}`).join('\n') || '  - none found'
   const styles = (standards.styles || []).map(f => `  - ${f}`).join('\n') || '  - none found'
-  const retry = opts && opts.retry ? `\n${retryContext(opts.result, a)}` : ''
-  const advisor = a.advisor ? `\n\n${ADVISOR_RULE}` : ''
+  // An executor is advised only when it was planned as opus. That holds for its retries too.
+  const advised = c.model === 'opus'
+  const retry = opts && opts.retry ? `\n${retryContext(opts.result, a, advised)}` : ''
+  const advisor = advisorBlock(a, advised)
+  const criteria = (c.acceptanceCriteria || []).map(x => `  - ${x}`).join('\n') || '  - as described in the intent'
   return `You are a Step Executor. Implement EXACTLY this component and nothing more.${retry}
+
+Approach (context only): ${a.summary || 'see the plan'}
 
 Component: ${c.name}
 Action: ${c.action}
-Target file: ${c.file}${c.sourceFile ? `\nSource file (rename from): ${c.sourceFile}` : ''}
+Target files: ${(c.files || []).join(', ')}${c.sourceFile ? `\nSource file (rename from): ${c.sourceFile}` : ''}
 Intent: ${c.description || ''}
+Acceptance criteria:
+${criteria}
 
-Read only these pattern references (ranges/symbols), plus the target file for modify/rename — and for create when it already exists:
+Read only these pattern references (ranges/symbols), plus the target files for modify/rename — and for create when they already exist:
 ${refs}
 
-Standards — read the parts that apply to your target and follow them. Repository standards win over the style skills.
+Standards — read the parts that apply to your target files and follow them. Repository standards win over the style skills.
 Repository standards:
 ${repoStandards}
 Style skills:
 ${styles}
 
-Rules: Nothing is persisted between runs, so your work may already be done: for \`create\`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). When a project file or symbol your component needs does not exist yet, do not create it: STOP and report status blocked with blockedBy — /5:implement reruns you after the next step. STOP and report failed for a missing package, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.${advisor}
+Rules: Nothing is persisted between runs, so your work may already be done: for \`create\`, read each target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Smallest coherent change; reuse what already exists in this codebase before writing new code, then prefer stdlib, native platform features, and installed dependencies; touch only the target files and what they strictly need (its test, an import site); mirror existing naming/exports/layout/tests; follow any local skill or rule; add no new dependency; no abstraction or error handling beyond what the intent requires. Fix mechanical issues you cause (imports, types, lint). When a project file or symbol your component needs does not exist yet, do not create it: STOP and report status blocked with blockedBy — /5:implement reruns you after the next step. STOP and report failed for a missing package, unplanned auth/schema/API/contract changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report that as a deviation with the exact evidence — do not mark the component failed. Do not make more than three attempts on the same failing issue.${advisor}
 
 Then run: ${verify}
 
 Return structured output: status, blockedBy (only when blocked), filesCreated, filesModified, verify, deviations (none or brief), skipped (none, or what you deliberately did not build — add when ...), error (none or description). Keep it concise — no logs or diffs unless failed.`
 }
 
-function verifyPrompt(a, results) {
+function verifyPrompt(a, results, skippedSteps) {
   const ran = results.flatMap(s => s.items.map(i =>
     `  step ${s.step} ${i.component.name}: ${i.result ? i.result.status : 'no result'}${i.result && i.result.blockedBy ? ` by ${i.result.blockedBy}` : ''} (verify ${i.result ? i.result.verify : '?'})${i.escalated ? ' [escalated to opus]' : i.retried ? ' [retried]' : ''}`))
   const summary = ran.join('\n') || '  (no components ran)'
+  const skipped = (skippedSteps || []).length
+    ? `\n\nSkipped steps — not run because an earlier step failed. Their components are not done, so completeness is not passed:\n${skippedSteps.map(s => `  step ${s.number} ${s.name}`).join('\n')}`
+    : ''
   const repoStandards = ((a.standards && a.standards.repo) || []).join(', ') || 'none found'
   const baseline = (a.baseline && a.baseline.length)
     ? a.baseline.map(b => `  ${b.command || b.details && b.details.command || '?'}: ${b.status}${b.summary ? ` — ${b.summary}` : ''}`).join('\n')
@@ -286,11 +333,11 @@ Baseline (pre-change) command results — treat any failure listed here as PRE-E
 ${baseline}
 
 Component results:
-${summary}
+${summary}${skipped}
 
 Checks — only whether the plan was built and works; code quality and correctness belong to /5:review, which runs next: completeness (every planned component done, and any acceptance criteria the plan states addressed); files exist for create/modify, rename moved correctly, delete removed; build + test pass (reuse the baseline and component results above when they already prove status — rerun only the commands whose inputs changed, not identical passing ones); scope (run \`git status --short\` and \`git diff HEAD --stat\`, and read untracked files directly since \`git diff HEAD\` omits them: every changed file traces to a planned component — its target, its test, an import site, or a file a repository standard requires (such as a changelog entry); flag files outside the plan, work the plan rules out or defers, new dependencies no component requires, and unrequested abstractions — report drift only in scope; it does not change status). Prefer changed files over broad scanning.
 
-Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).`
+Return structured output: status, completeness, infrastructure, acceptanceCriteria ("satisfied/total"), scope, commands[], failures[] (one "drift: {path} — {why}" entry per drift finding).${noAdvisorBlock(a)}`
 }
 
 // The user should be asked as little as possible: "decide" is the exception, "fix" the default.
@@ -311,7 +358,7 @@ function correctnessPrompt(a, files) {
 
 If the built-in code-review skill is available, invoke Skill(skill: "code-review", args: "high") — never with --fix or --comment — and keep only its findings in these files. Otherwise review the diff blind, on its merits: triage files by risk; read full files only for high-risk changes, public API boundaries, security/auth, and data migrations. Report bugs, security, performance, code quality, API design, missing tests, and over-engineering (unnecessary abstractions, single-use indirection, speculative generality, reinventing stdlib or existing dependencies).
 
-${TRIAGE_RULE}`
+${TRIAGE_RULE}${noAdvisorBlock(a)}`
 }
 
 function securityPrompt(a, files) {
@@ -319,13 +366,13 @@ function securityPrompt(a, files) {
 
 If the built-in security-review skill is available, invoke Skill(skill: "security-review") and keep only its findings in these files. Otherwise review them for authentication and authorization gaps, unvalidated input, leaked secrets, weak cryptography, and SQL/shell/path injection. Every security finding has severity error.
 
-${TRIAGE_RULE}`
+${TRIAGE_RULE}${noAdvisorBlock(a)}`
 }
 
 function standardsPrompt(a, files) {
   return `You are a Standards Reviewer. Invoke Skill(skill: "review-style", args: "${a.fixedPoint || 'HEAD'} files: ${files.join(', ')} report only"); if it cannot be invoked, read .claude/skills/review-style/SKILL.md and follow it with the same arguments. Leave out its Suppressed findings. ⛔️ hard breaches of a repository standard are severity error, ⚠️ judgement calls severity suggestion; a judgement call whose fix is clearly better is fix, otherwise skip.
 
-${TRIAGE_RULE}`
+${TRIAGE_RULE}${noAdvisorBlock(a)}`
 }
 
 function flowPrompt(a, files) {
@@ -339,18 +386,30 @@ A diff reviewer reads file by file; you trace behavior ACROSS these files and th
 - files and helpers the change relies on but does not check, and tests that assert the old order or state.
 Report only failures you can describe as a concrete sequence of states.
 
-${TRIAGE_RULE}`
+${TRIAGE_RULE}${noAdvisorBlock(a)}`
 }
 
-function fixerPrompt(a, file, findings) {
-  const list = findings.map(f => `  - ${f.id}${f.line ? ` (line ${f.line})` : ''}: ${f.description} → ${f.fix || 'fix as described'}`).join('\n')
-  const dirty = (a.dirty || []).join(', ') || 'none'
-  return `You are a Review Fixer. Apply these review findings in ${file}:
+// One skeptic checks all findings of one reviewer at once. Unsure counts as not real.
+function skepticPrompt(a, findings) {
+  const list = findings.map((f, n) => `${n + 1}. ${f.file}${f.line ? `:${f.line}` : ''} — ${f.description}\n   Fix: ${f.fix || 'as described'}`).join('\n')
+  return `You are a Review Skeptic. Try to refute each of these review findings by reading the code yourself. Do not edit any file.
+
 ${list}
 
-Read the file first, then apply the fixes from the highest line to the lowest. Touch another file only when a fix strictly needs it (its test, a caller), and never one of these, which hold the user's own uncommitted work: ${dirty}. Make no unrelated change. When reading the code shows a finding's premise is wrong, mark it rejected with the reason — do not ask. Follow the repository standards first, then the style skills. Run the narrowest relevant test or build for the file.
+Judge every finding on its own. Do not let one verdict influence the next.
+Set real=false when the finding cannot happen, is already handled, or is not a problem. If unsure, set real=false.
+Return one verdict per finding with its number and a one-line reason.${noAdvisorBlock(a)}`
+}
 
-Return structured output: one item per finding id (applied, rejected, or failed, with a one-line note) and filesModified.`
+function fixerPrompt(a, findings) {
+  const list = findings.map(f => `  - ${f.id} ${f.file}${f.line ? `:${f.line}` : ''}: ${f.description} → ${f.fix || 'fix as described'}`).join('\n')
+  const dirty = (a.dirty || []).join(', ') || 'none'
+  return `You are a Review Fixer. Apply these review findings:
+${list}
+
+Read each file first, then apply its fixes from the highest line to the lowest. Touch another file only when a fix strictly needs it (its test, a caller), and never one of these, which hold the user's own uncommitted work: ${dirty}. Make no unrelated change. When reading the code shows a finding's premise is wrong, mark it rejected with the reason — do not ask. Follow the repository standards first, then the style skills. Run the narrowest relevant test or build for the changed files.
+
+Return structured output: one item per finding id (applied, rejected, or failed, with a one-line note) and filesModified.${noAdvisorBlock(a)}`
 }
 
 function checksPrompt(a, files) {
@@ -364,7 +423,7 @@ ${baseline}
 
 When a command fails because of this run's changes, fix the cause with the smallest change in these files only — ${files.join(', ')} — and rerun it. At most two repair attempts per command. Do not touch any other file.
 
-Return structured output: status (passed when every command passed, was skipped, or failed only pre-existing), commands[] with category, command, status, and a one-line summary, and filesModified (repairs only).`
+Return structured output: status (passed when every command passed, was skipped, or failed only pre-existing), commands[] with category, command, status, and a one-line summary, and filesModified (repairs only).${noAdvisorBlock(a)}`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -387,7 +446,7 @@ function isBlocked(item) {
 }
 
 // Retries escalate to opus. With the advisor available, the first retry stays on the planned model
-// (at least sonnet) and consults the advisor instead; only the second escalates.
+// (at least sonnet) and only the second escalates. Only a component planned as opus consults the advisor.
 function retryModel(c, attempt, a) {
   if (!(a.advisor && attempt === 1)) return 'opus'
   return c.model === 'haiku' || !c.model ? 'sonnet' : c.model
@@ -412,8 +471,8 @@ async function runComponent(c, a) {
   return item
 }
 
-async function runStep(step, components, a) {
-  const stepComps = components.filter(c => step.components.includes(c.name))
+async function runStep(step, plan, a) {
+  const stepComps = plan.pendingComponents.filter(c => step.components.includes(c.name))
   let items
   if (step.mode === 'parallel') {
     // Fire every parallel component together, retries included — true concurrency, one wave.
@@ -440,10 +499,33 @@ async function rerunBlocked(items, a, afterStep) {
 
 const stripDot = f => f.replace(/^\.\//, '')
 
+// Hands the fix and decide findings of one reviewer to a sonnet skeptic. A refuted finding becomes skip.
+// A crashed skeptic or a missing verdict leaves the findings unchanged.
+async function refuteFindings(a, key, findings) {
+  if (!findings) return findings
+  const open = findings.filter(f => f.action === 'fix' || f.action === 'decide')
+  if (!open.length) return findings
+  const out = await agent(skepticPrompt(a, open), { label: `skeptic:${key}`, phase: 'Review', ...modelOpts('sonnet'), schema: VERDICTS_SCHEMA })
+    .catch(() => null)
+  if (!out) {
+    log(`skeptic:${key} returned nothing, findings kept as they are`)
+    return findings
+  }
+  open.forEach((f, n) => {
+    const verdict = out.verdicts.find(v => v.number === n + 1)
+    if (verdict && !verdict.real) {
+      f.action = 'skip'
+      f.reason = `refuted: ${verdict.reason}`
+      f.refuted = true
+    }
+  })
+  return findings
+}
+
 // Review the run's files, triage the findings, fix every clear one, then rerun build/test/lint.
 async function reviewAndFix(a, plan, allItems, verification, usedOpus) {
   const runFiles = [...new Set(allItems.flatMap(i => [
-    i.component.file, i.component.sourceFile,
+    ...(i.component.files || []), i.component.sourceFile,
     ...(i.result ? [...(i.result.filesCreated || []), ...(i.result.filesModified || [])] : [])
   ]).filter(Boolean).map(stripDot))]
   const dirty = new Set((a.dirty || []).map(stripDot))
@@ -455,9 +537,14 @@ async function reviewAndFix(a, plan, allItems, verification, usedOpus) {
   ]
   if (plan.securitySensitive) reviewers.push({ key: 'security', prompt: securityPrompt, model: 'sonnet' })
   if (plan.lifecycleSensitive || plan.securitySensitive) reviewers.push({ key: 'flow', prompt: flowPrompt, model: 'opus' })
-  const reports = await parallel(reviewers.map(r => () =>
-    agent(r.prompt(a, runFiles), { label: `review:${r.key}`, phase: 'Review', ...modelOpts(r.model), schema: FINDINGS_SCHEMA })
-      .then(out => out && out.findings.map(f => ({ ...f, reviewer: r.key })))))
+  // Each reviewer's skeptic starts as soon as that reviewer finishes.
+  const reports = await pipeline(
+    reviewers,
+    r => agent(r.prompt(a, runFiles), { label: `review:${r.key}`, phase: 'Review', ...modelOpts(r.model), schema: FINDINGS_SCHEMA })
+      .catch(() => null)
+      .then(out => ({ key: r.key, findings: out && out.findings.map(f => ({ ...f, reviewer: r.key })) })),
+    report => refuteFindings(a, report.key, report.findings)
+  )
   const missing = reviewers.filter((r, n) => !reports[n]).map(r => r.key)
   if (missing.length) log(`reviewer(s) returned nothing: ${missing.join(', ')}`)
 
@@ -465,7 +552,10 @@ async function reviewAndFix(a, plan, allItems, verification, usedOpus) {
   const findings = []
   const seen = new Set()
   let outside = 0
-  for (const f of reports.filter(Boolean).flat()) {
+  // Refuted findings come last, so they never take the file:line slot of a live finding.
+  const reported = reports.filter(Boolean).flat()
+  const ordered = [...reported.filter(f => f.action !== 'skip'), ...reported.filter(f => f.action === 'skip')]
+  for (const f of ordered) {
     const file = stripDot(f.file)
     if (!runFiles.includes(file)) { outside++; continue }
     const key = `${file}:${f.line || 0}`
@@ -481,23 +571,21 @@ async function reviewAndFix(a, plan, allItems, verification, usedOpus) {
   if (outside) log(`review: dropped ${outside} finding(s) outside the run's files`)
 
   phase('Fix')
-  const byFile = new Map()
-  for (const f of findings.filter(f => f.action === 'fix')) {
-    if (!byFile.has(f.file)) byFile.set(f.file, [])
-    byFile.get(f.file).push(f)
-  }
-  const fixModel = plan.securitySensitive ? 'opus' : 'sonnet'
-  await parallel([...byFile].map(([file, list]) => async () => {
-    const out = await agent(fixerPrompt(a, file, list), { label: `fix:${file}`, phase: 'Fix', ...modelOpts(list.some(f => f.reviewer === 'flow') ? 'opus' : fixModel), schema: FIX_SCHEMA })
+  // One fixer applies every clear finding across files.
+  const toFix = findings.filter(f => f.action === 'fix')
+  if (toFix.length) {
+    const needsOpus = plan.securitySensitive || toFix.some(f => f.reviewer === 'flow')
+    const fixModel = needsOpus ? 'opus' : 'sonnet'
+    const out = await agent(fixerPrompt(a, toFix), { label: 'fix', phase: 'Fix', ...modelOpts(fixModel), schema: FIX_SCHEMA })
       .catch(() => null)
-    for (const f of list) {
+    for (const f of toFix) {
       const item = out && out.items.find(i => i.id === f.id)
       f.status = item ? item.status : 'failed'
       if (item && item.note) f.note = item.note
     }
-  }))
+  }
   const applied = findings.filter(f => f.status === 'applied').length
-  log(`review: ${findings.length} finding(s), ${applied} fixed, ${findings.filter(f => f.action === 'decide').length} need a decision`)
+  log(`review: ${findings.length} finding(s), ${findings.filter(f => f.refuted).length} refuted, ${applied} fixed, ${findings.filter(f => f.action === 'decide').length} need a decision`)
 
   // The inline fast path ran no build/test yet, and applied fixes change what the verifier saw.
   let checks = null
@@ -512,27 +600,41 @@ async function reviewAndFix(a, plan, allItems, verification, usedOpus) {
 const a = args || {}
 
 phase('Orchestrate')
-const plan = await agent(orchestratorPrompt(a), { label: 'orchestrate', phase: 'Orchestrate', schema: STATE_SCHEMA })
+const plan = await agent(orchestratorPrompt(a), { label: 'orchestrate', phase: 'Orchestrate', ...modelOpts('opus'), schema: STATE_SCHEMA })
 const steps = plan.steps
 const components = plan.pendingComponents
+// Executors get the approach summary as context.
+const ctx = { ...a, summary: plan.summary }
 
 phase('Execute')
 // A blocked component waits for the next step, then — if still blocked — for the end of the run.
+// A step whose component still fails after its retries stops the run. Later steps would build on it.
 const results = []
 let waiting = []
 const late = []
 for (let n = 0; n < steps.length; n++) {
-  const r = await runStep(steps[n], components, a)
+  const r = await runStep(steps[n], plan, ctx)
   results.push(r)
+  // A blocked component from the previous step that fails on its rerun stops the run too.
+  let rerunFailed = []
   if (waiting.length) {
-    await rerunBlocked(waiting, a, n)
+    await rerunBlocked(waiting, ctx, n)
     late.push(...waiting.filter(isBlocked))
+    rerunFailed = waiting.filter(i => needsRetry(i.result))
   }
   waiting = r.items.filter(isBlocked)
   waiting.forEach(i => { i.lastTry = n })
+  const failed = [...r.items.filter(i => needsRetry(i.result)), ...rerunFailed]
+  if (failed.length) {
+    log(`stopping after step ${steps[n].number}: ${failed.map(i => i.component.name).join(', ')} failed`)
+    break
+  }
 }
-const finalRerun = [...late.filter(i => i.lastTry < steps.length - 1), ...waiting]
-if (finalRerun.length) await rerunBlocked(finalRerun, a, steps.length)
+// `results` holds one entry per step that ran. The final rerun covers only those steps.
+const lastRun = results.length - 1
+const skippedSteps = steps.slice(results.length).map(s => ({ number: s.number, name: s.name }))
+const finalRerun = [...late.filter(i => i.lastTry < lastRun), ...waiting]
+if (finalRerun.length) await rerunBlocked(finalRerun, ctx, lastRun + 1)
 
 phase('Verify')
 const allItems = results.flatMap(s => s.items)
@@ -544,7 +646,7 @@ const mechanical = !usedOpus && !allItems.some(i => i.retried) && components.eve
 // Deterministic scope signal: files an executor touched beyond its planned target(s).
 // Tests and import sites are legitimate, so this is reported for the user, never a failure.
 const extraFiles = allItems.flatMap(i => {
-  const planned = new Set([i.component.file, i.component.sourceFile].filter(Boolean).map(stripDot))
+  const planned = new Set([...(i.component.files || []), i.component.sourceFile].filter(Boolean).map(stripDot))
   const touched = i.result ? [...(i.result.filesCreated || []), ...(i.result.filesModified || [])].map(stripDot) : []
   return touched.filter(f => !planned.has(f)).map(f => ({ component: i.component.name, file: f }))
 })
@@ -555,7 +657,7 @@ if (allPassed && mechanical) {
   // No shell access here: the Checks agent in reviewAndFix runs build/test, /5:implement the scope check, when it sees inline: true.
   verification = { status: 'passed', completeness: 'passed', infrastructure: 'passed', acceptanceCriteria: 'n/a', commands: [], failures: [], inline: true }
 } else {
-  verification = await agent(verifyPrompt(a, results), {
+  verification = await agent(verifyPrompt(a, results, skippedSteps), {
     label: 'verify', phase: 'Verify', ...modelOpts(usedOpus ? 'opus' : 'sonnet'), schema: VERIFICATION_SCHEMA
   })
 }
@@ -572,16 +674,18 @@ const checksPassed = !review || !review.checks || review.checks.status === 'pass
 // Returned to the /5:implement command for the findings file, the decisions, the scope check, per-step staging, and the report.
 return {
   feature: a.feature,
+  summary: plan.summary,
   steps,
   components,
   results: results.map(s => ({
     step: s.step,
     name: s.name,
     mode: s.mode,
-    items: s.items.map(i => ({ component: i.component.name, file: i.component.file, sourceFile: i.component.sourceFile, retried: i.retried, escalated: i.escalated, result: i.result }))
+    items: s.items.map(i => ({ component: i.component.name, files: i.component.files, sourceFile: i.component.sourceFile, retried: i.retried, escalated: i.escalated, result: i.result }))
   })),
   verification,
+  skippedSteps,
   extraFiles,
   review,
-  status: verification.status === 'passed' && checksPassed ? 'completed' : 'failed'
+  status: verification.status === 'passed' && checksPassed && !skippedSteps.length ? 'completed' : 'failed'
 }

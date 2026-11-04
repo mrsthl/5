@@ -1,5 +1,33 @@
 # Release Notes
 
+## v3.2.2
+
+**Release Date:** 2026-11-04
+
+### Fewer Agents, Fewer False Fixes
+
+`/5:implement` now starts fewer agents and checks review findings before it fixes them. Runs cost fewer tokens, and wrong findings no longer turn into code changes.
+
+**Improvements**
+- **Coarser components**: a component now covers one coherent change to one or a few tightly coupled files, instead of one file. Fewer executors run, and each one pays the agent start-up cost only once.
+- **Better executor context**: the orchestrator returns a short approach summary and acceptance criteria per component. Executors get both, so they see the bigger picture and know when they are done.
+- **Skeptic pass (Claude Code)**: a Sonnet skeptic per reviewer tries to refute each finding by reading the code. Refuted findings are marked skip and are not fixed. Each skeptic starts as soon as its reviewer finishes.
+- **One fixer**: a single fixer applies all clear findings, instead of one fixer per file.
+- **Advisor only where it pays off**: only executors planned as `opus` get the advisor rule. Every other agent is told not to call the advisor tool. One advisor call costs more than a small component.
+- **Stop after a failed step**: when a component still fails after its retries, the remaining steps are skipped. Verify and the report still run. Later steps no longer build on a broken base.
+- **Predictable orchestrator cost**: the orchestrator runs on `opus` at effort `medium`, instead of inheriting the session model.
+
+**Affected files:**
+- `src/workflows/5-implement.js` (modified)
+- `src/commands/5/implement.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/agents/step-orchestrator-agent.md` (modified)
+- `src/agents/verification-agent.md` (modified)
+- `docs/workflow-guide.md` (modified)
+- `AGENTS.md` (modified)
+
+---
+
 ## v3.2.1
 
 **Release Date:** 2026-10-26

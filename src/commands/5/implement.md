@@ -70,11 +70,13 @@ It moves orchestration into deterministic JS, fires parallel components concurre
 
 - `standards` holds the repository standards and style skill paths from Step 1. Executors follow them while writing code.
 - `baseline` is the array from Step 2 (or `[]`); the workflow's verifier treats those failures as pre-existing and reuses passing results instead of rerunning them.
-- `advisor` is `true` only when the advisor is enabled (Step 1). It adds the advisor rule to the executors and keeps their first retry on the planned model, at least `sonnet`.
+- `advisor` is `true` only when the advisor is enabled (Step 1). It adds the advisor rule only to executors planned as `opus` and keeps their first retry on the planned model. Every other agent is told not to call the advisor tool.
 - `fixedPoint` and `dirty` are the fixed point and the pre-run dirty files from Step 2. The workflow reviews only the run's files since the fixed point and never edits a dirty file.
 - The workflow reads the config **file** at `paths.config` itself; do not pass build/test/commit settings inline.
 
-The workflow also reviews and fixes: after verification it runs the correctness and standards reviewers — plus security and flow reviewers when the plan touches security or install/update/ordering paths — fixes every clear finding with one fixer per file, and reruns build, test, e2e, and lint with up to two repair attempts. It skips review and fix when verification failed.
+The workflow also reviews and fixes. After verification it runs the correctness and standards reviewers. It adds security and flow reviewers when the plan touches security or install/update/ordering paths. One Sonnet skeptic checks each reviewer's findings and marks refuted ones as `skip`. One fixer then fixes every clear finding across files. Then it reruns build, test, e2e, and lint with up to two repair attempts. It skips review and fix when verification failed.
+
+The workflow also returns `skippedSteps` when it stopped after a failed step. Each entry has a `number` and a `name`.
 
 2. If the returned `verification.inline` is `true` (every component was mechanical and passed, so no verification agent ran), run steps 2-4 of the **fast-path check** (3c) — the scope part. Build and test already ran in `review.checks`; take their result as the verification.
 3. Continue with Step 4.
@@ -85,7 +87,7 @@ It produces the same outcome.
 
 #### 3a. Derive the execution graph
 
-Spawn `step-orchestrator-agent` with the plan path and config. It returns steps, dependencies, a model per component, `patternRefs` (line ranges/symbols), and verify commands. Check the graph: non-empty steps, and each component carrying `step`, `mode`, `model`, `patternRefs`, and `verifyCommands`.
+Spawn `step-orchestrator-agent` with the plan path and config, on `opus` at `effort: "medium"`. It returns a `summary` of the approach, steps, dependencies, and per component a model, `files`, `acceptanceCriteria`, `patternRefs` (line ranges/symbols), and verify commands. A component is one coherent change to one or a few tightly coupled files. Check the graph: a `summary`, non-empty steps, and each component carrying `step`, `mode`, `model`, `files`, `acceptanceCriteria`, `patternRefs`, and `verifyCommands`.
 
 #### 3b. Execute steps in waves
 
@@ -95,10 +97,11 @@ For each step:
 2. Spawn executors with the component's model. Run `opus` at `effort: "medium"`.
    - **Parallel step: emit all of the step's executor Agent calls in a single message so they run concurrently.**
    - Sequential step (same-file or dependency): one executor at a time.
-   - Give each executor only its component block, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below — do not make it read `step-executor-agent.md`. When the advisor is enabled, append the advisor line after the contract.
+   - Give each executor only the plan `summary`, its component block with its acceptance criteria, required `patternRefs`, verify commands, the standards from Step 1, and the inline contract below. Do not make it read `step-executor-agent.md`.
+   - When the advisor is enabled, append the advisor line after the contract of components planned as `opus` only. Tell every other spawned agent: "Do not call the advisor tool."
 
 ```text
-Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target file. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target file and what it strictly needs (its test, an import site) — run assigned verify commands. When a project file or symbol your component needs does not exist yet, do not create it: stop with STATUS: blocked and name it under BLOCKED_BY. Stop (STATUS: failed) for a missing package, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
+Implement exactly the assigned component. Read only listed patternRefs ranges/symbols and the target files. Meet the acceptance criteria you are given. Nothing is persisted between runs, so your work may already be done: for `create`, read the target first when it exists — if it already fulfils the intent, report success with no change; otherwise complete it, never overwrite it blindly. Read the parts of the repository standards and style skills that apply to your target and follow them; repository standards win over the styles. Make the smallest coherent change — reuse existing codebase code first, then stdlib, native platform features, and installed dependencies; touch only the target files and what they strictly need (its test, an import site) — run assigned verify commands. When a project file or symbol your component needs does not exist yet, do not create it: stop with STATUS: blocked and name it under BLOCKED_BY. Stop (STATUS: failed) for a missing package, unplanned auth/schema/API changes, or unclear product decisions. If verify fails only from pre-existing unrelated issues, report it under DEVIATIONS with the exact evidence and keep STATUS: success — your change is complete. Do not make more than three attempts on the same failing issue.
 
 End with:
 ---RESULT---
@@ -113,7 +116,7 @@ ERROR: none | {error description}
 ---END---
 ```
 
-Advisor line (only when the advisor is enabled):
+Advisor line (only when the advisor is enabled, and only for components planned as `opus`):
 
 ```text
 Advisor: if an advisor tool is available, consult it before committing to an approach when the intent is ambiguous or crosses modules, and when the same verify failure returns after a fix. Do not consult it for mechanical edits or to confirm work that already passes.
@@ -121,9 +124,11 @@ Advisor: if an advisor tool is available, consult it before committing to an app
 
 3. Parse only the `---RESULT---` block from each executor. Trust the executor's report — do not re-read files you did not change to confirm them.
 
-Retry a failed component up to twice, right after it fails (in a sequential step, before the next component starts), on `opus` at `effort: "medium"`. When the advisor is enabled, the first retry stays on the component's planned model — at least `sonnet` — and asks the executor to consult the advisor before its first edit; only the second escalates to `opus`.
+Retry a failed component up to twice, right after it fails (in a sequential step, before the next component starts), on `opus` at `effort: "medium"`. When the advisor is enabled, the first retry of a component planned as `opus` stays on `opus` and asks the executor to consult the advisor before its first edit. For other components the first retry stays on the planned model, at least `sonnet`, with no advisor. Only the second retry escalates to `opus`.
 
 `STATUS: blocked` is no retry reason: the component needs a project file or symbol another component has not created yet, and no model can fix that. Rerun it on its planned model once the next step has finished; if it is still blocked, rerun it once more after the last step. Still blocked after that counts as failed. Give every retry the previous attempt's `STATUS`, `VERIFY`, `ERROR`, and `DEVIATIONS` (or that it returned no result). A `STATUS: success` with `VERIFY: failed` is no retry reason: it can come from pre-existing failures, which verification separates using the baseline. Never fix code in the orchestrator context.
+
+**Stop after a failed step.** When a component of a step is still failed after its retries, do not run the remaining steps. Note them as skipped, then go to 3c and the report. Blocked reruns stay as they are for the steps that ran.
 
 #### 3c. Verify
 
@@ -168,7 +173,7 @@ The code is **green** when `review.checks` is `null` or `passed` and the post-fi
 
 If `.5/config.json` `git.autoCommit` is `true`, verification passed, and Step 4 left the code green — commit, including the review fixes from Step 4 for those files, once per step for a full plan, once for a compact plan:
 
-1. Stage only files that step owns: each component's `file` for create/modify/delete, both `sourceFile` and `file` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes. **Never stage a pre-run dirty file** (Step 2), on any plan: it holds the user's own unfinished work. Leave it uncommitted and list it in the report.
+1. Stage only files that step owns: each component's `files` for create/modify/delete, both `sourceFile` and `files` for rename, plus the executors' reported `FILES_CREATED`/`FILES_MODIFIED`. For a compact plan, stage the files you changed. Do not stage unrelated changes. **Never stage a pre-run dirty file** (Step 2), on any plan: it holds the user's own unfinished work. Leave it uncommitted and list it in the report.
 2. Build the message from `git.commitMessage.pattern`, replacing `{ticket-id}` with the ticket the plan or the branch name gives (or empty) and `{short-description}` with `step {number}: {step-name}` (compact plan: a short summary of the change); trim redundant whitespace/punctuation when the ticket is empty.
 3. Commit.
 
@@ -179,6 +184,7 @@ When a review fix left build, tests, e2e, or lint failing, do not commit; report
 Report: completed/failed component counts, verification status, auto-commit count and any failures, and any failed commands, missing tests, or unmet acceptance criteria. When verification failed, tell the user to fix the reported issues and rerun `/5:implement {feature-name}`. Also list, one line each:
 
 - **Review:** the findings count, how many were fixed without asking, how many you asked about, and every failed fix.
+- **Skipped steps:** the steps not run because an earlier step failed, with their numbers and names.
 - **Blocked:** components that stayed blocked, with what they were waiting for — a sign the plan's step order is wrong.
 - **Not verified locally:** the line from Step 2, when build/test could not run here.
 - **Scope:** drift findings from verification, plus files an executor touched outside its planned target (the workflow returns these as `extraFiles`). Suggest `/5:lean-check {feature-name}` when there are any.

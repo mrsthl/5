@@ -177,6 +177,21 @@ function verifyProjectInstructionsContract() {
       ok: fs.readFileSync('src/skills/configure-rules/SKILL.md', 'utf8').includes('## Codex: rules in AGENTS.md') && fs.readFileSync('bin/sync-agents.js', 'utf8').includes("path.join(root, 'AGENTS.md')") && !fs.readFileSync('bin/sync-agents.js', 'utf8').includes("'instructions.md'") && !fs.readFileSync('bin/install.js', 'utf8').includes('generateCodexInstructions') && agentsSkill.includes('5-sync:rules-start')
     },
     {
+      label: 'Codex lists path-scoped rules as an index, not full text',
+      ok: fs.readFileSync('src/skills/configure-rules/SKILL.md', 'utf8').includes('.5/rules/{name}.md') && fs.readFileSync('bin/sync-agents.js', 'utf8').includes('read that rule file and follow it')
+    },
+    {
+      label: 'configure-project-skills marks its skills, keeps one-liners in AGENTS.md, and never forks',
+      ok: (() => {
+        const projectSkills = fs.readFileSync('src/skills/configure-project-skills/SKILL.md', 'utf8');
+        return projectSkills.includes('<!-- foifi:generated -->') && projectSkills.includes('one plain command') && !/^context:\s*fork/m.test(projectSkills);
+      })()
+    },
+    {
+      label: 'reconfigure changes unmarked skills and rules only through selected proposals',
+      ok: fs.readFileSync('src/commands/5/reconfigure.md', 'utf8').includes('unless the user selected that proposal')
+    },
+    {
       label: 'config-guard hook is gone from settings.json',
       ok: !settings.includes('config-guard')
     }

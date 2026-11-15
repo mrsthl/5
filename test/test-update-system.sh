@@ -36,6 +36,13 @@ for style_skill in review-style fowler-code-smells cognitive-load documentation-
   fi
 done
 echo "✓ Review style skills installed"
+for configure_skill in configure-agents-md configure-rules configure-project-skills; do
+  if [ ! -f ".claude/skills/${configure_skill}/SKILL.md" ]; then
+    echo "✗ Configure skill missing: ${configure_skill}"
+    exit 1
+  fi
+done
+echo "✓ Configure skills installed"
 for removed in ".claude/commands/5/plan.md" ".claude/commands/5/split.md" ".claude/skills/use-index" ".claude/templates/CONVENTIONS.md" \
   ".claude/commands/5/commit.md" ".claude/commands/5/apply-review-findings.md" ".claude/commands/5/triage-pr-comments.md" \
   ".claude/commands/5/reply-pr-comments.md" ".claude/skills/generate-readme" ".claude/skills/configure-skills" \
@@ -289,6 +296,13 @@ if [ -f ".codex/skills/5-plan/SKILL.md" ]; then
   echo "✓ Commands converted to Codex skills"
 else
   echo "✗ Codex skills not created"
+  exit 1
+fi
+if [ -f ".codex/skills/configure-project-skills/SKILL.md" ] && grep -q '\.5/rules/' .codex/skills/configure-rules/SKILL.md \
+  && ! grep -q '\.codex/rules' .codex/skills/configure-rules/SKILL.md .codex/skills/5-configure/SKILL.md .codex/skills/5-reconfigure/SKILL.md; then
+  echo "✓ Configure skills installed for Codex, rules indexed from .5/rules/"
+else
+  echo "✗ Codex configure skills not installed or rules not under .5/rules/"
   exit 1
 fi
 if [ -f ".codex/skills/review-style/SKILL.md" ] && [ -f ".codex/skills/baseline-conventions/SKILL.md" ]; then

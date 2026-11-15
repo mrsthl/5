@@ -377,7 +377,7 @@ const LEGACY_REMOVED_FILES = [
   'templates/CONCERNS.md',
   'templates/CONVENTIONS.md',
   'templates/TESTING.md',
-  // Lean core: Claude Code covers commits, READMEs, PR replies, and per-pattern skills natively
+  // Lean core: Claude Code covers commits, READMEs, and PR replies natively; patterns now live in rules
   'commands/5/commit.md',
   // Claude Code plans in native plan mode under the AGENTS.md Planning rules; $5-plan stays for Codex
   'commands/5/plan.md',
@@ -423,6 +423,7 @@ function getWorkflowManagedFiles() {
     skills: [
       'configure-agents-md',
       'configure-rules',
+      'configure-project-skills',
       // Review styles: review-style runs one reviewer per style listed in its SKILL.md
       'review-style',
       'fowler-code-smells',
@@ -538,6 +539,9 @@ function convertSlashCommandsToCodexMentions(content) {
 // Convert Claude command markdown to Codex-compatible content
 function convertClaudeToCodexMarkdown(content) {
   let converted = convertSlashCommandsToCodexMentions(content);
+  // Codex has no path-scoped rules: rule files live in .5/rules/ and AGENTS.md indexes them.
+  // Map them before the general rewrite, which would point them at .codex/rules/.
+  converted = converted.replace(/\.claude\/rules\b/g, '.5/rules');
   // Replace .claude/ path references with .codex/
   converted = converted.replace(/\.claude\//g, '.codex/');
   converted = convertClaudeSetupCommandsToCodexNotes(converted);

@@ -92,9 +92,9 @@ First-time setup:
 /5:configure
 ```
 
-`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, writes the CONFIGURE plan, and then runs `/5:implement CONFIGURE` itself, which adds the workflow rules to AGENTS.md as one marked block that links the repository's own standards, appends `@AGENTS.md` to CLAUDE.md when it lacks that line, and generates scoped rules. Nothing outside the block changes.
+`/5:configure` writes `.5/config.json`, sets `plansDirectory` to `.5/planning` in `.claude/settings.json`, writes the CONFIGURE plan, and then runs `/5:implement CONFIGURE` itself, which adds the workflow rules to AGENTS.md as one marked block that links the repository's own standards, appends `@AGENTS.md` to CLAUDE.md when it lacks that line, and generates the rules and project skills you pick. Rules carry how code looks — one rule per pattern such as DTO, entity, or mapper, scoped to its files, plus a few project-wide ones. Project skills carry procedures that take more than one plain command, such as running a single test, codegen, or starting the app. Nothing outside the block changes.
 
-Refresh the AGENTS.md block and the rules later with:
+Refresh the AGENTS.md block, rules, and project skills later with the command below. It also checks every other skill and rule in the project — stale paths, duplicates, content in the wrong mechanism — and changes one only when you select its proposal:
 
 ```text
 /5:reconfigure
@@ -135,4 +135,4 @@ v2.0.0 removes old commands during upgrade:
 | `/5:address-review-findings` | Fix clear findings, ask about real decisions |
 | `/5:analyze-feature` | Document a feature with mermaid diagrams |
 | `/5:configure` | Create project config and CONFIGURE plan, then implement it |
-| `/5:reconfigure` | Refresh the AGENTS.md block and rules |
+| `/5:reconfigure` | Refresh the AGENTS.md block, rules, and project skills; propose fixes for the others |

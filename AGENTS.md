@@ -48,7 +48,8 @@ Every feature must work for both Claude Code and Codex. The two runtimes share `
 | Statusline | `src/hooks/statusline.js` | Not available |
 | Update notice | Statusline reads `.5/.update-cache.json` | Skill adapter preamble reads `.5/.update-cache.json` at startup |
 | Migration notice | Statusline reads `.5/.migration-v*` | Skill adapter preamble reads `.5/.migration-v*` at startup |
-| Generated rules | `.claude/rules/*.md` from `configure-rules` | `File-Scoped Rules` section in the foifi block of `AGENTS.md` — Codex reads only `AGENTS.md`, never `.codex/instructions.md`; `/5:synchronize-agents` writes the same section from `.claude/rules/` |
+| Generated rules | `.claude/rules/*.md` from `configure-rules`, path-scoped per code pattern | Rule files in `.5/rules/` (the installer's conversion maps `.claude/rules` to `.5/rules`, before its general `.claude/` → `.codex/` rewrite) plus an index in the `File-Scoped Rules` section of the foifi block in `AGENTS.md` (path-scoped rules as one line each, project-wide rules in full text) — Codex reads only `AGENTS.md` and has no path scoping; `/5:synchronize-agents` writes the same index from `.claude/rules/` |
+| Generated project skills | `.claude/skills/{name}/` from `configure-project-skills` | `.codex/skills/{name}/` (path rewritten by the installer's conversion); `/5:synchronize-agents` syncs them like any user skill |
 | Security review | `Skill(security-review)` in `/5:review` when the diff is security-sensitive | `Skill(skill="security-review")` row in the "Tool Mapping"; the prose review fallback covers security |
 | Advisor (opt-in, `advisor: true` in `.5/config.json`) | Only executors planned as `opus` get the advisor rule, and their first retry stays on the planned model. Every other agent is told `Do not call the advisor tool.`. Needs `/advisor opus` in Claude Code; without the tool in the session, `/5:implement` warns and runs with it disabled | Not available; the setting is ignored and retries go to `opus` |
 | Upgrade migrations | `performUpdate()` in `install.js` | `performCodexUpdate()` in `install.js` — must mirror all migrations |
@@ -68,8 +69,9 @@ Helpers:
 - `/5:lean-check [base-branch|feature-name] [request]` checks any diff — with or without a plan — for scope drift and over-engineering, and can revert the drift.
 - `/5:address-review-findings {name} [--interactive]` runs after every `/5:review`, without asking first: it fixes clear findings — including a clearly better way a reviewer points out — on its own, checks uncertain ones against the code, asks the user one question at a time only for real decisions, and verifies the result. Keep user questions to a minimum everywhere.
 - `/5:analyze-feature {topic}` documents a feature or dataflow with mermaid diagrams.
-- `/5:configure` writes config and the CONFIGURE plan, then runs `/5:implement CONFIGURE` itself.
-- `/5:reconfigure`, `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.
+- `/5:configure` finds rule and project-skill candidates, lets the user pick them one by one, writes config and the CONFIGURE plan, then runs `/5:implement CONFIGURE` itself.
+- `/5:reconfigure` refreshes the foifi block and every marked rule and skill, analyzes all other project skills and rules, and applies only the proposals the user selects (skill↔rule migration, stale, outdated, duplicate, trim, new).
+- `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.
 
 All commands have `$5-*` Codex equivalents unless noted otherwise.
 
@@ -77,7 +79,7 @@ All commands have `$5-*` Codex equivalents unless noted otherwise.
 
 `/5:configure` never owns a project's `AGENTS.md` or `CLAUDE.md`. `configure-agents-md` writes the workflow rules into `AGENTS.md` as one block between `<!-- foifi:start` and `<!-- foifi:end -->`, and appends `@AGENTS.md` to `CLAUDE.md` when that line is missing. Everything outside the block belongs to the repository, ranks as a repository standard, and is never changed. `review-style` uses the markers to tell the two apart.
 
-`configure-rules` generates `.claude/rules/*.md` scoped to file globs and marks each with `<!-- foifi:generated -->`; only marked rules are refreshed or removed. foifi generates no project-specific skills: Claude explores the code itself. Pattern and `run-*` skills from earlier versions stay where they are, untouched.
+Rules carry how code looks; skills carry how to run a procedure. `configure-rules` generates `.claude/rules/*.md` — one rule per recurring code pattern (DTO, entity, mapper, component, ...) scoped by its globs, plus at most `architecture.md` and `dependencies.md` project-wide — and says only what an example file does not show: obligations across files, conventions tooling does not enforce, a reference file. `configure-project-skills` generates `.claude/skills/{name}/` only for procedures that take more than one plain command (variants, prerequisites, a fixed order); a one-liner stays under "Build & Run Commands" in the foifi block. Both mark their files with `<!-- foifi:generated -->`, and only marked files are refreshed or removed without asking. `/5:reconfigure` changes any other skill or rule — the user's own, and the pattern and `run-*` skills from earlier versions — only through a proposal the user selects; afterwards that file carries the marker.
 
 The installer merges `src/settings.json` into an existing `settings.json` without overriding any value the user already set, such as their own `statusLine`.
 

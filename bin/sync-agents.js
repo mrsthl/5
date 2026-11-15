@@ -28,6 +28,7 @@ const log = {
 const WORKFLOW_MANAGED_SKILLS = new Set([
   'configure-agents-md',
   'configure-rules',
+  'configure-project-skills',
   'review-style',
   'fowler-code-smells',
   'cognitive-load',
@@ -406,14 +407,27 @@ function buildRulesSection(root, ruleFiles) {
   section += '> Synced from .claude/rules/ — do not edit this section manually.\n';
   section += '> Re-run /5:synchronize-agents (or $5-synchronize-agents) to update.\n\n';
 
+  // Codex has no path-scoped rules: list scoped rules as an index so they cost context only
+  // when needed, and keep project-wide rules in full text because they apply everywhere.
+  const indexLines = [];
+  let fullText = '';
   for (const file of ruleFiles) {
     const content = fs.readFileSync(path.join(rulesDir, file), 'utf8');
     const { frontmatter, body } = extractFrontmatterAndBody(content);
     const globs = frontmatter ? [...frontmatter.matchAll(/^\s*-\s*["']?([^"'\n]+?)["']?\s*$/gm)].map(m => `\`${m[1]}\``) : [];
     const name = file.replace('.md', '');
-    const directives = body.replace('<!-- foifi:generated -->', '').trim();
-    section += `### ${name}\nApplies to: ${globs.length ? globs.join(', ') : 'all files'}\n\n${directives}\n\n`;
+    if (globs.length) {
+      indexLines.push(`- \`${name}\` — ${globs.join(', ')} → \`.claude/rules/${file}\``);
+    } else {
+      const directives = body.replace('<!-- foifi:generated -->', '').trim();
+      fullText += `### ${name}\nApplies to: all files\n\n${directives}\n\n`;
+    }
   }
+  if (indexLines.length) {
+    section += 'Before you work on a file that matches a rule below, read that rule file and follow it.\n\n';
+    section += `${indexLines.join('\n')}\n\n`;
+  }
+  section += fullText;
 
   section += RULES_SYNC_END;
   return section;

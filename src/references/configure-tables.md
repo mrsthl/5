@@ -78,6 +78,9 @@ Check files in this order (first match wins):
   },
   "rules": {
     "generate": true
+  },
+  "skills": {
+    "generate": false
   }
 }
 ```

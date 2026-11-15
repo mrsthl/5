@@ -120,9 +120,10 @@ When running in REFRESH MODE, read `.5/reconfigure-manifest.json`:
 - `proposals`: apply each accepted proposal whose `target` is a rule, or whose `action` is `migrate-to-rule`:
   - `migrate-to-rule` — write the new rule from the source skill's content and the code, following steps 2-4. Delete the source skill directory only after the rule is written.
   - `stale`, `outdated`, `trim`, `contradicts-standard`, `duplicate` — rewrite or remove the target rule as the proposal's `detail` says.
+  - `convert-codex-index` (Codex only) — for each full-text `###` subsection of the `File-Scoped Rules` section whose `Applies to:` names globs, write `.5/rules/{name}.md` with those globs as `paths:`, the marker, and the subsection's directives. Subsections that apply to all files stay in full text. The section is then rewritten as the index below.
   - Every rule you write gets the `<!-- foifi:generated -->` marker, also when it was the user's before: the user agreed that foifi manages it from now on.
 - Never modify or remove any rule file the manifest does not list.
-- On Codex, rewrite the `File-Scoped Rules` section from all rules in `.5/rules/` after the changes.
+- On Codex, rewrite the `File-Scoped Rules` section from all rules in `.5/rules/` after the changes. `/5:reconfigure` runs this skill last, so the index also reflects rules that `configure-project-skills` changed or deleted.
 
 ---
 

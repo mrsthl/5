@@ -133,17 +133,17 @@ Write `.5/reconfigure-manifest.json`:
 
 First, point plan mode at `.5/planning/` exactly as `/5:configure` Step 2.5 describes (Claude Code only — skip on Codex).
 
-Then invoke the refresh skills in **refresh mode** via the Agent tool (`subagent_type: "general-purpose"`), one after the other — on Codex the first two write the foifi block of `AGENTS.md`:
+Then invoke the refresh skills in **refresh mode** via the Agent tool (`subagent_type: "general-purpose"`), one after the other in this order. The rules task runs last: a `migrate-to-skill` proposal changes or deletes a rule in the skills task, and on Codex the rules task rebuilds the `File-Scoped Rules` index from the rule files that are left.
 
 ```
 Task prompt 1: "Run configure-agents-md skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Refresh the foifi block in AGENTS.md and the CLAUDE.md include; change nothing outside the block."
 
-Task prompt 2: "Run configure-rules skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Apply the manifest's rules lists and the proposals that target rules or migrate to rules; change no other file."
+Task prompt 2: "Run configure-project-skills skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Apply the manifest's skills lists and the proposals that target skills or migrate to skills; change no other file."
 
-Task prompt 3: "Run configure-project-skills skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Apply the manifest's skills lists and the proposals that target skills or migrate to skills; change no other file."
+Task prompt 3: "Run configure-rules skill in REFRESH MODE using `.5/reconfigure-manifest.json`. Apply the manifest's rules lists and the proposals that target rules, migrate to rules, or convert the Codex index; change no other file."
 ```
 
-Skip task 2 when the manifest lists no rule work, and task 3 when it lists no skill work. A migration writes the target before it deletes the source.
+Skip task 2 when the manifest lists no skill work. Skip task 3 when the manifest lists no rule work — on Codex, unless task 2 changed or deleted a rule, because the index must then be rebuilt. A migration writes the target before it deletes the source.
 
 When rules or skills now exist and `rules.generate` or `skills.generate` in `.5/config.json` is `false`, set it to `true`; set it to `false` when none are left.
 

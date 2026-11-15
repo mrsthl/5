@@ -298,7 +298,8 @@ else
   echo "✗ Codex skills not created"
   exit 1
 fi
-if [ -f ".codex/skills/configure-project-skills/SKILL.md" ] && grep -q '\.5/rules/' .codex/skills/configure-rules/SKILL.md; then
+if [ -f ".codex/skills/configure-project-skills/SKILL.md" ] && grep -q '\.5/rules/' .codex/skills/configure-rules/SKILL.md \
+  && ! grep -q '\.codex/rules' .codex/skills/configure-rules/SKILL.md .codex/skills/5-configure/SKILL.md .codex/skills/5-reconfigure/SKILL.md; then
   echo "✓ Configure skills installed for Codex, rules indexed from .5/rules/"
 else
   echo "✗ Codex configure skills not installed or rules not under .5/rules/"

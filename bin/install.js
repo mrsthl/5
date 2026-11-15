@@ -539,6 +539,9 @@ function convertSlashCommandsToCodexMentions(content) {
 // Convert Claude command markdown to Codex-compatible content
 function convertClaudeToCodexMarkdown(content) {
   let converted = convertSlashCommandsToCodexMentions(content);
+  // Codex has no path-scoped rules: rule files live in .5/rules/ and AGENTS.md indexes them.
+  // Map them before the general rewrite, which would point them at .codex/rules/.
+  converted = converted.replace(/\.claude\/rules\b/g, '.5/rules');
   // Replace .claude/ path references with .codex/
   converted = converted.replace(/\.claude\//g, '.codex/');
   converted = convertClaudeSetupCommandsToCodexNotes(converted);

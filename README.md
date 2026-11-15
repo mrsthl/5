@@ -27,7 +27,7 @@ Then configure the project once:
 /5:configure
 ```
 
-This adds the foifi rules to `AGENTS.md` as one marked block, links your existing standards from it, and makes `CLAUDE.md` include it. Nothing else in your files or settings changes.
+This adds the foifi rules to `AGENTS.md` as one marked block, links your existing standards from it, and makes `CLAUDE.md` include it. It also generates the rules (code patterns) and project skills (multi-step procedures) you pick. Nothing else in your files or settings changes.
 
 ## Workflow
 
@@ -46,7 +46,7 @@ On Codex, start with `$5-plan`; the rest is the same.
 | `/5:address-review-findings [--interactive]` | Address saved review findings again; `--interactive` asks about each one |
 | `/5:lean-check` | Check a diff for scope drift and over-engineering |
 | `/5:analyze-feature` | Document an existing feature with diagrams |
-| `/5:configure` / `/5:reconfigure` | Set up the project / refresh the AGENTS.md block and rules |
+| `/5:configure` / `/5:reconfigure` | Set up the project / refresh the AGENTS.md block, rules, and project skills |
 | `/5:update` / `/5:eject` | Update foifi / stop automatic updates |
 | `/5:synchronize-agents` | Sync your own skills and rules between Claude Code and Codex |
 

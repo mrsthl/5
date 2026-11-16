@@ -1,5 +1,42 @@
 # Release Notes
 
+## v3.2.3
+
+**Release Date:** 2026-11-16
+
+### Patterns as Rules, Procedures as Skills
+
+`/5:configure` now keeps code patterns in rules and executable procedures in project skills. `/5:reconfigure` analyzes both and proposes fixes and migrations. It applies only what you select.
+
+**What's New**
+- **Pattern rules**: one path-scoped rule per recurring building block (DTO, entity, mapper, component, migration, testing), plus at most `architecture.md` and `dependencies.md`. Each rule states what the example files do not show: obligations across files, conventions tooling does not enforce, a reference file.
+- **Project skills**: `configure-project-skills` creates a skill only for a procedure that takes more than one plain command, such as single test runs, lint with autofix, codegen, or starting the app. One-liners stay in AGENTS.md.
+- **Reconfigure proposals**: analyzes all project skills and rules and proposes migrations between them (skill to rule, rule to skill), stale, outdated, duplicate, and trimmed entries, and new patterns. Each proposal is a multi-select option. Files you do not select stay unchanged.
+- **Ownership marker**: files foifi generates carry `<!-- foifi:generated -->`. Only marked files are refreshed without asking.
+- **Codex**: rule files live in `.5/rules/`, and AGENTS.md indexes the path-scoped ones.
+
+**Improvements**
+- Plans and `/5:analyze-feature` ask for diagrams without naming a format, so they read in the terminal and the plan preview.
+
+**Bug Fixes**
+- The Codex conversion maps `.claude/rules` to `.5/rules` instead of `.codex/rules`.
+- `/5:reconfigure` handles the Codex index conversion and rebuilds the index last.
+
+**Affected files:**
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/reconfigure.md` (modified)
+- `src/skills/configure-rules/SKILL.md` (modified)
+- `src/skills/configure-project-skills/SKILL.md` (new)
+- `src/references/configure-tables.md` (modified)
+- `src/commands/5/analyze-feature.md` (modified)
+- `src/templates/AGENTS.md` (modified)
+- `bin/install.js` (modified)
+- `bin/sync-agents.js` (modified)
+- `AGENTS.md`, `README.md`, `docs/workflow-guide.md` (modified)
+- `test/verify-install-js.sh`, `test/test-update-system.sh` (modified)
+
+---
+
 ## v3.2.2
 
 **Release Date:** 2026-11-04

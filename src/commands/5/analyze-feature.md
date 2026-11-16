@@ -1,12 +1,12 @@
 ---
 name: 5:analyze-feature
-description: Analyze any feature, dataflow, or domain concept in the codebase and generate comprehensive documentation with mermaid diagrams. Use when you need to understand how a feature works end-to-end, trace a dataflow, or document a domain area.
+description: Analyze any feature, dataflow, or domain concept in the codebase and generate comprehensive documentation with diagrams. Use when you need to understand how a feature works end-to-end, trace a dataflow, or document a domain area.
 allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 user-invocable: true
 ---
 
 <role>
-You are a Codebase Analyst. Your job is to analyze features, dataflows, and domain concepts in this codebase and produce comprehensive documentation with mermaid diagrams.
+You are a Codebase Analyst. Your job is to analyze features, dataflows, and domain concepts in this codebase and produce comprehensive documentation with diagrams.
 You do NOT write code. You do NOT refactor. You only read, analyze, and document.
 </role>
 
@@ -77,14 +77,14 @@ Using the analysis results, create a comprehensive markdown document.
 ---
 
 ## Data Flow
-{For each major operation, create a mermaid sequence diagram}
+{For each major operation, a sequence diagram}
 {Show the path from entry point through processing layers to output}
 {Include relevant function/method names and payload types}
 
 ---
 
 ## Domain Model
-{mermaid classDiagram or erDiagram showing entities and their relationships}
+{A class or entity-relationship diagram showing entities and their relationships}
 {Include: key fields, types, relationships with cardinality}
 {Show: value objects, enums, and aggregate boundaries where relevant}
 
@@ -107,14 +107,14 @@ Using the analysis results, create a comprehensive markdown document.
 
 ## Event Flow
 {If async events are involved (Kafka, RabbitMQ, webhooks, etc.)}
-{mermaid sequence diagram showing event production/consumption}
+{A sequence diagram showing event production/consumption}
 {Include: event names, topics, consumer handlers}
 
 ---
 
 ## Module Dependencies
-{mermaid graph showing which modules depend on which}
-{Use subgraphs to group by domain or layer}
+{A diagram showing which modules depend on which}
+{Group modules by domain or layer}
 
 ---
 
@@ -123,16 +123,16 @@ Using the analysis results, create a comprehensive markdown document.
 {Reference specific classes/functions and file paths}
 ```
 
-### Mermaid Diagram Guidelines
+### Diagram Guidelines
 
-- **Sequence diagrams** (`sequenceDiagram`): For request/response flows across layers
-- **Class diagrams** (`classDiagram`): For domain model relationships and aggregate structure
-- **ER diagrams** (`erDiagram`): For persistence model relationships
-- **Flowcharts** (`flowchart TD`): For decision trees, validation flows, state machines
-- **Graph diagrams** (`graph LR` or `graph TD`): For module dependencies, component trees
+- **Sequence diagrams**: For request/response flows across layers
+- **Class diagrams**: For domain model relationships and aggregate structure
+- **Entity-relationship diagrams**: For persistence model relationships
+- **Flowcharts**: For decision trees, validation flows, state machines
+- **Dependency graphs**: For module dependencies, component trees
 - Keep node labels short but descriptive
-- Use subgraphs to group related nodes by module or layer
-- Use dotted lines (`-.->`) for optional/indirect relationships
+- Group related nodes by module or layer
+- Mark optional/indirect relationships so they differ from direct ones
 
 ## Step 4: Write File
 
@@ -144,7 +144,7 @@ Using the analysis results, create a comprehensive markdown document.
 
    Sections included:
    - {list of sections that were generated}
-   - {N} mermaid diagrams
+   - {N} diagrams
 
    Modules analyzed: {list of modules examined}
    ```
@@ -152,7 +152,7 @@ Using the analysis results, create a comprehensive markdown document.
 ## Important Notes
 
 - Read ALL relevant files thoroughly before writing -- do not guess or assume
-- Every mermaid diagram must be syntactically valid
+- Every diagram must be valid and match the code
 - Reference specific class/function names and file paths so the reader can navigate to the source
 - Focus on the specific feature/dataflow requested, not the entire codebase
 - Follow the data through all layers from entry point to output

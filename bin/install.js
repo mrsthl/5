@@ -1102,7 +1102,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  $5-review                    - Code and standards review');
     log.info('  $5-lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  $5-address-review-findings   - Decide on review findings, apply the fixes');
-    log.info('  $5-analyze-feature           - Document a feature with mermaid diagrams');
+    log.info('  $5-analyze-feature           - Document a feature with diagrams');
     log.info('  $5-configure                 - Interactive project setup');
     log.info('  $5-reconfigure               - Refresh the AGENTS.md block and rules (no Q&A)');
     log.info('  $5-eject                     - Eject from update mechanism');
@@ -1114,7 +1114,7 @@ function showCommandsHelp(isGlobal) {
     log.info('  /5:review                    - Code and standards review');
     log.info('  /5:lean-check                - Check a diff for scope drift/over-engineering');
     log.info('  /5:address-review-findings   - Decide on review findings, apply the fixes');
-    log.info('  /5:analyze-feature           - Document a feature with mermaid diagrams');
+    log.info('  /5:analyze-feature           - Document a feature with diagrams');
     log.info('  /5:configure                 - Interactive project setup');
     log.info('  /5:reconfigure               - Refresh the AGENTS.md block and rules (no Q&A)');
     log.info('  /5:eject                     - Eject from update mechanism');

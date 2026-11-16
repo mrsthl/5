@@ -33,7 +33,7 @@ On Claude Code there is no plan command. Plan in native plan mode (shift+tab, or
 
 On Codex, which has no plan mode, run `$5-plan`; it writes `.5/planning/{feature-name}.md`.
 
-The plan has no prescribed structure; Claude shapes it as the change needs, with a mermaid diagram where a flow, state machine, or component relationships explain the change better than text. When the request names a ticket, Claude fetches it and confirms the content with you first.
+The plan has no prescribed structure; Claude shapes it as the change needs, with a diagram where a flow, state machine, or component relationships explain the change better than text. When the request names a ticket, Claude fetches it and confirms the content with you first.
 
 Approving a plan means you want it built: Claude runs `/5:implement {plan-path}` right away. A small plan (1-2 files, no migration, security/auth, or public API change) skips the orchestrator there.
 
@@ -133,6 +133,6 @@ v2.0.0 removes old commands during upgrade:
 | `/5:implement` | Implement and verify |
 | `/5:review` | Review changes for correctness and standards |
 | `/5:address-review-findings` | Fix clear findings, ask about real decisions |
-| `/5:analyze-feature` | Document a feature with mermaid diagrams |
+| `/5:analyze-feature` | Document a feature with diagrams |
 | `/5:configure` | Create project config and CONFIGURE plan, then implement it |
 | `/5:reconfigure` | Refresh the AGENTS.md block, rules, and project skills; propose fixes for the others |

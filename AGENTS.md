@@ -68,7 +68,7 @@ Helpers:
 
 - `/5:lean-check [base-branch|feature-name] [request]` checks any diff — with or without a plan — for scope drift and over-engineering, and can revert the drift.
 - `/5:address-review-findings {name} [--interactive]` runs after every `/5:review`, without asking first: it fixes clear findings — including a clearly better way a reviewer points out — on its own, checks uncertain ones against the code, asks the user one question at a time only for real decisions, and verifies the result. Keep user questions to a minimum everywhere.
-- `/5:analyze-feature {topic}` documents a feature or dataflow with mermaid diagrams.
+- `/5:analyze-feature {topic}` documents a feature or dataflow with diagrams.
 - `/5:configure` finds rule and project-skill candidates, lets the user pick them one by one, writes config and the CONFIGURE plan, then runs `/5:implement CONFIGURE` itself.
 - `/5:reconfigure` refreshes the foifi block and every marked rule and skill, analyzes all other project skills and rules, and applies only the proposals the user selects (skill↔rule migration, stale, outdated, duplicate, trim, new).
 - `/5:update`, `/5:eject`, and `/5:synchronize-agents` are maintenance commands.

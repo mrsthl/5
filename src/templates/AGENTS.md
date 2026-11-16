@@ -25,7 +25,7 @@ Run the `review-style` skill to check a change against all of them.
 
 ## Planning
 
-Plan non-trivial changes in plan mode (Codex: run `$5-plan`). Shape each plan as the change needs; add a mermaid diagram when a flow, state machine, or component relationships explain the change better than text, and plan what the repository standards require, such as tests or a changelog entry.
+Plan non-trivial changes in plan mode (Codex: run `$5-plan`). Shape each plan as the change needs; add a diagram when a flow, state machine, or component relationships explain the change better than text, and plan what the repository standards require, such as tests or a changelog entry.
 
 When the request names a ticket, fetch it (Jira MCP or `gh issue view`) and confirm its content with the user before planning.
 

@@ -324,8 +324,8 @@ function verifyPlanModeContract() {
       ok: implementCommand.includes('`{argument}.md`') && implementCommand.includes('`feature: {argument}`')
     },
     {
-      label: 'implement runs /5:review once, scoped to the run, before auto-commit',
-      ok: implementCommand.includes('Run `/5:review since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}`') && reviewCommand.includes('since {fixed-point} files: {paths} feature: {name} dirty: {paths}') && implementCommand.includes('do not commit; report it') && implementCommand.includes('Never stage a pre-run dirty file') && reviewCommand.includes('drop every finding whose file is not in `{paths}`') && !reviewCommand.includes('Ask once:') && implementCommand.includes('**After the Workflow route:**') && workflow.includes("phase('Review')") && workflow.includes("phase('Fix')") && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
+      label: 'implement runs /5:review in two passes (bugs, then standards), scoped to the run, before auto-commit',
+      ok: implementCommand.includes('/5:review bugs since {fixed-point} files: {run-files} feature: {feature-name} dirty: {dirty-files}') && implementCommand.includes('/5:review standards') && reviewCommand.includes('`bugs` runs') && reviewCommand.includes('`standards` runs') && reviewCommand.includes('since {fixed-point} files: {paths} feature: {name} dirty: {paths}') && implementCommand.includes('do not commit; report it') && implementCommand.includes('Never stage a pre-run dirty file') && reviewCommand.includes('drop every finding whose file is not in `{paths}`') && !reviewCommand.includes('Ask once:') && implementCommand.includes('**After the Workflow route:**') && workflow.includes("phase('Review')") && workflow.includes("phase('Fix')") && !implementCommand.includes('Skill(skill: "review-style"') && implementCommand.indexOf('## Step 4: Review') < implementCommand.indexOf('## Step 5: Auto-commit')
     },
     {
       label: 'verification checks only built-and-works; review-style uses two reviewers',

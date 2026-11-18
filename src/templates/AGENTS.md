@@ -18,8 +18,9 @@ These rules decide how code is written here, in this order:
 
 {REPO_STANDARDS_LINKS}
 
-2. **The workflow's style skills set the baseline** wherever the repository's standards say nothing: `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions`. Follow them when you write or review code. Where a repository standard endorses something a style would flag, the repository standard wins.
-3. **The workflow rules below** (Simplicity First, Testing, Surgical Changes, Goal-Driven Execution) apply as well. When a repository standard asks for more, such as a changelog entry or a test, do what it asks.
+2. **The developer's user-level rules come next.** They are `~/.claude/CLAUDE.md` and the files in `~/.claude/rules/` (Codex: `~/.codex/AGENTS.md`). A missing file is fine. Where a repository standard endorses something a user-level rule would flag, the repository standard wins.
+3. **The workflow's style skills set the baseline** wherever the repository's standards and the user-level rules say nothing: `fowler-code-smells`, `cognitive-load`, `documentation-style`, and `baseline-conventions`. Follow them when you write or review code. Where a repository standard or a user-level rule endorses something a style would flag, that standard or rule wins.
+4. **The workflow rules below** (Simplicity First, Testing, Surgical Changes, Goal-Driven Execution) apply as well. When a repository standard asks for more, such as a changelog entry or a test, do what it asks.
 
 Run the `review-style` skill to check a change against all of them.
 

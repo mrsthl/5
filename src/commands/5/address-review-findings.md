@@ -2,7 +2,7 @@
 name: 5:address-review-findings
 description: Fixes clear review findings on its own, asks the user one question at a time only for real decisions, then verifies the result. --interactive asks about every finding.
 allowed-tools: Bash, Read, Edit, Write, Glob, AskUserQuestion, Agent
-argument-hint: [feature-name] [--interactive] [dirty: {paths}]
+argument-hint: [feature-name] [--interactive] [pass: bugs|standards] [dirty: {paths}]
 user-invocable: true
 model: sonnet
 context: inherit
@@ -19,6 +19,9 @@ You are a Review Fix Coordinator. You fix what is clear, ask the user only what 
 ## Options
 
 - `--interactive` — ask about every finding, one at a time, instead of deciding the clear ones yourself.
+- `pass: bugs` — the findings come from the bug review. Fix behaviour only, with no refactor and no restyle, because a standards pass follows.
+- `pass: standards` — the findings come from the standards review. Behaviour must stay exactly the same. Fix a hard (⛔️/error) finding unless the fix changes behaviour or contradicts the plan. Record such a finding as `wont_fix` with that reason. Fix a judgement call (⚠️/suggestion) only when the fix is clearly easier to read. Otherwise record it as `wont_fix`.
+- No `pass:` — behave as described below, for any finding.
 - `dirty: {paths}` — files that held the user's own uncommitted work before the run (`/5:implement` passes this). A finding in one of them may sit in that earlier work, so it is never fixed on your own and never asked about: record it as `wait` with the reason "pre-run dirty file" and list it in the report.
 
 ## Process
@@ -40,6 +43,7 @@ You are a Review Fix Coordinator. You fix what is clear, ask the user only what 
    - With `--interactive`, ask about every finding this way instead.
    - Write decisions to `.5/features/{feature}/review-decisions-{YYYYMMDD-HHmmss}.json`.
 3. Apply the fixes:
+   - Reject a finding whose file path is absolute or leaves the repository root through `..`. Mark it `FAILED` with that reason (the workflow fixer reports it as `rejected`) and never edit it.
    - Take every decision with `fix`. Use `customInstructions` when present; otherwise `suggestedFix`.
    - Group fixes by file. Read each file before editing it.
    - 1-3 simple fixes in a file: edit directly, highest line number first.

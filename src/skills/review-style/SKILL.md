@@ -1,17 +1,19 @@
 ---
 name: review-style
-description: Review changes against coding and documentation standards (repo standards plus a list of style skills), then optionally fix the findings. Use when the user wants a style, standards or conventions review of a branch, a commit range or uncommitted work.
+description: Review changes against coding and documentation standards (repo standards, user-level rules and a list of style skills), then optionally fix the findings. Use when the user wants a style, standards or conventions review of a branch, a commit range or uncommitted work.
 ---
 
 # Review style
 
-Review a change against two kinds of standards:
+Review a change against three kinds of standards:
 
 - **Repo standards**: whatever the repository documents about how code is written.
+- **User-level rules**: the rules the developer keeps outside the repository, in their home folder.
 - **Styles**: the style skills listed below. They apply in every repository.
 
-Repo standards always win. Where a repo standard endorses something a style would flag, the style finding is
-**suppressed**.
+The order of precedence is repo standards, then user-level rules, then styles.
+Where a repo standard endorses something a user-level rule or a style would flag, that finding is **suppressed**.
+Where a user-level rule endorses something a style would flag, the style finding is suppressed too.
 
 ## Styles
 
@@ -61,28 +63,52 @@ Search the repository for every file that documents how code is written:
   The block between `<!-- foifi:start` and `<!-- foifi:end -->` holds workflow rules, not repository
   standards; count only the files it links under "Standards". In a legacy file that says a workflow generated it
   from a template, count only the parts it names as repository standards.
+  A nested `CLAUDE.md` or `AGENTS.md` applies to the changed files below it.
+- Every file in `.claude/rules/*.md`.
+  A rule file applies to a changed file when the file's path matches one of its `paths:` globs.
+  The path is relative to the repo root.
+  A rule file without `paths:` applies to every changed file.
+
+Skip process instructions, such as how to build, commit, run commands or talk to the developer.
+They cannot be checked against a diff.
 
 Skip linter and formatter configs. Tooling enforces them already.
 
-### 3. Resolve the styles
+### 3. Collect the user-level rules
+
+Read these files from the developer's home folder:
+
+- On Claude Code: `~/.claude/CLAUDE.md` and every file in `~/.claude/rules/`.
+- On Codex: `~/.codex/AGENTS.md`.
+
+A rule file applies to a changed file when the file's path matches one of its `paths:` globs.
+The path is relative to the repo root.
+A rule file without `paths:` applies to every changed file.
+
+A missing file or folder is fine. Skip it and go on.
+
+Skip process instructions, as for repo standards.
+
+### 4. Resolve the styles
 
 Turn each path in [Styles](#styles) into an absolute path from this skill's base directory. Reviewers don't
 know that directory, so they only get absolute paths.
 
-### 4. Review in parallel
+### 5. Review in parallel
 
 Start both reviewers in one message, as foreground sub-agents:
 
-- One **repo reviewer** for all repo standards together, when step 2 found any.
+- One **repo reviewer** for all repo standards and user-level rules together, when step 2 or 3 found any.
 - One **style reviewer** for all styles together. Two reviewers keep the token cost flat as styles are added.
 
 Each prompt carries:
 
 - The diff file path and the commit list.
-- Its standards: the repo standard files, or the absolute paths of every style's `SKILL.md`. The style
-  reviewer reads each `SKILL.md` and every file it links to, and applies each style only where it says it
-  applies.
-- For the style reviewer, the repo standard files too, so they can suppress overridden findings.
+- Its standards: the repo standard files and the user-level rule files, or the absolute paths of every
+  style's `SKILL.md`. The style reviewer reads each `SKILL.md` and every file it links to, and applies each
+  style only where it says it applies.
+- For the style reviewer, the repo standard files and the user-level rule files too, so they can suppress
+  overridden findings.
 - The **context rule**: before judging a hunk, read its whole enclosing method and type. Follow the calls,
   types and parents it touches whenever a rule needs them. Search the repository when a rule asks about
   duplication.
@@ -92,40 +118,54 @@ Each prompt carries:
 - The brief:
 
   > Apply every rule of your standard to every changed hunk. Report each finding as:
-  > `path:line`, a title of a few words, the quoted code, the rule (standard file plus rule name), hard or judgement, and a suggested
-  > fix in a few words. Every finding gets a suggested fix. Use one sentence when a few words can't carry it. A breach of a repo standard may be hard. A style finding is always a judgement call. Skip anything
-  > tooling enforces.
+  > `path:line`, a title of a few words, the quoted code, the rule (standard file plus rule name), the rule
+  > sentence quoted verbatim, hard or judgement, and a suggested fix in a few words. Every finding gets a
+  > suggested fix. Use one sentence when a few words can't carry it.
   >
-  > Style reviewer only: when a repo standard endorses what your style would flag, report it under
-  > **Suppressed**, citing the repo rule that overrides it.
+  > Severity comes from the wording of the rule. A repo or user-level rule written as a statement or a command is hard.
+  > A repo or user-level rule worded with "prefer", "should" or "usually", or that calls itself a guideline,
+  > is a judgement call. A style finding is always a judgement call. Skip anything tooling enforces.
+  >
+  > Style reviewer only: when a repo standard or a user-level rule endorses what your style would flag,
+  > report it under **Suppressed**, citing the rule that overrides it.
+  >
+  > Repo reviewer only: when a repo standard endorses what a user-level rule would flag, report it under
+  > **Suppressed**, citing the repo source.
+  >
+  > Quote user-level rules verbatim too.
 
-### 5. Merge and report
+### 6. Merge and report
 
 - Merge findings that flag the same line for the same reason. Cite every rule involved.
+- Drop a finding that has no verbatim quote. Drop one whose quote does not state what the finding claims.
+  List each dropped finding in a short **Dropped** section with the reason.
 - Number the findings `F1`, `F2`, … and group them by file.
-- Write each finding in this shape. ⛔️ marks a hard breach of a repo standard. ⚠️ marks a judgement call.
-  The title names the problem in a few words.
+- Write each finding in this shape. ⛔️ marks a repo or user-level rule worded as a statement or a command. ⚠️ marks a judgement call.
+  The title names the problem in a few words. The quote is the rule sentence, verbatim.
   ```
   - <icon> **<ID> <title>** _(<lines>)_
     <what is wrong and why>
+    > "<rule sentence>"
     → <fix> _(<standards>)_
   ```
   For example:
   ```
   - ⛔️ **F1 Javadoc repeats the accessor** _(:71)_
     `@return the entity links.` adds nothing the method name doesn't say.
+    > "Do not repeat the method name in a Javadoc line."
     → Drop the line. _(Repo comment rules, Doc)_
   - ⚠️ **F7 Plural name on an invariant checker** _(:12)_
     The plural name suggests a collection, but the class checks an invariant.
+    > "Name a class after what it does."
     → Rename to `DocumentEntityLinkInvariantHelper`. _(Cog)_
   ```
 - Every finding shows its fix. When a reviewer sent none, write one.
-- List suppressed findings in a separate **Suppressed** section, each with its overriding repo rule.
+- List suppressed findings in a separate **Suppressed** section, each with its overriding repo rule or user-level rule.
 - End with one line: findings per standard, hard violations count, and the worst issue.
 
-### 6. Fix
+### 7. Fix
 
-When the caller asked for a report only, stop after step 5. When the caller asked for fixes up front, fix every
+When the caller asked for a report only, stop after step 6. When the caller asked for fixes up front, fix every
 finding. Otherwise, and only when there are findings, ask: fix all, fix hard violations only, fix the IDs I list,
 or fix nothing.
 

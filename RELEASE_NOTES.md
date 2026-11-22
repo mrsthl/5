@@ -1,5 +1,43 @@
 # Release Notes
 
+## v3.3.0
+
+**Release Date:** 2026-11-22
+
+### Working Code First, Standards After
+
+`/5:implement` now gets the code working first and only then reviews standards. Behaviour fixes and refactoring stay apart, and each round is checked before the next one starts.
+
+**What's New**
+- **Two-stage implement**: after the run is green, a standards review and a behaviour-preserving refactor run. Before that, bug review and one fix round run on the working code.
+
+**Improvements**
+- **Bug review**: three lens reviewers (logic, integration, edge cases) replace the `code-review` subagent in the workflow. Each lens has its own skeptic.
+- **Parallel steps**: components in a parallel step run without build and test. One step verifier then runs the verify commands once, so builds such as Gradle no longer run twice at the same time.
+- **Advisor mode**: complex components run on Sonnet with the Opus advisor, and retries run on Opus.
+- **review-style**: checks `.claude/rules` and user-level rules, quotes each rule it reports, and takes severity from the rule's wording.
+
+**Bug Fixes**
+- Bug review no longer comes back empty when `code-review` runs in the background and ends the subagent's turn.
+
+**Affected files:**
+- `AGENTS.md` (modified)
+- `bin/install.js` (modified)
+- `docs/workflow-guide.md` (modified)
+- `src/agents/step-executor-agent.md` (modified)
+- `src/commands/5/address-review-findings.md` (modified)
+- `src/commands/5/configure.md` (modified)
+- `src/commands/5/implement.md` (modified)
+- `src/commands/5/review.md` (modified)
+- `src/skills/documentation-style/SKILL.md` (modified)
+- `src/skills/fowler-code-smells/SKILL.md` (modified)
+- `src/skills/review-style/SKILL.md` (modified)
+- `src/templates/AGENTS.md` (modified)
+- `src/workflows/5-implement.js` (modified)
+- `test/verify-install-js.sh` (modified)
+
+---
+
 ## v3.2.3
 
 **Release Date:** 2026-11-16

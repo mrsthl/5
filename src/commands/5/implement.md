@@ -23,7 +23,7 @@ Find the plan:
 
 Plans have no fixed shape. The feature name is the plan's `feature` frontmatter field when it has one, otherwise the file name without `.md`.
 
-Read the plan and `.5/config.json` if it exists. The advisor is **enabled** for this run only when `.5/config.json` has `advisor: true`, the runtime is Claude Code, and this session actually has an advisor tool — subagents inherit it from here. When the setting is on but the tool is missing, tell the user once — "Advisor is on in `.5/config.json`, but no advisor tool is available in this session (`/advisor opus`, Anthropic API only); running without it." — and run with the advisor disabled. Codex has no advisor tool and ignores the setting. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
+Read the plan and `.5/config.json` if it exists. The advisor is **enabled** for this run only when `.5/config.json` has `advisor: true`, the runtime is Claude Code, and this session actually has an advisor tool — subagents inherit it from here. When the setting is on but the tool is missing, tell the user once — "Advisor is on in `.5/config.json`, but no advisor tool is available in this session (`/advisor <model>`, Anthropic API only); running without it." — and run with the advisor disabled. Codex has no advisor tool and ignores the setting. Nothing is persisted between runs; a rerun starts over, and executors see work that is already done in the files.
 
 A plan is **compact** when it changes 1-2 files with no data migration, no security/auth change, and no public API change. Every other plan is **full**.
 
